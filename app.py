@@ -334,10 +334,9 @@ def smazat_uzivatele(user_id):
     db.session.commit()
     return redirect(url_for("admin"))
 
-if __name__ == "__main__":
+def init_db():
     with app.app_context():
         db.create_all()
-        # Create default admin if none exists
         if not User.query.filter_by(is_admin=True).first():
             admin_user = User(
                 email="admin@commarec.cz",
@@ -348,4 +347,9 @@ if __name__ == "__main__":
             db.session.add(admin_user)
             db.session.commit()
             print("Vytvořen výchozí admin: admin@commarec.cz / admin123")
+
+# Initialize DB on every startup (safe to call multiple times)
+init_db()
+
+if __name__ == "__main__":
     app.run(debug=False, host="0.0.0.0", port=int(os.environ.get("PORT", 5000)))
