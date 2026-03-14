@@ -214,7 +214,7 @@ def generovat():
     client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
     try:
         message = client.messages.create(
-            model="claude-opus-4-5",
+            model="claude-opus-4-5-20251101",
             max_tokens=2000,
             system=SYSTEM_PROMPTS.get(template, SYSTEM_PROMPTS["audit"]),
             messages=[{"role": "user", "content": input_text}]
