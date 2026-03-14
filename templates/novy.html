@@ -2,21 +2,27 @@
 {% block title %}Nový zápis{% endblock %}
 {% block extra_head %}
 <style>
-  .templates { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 1.5rem; }
-  .tmpl { background: var(--surface); border: 1.5px solid var(--border); border-radius: var(--radius); padding: 14px 16px; cursor: pointer; transition: all 0.15s; user-select: none; }
-  .tmpl:hover { border-color: #B5D4F4; }
-  .tmpl.selected { border-color: var(--accent); background: var(--accent-light); }
-  .tmpl-name { font-size: 14px; font-weight: 500; margin-bottom: 4px; }
-  .tmpl-desc { font-size: 12px; color: var(--muted); line-height: 1.5; }
-  .step-label { font-size: 12px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 10px; }
-  #output-section { display: none; margin-top: 2rem; }
-  .output-text { font-family: 'DM Mono', monospace; font-size: 13px; line-height: 1.8; white-space: pre-wrap; color: var(--text); background: var(--bg); padding: 1.25rem; border-radius: 8px; border: 1px solid var(--border); max-height: 500px; overflow-y: auto; }
-  .task-item { display: flex; gap: 10px; padding: 10px 0; border-bottom: 1px solid var(--border); align-items: flex-start; }
-  .task-item:last-child { border-bottom: none; }
-  .task-check { width: 18px; height: 18px; border: 1.5px solid var(--border); border-radius: 4px; flex-shrink: 0; margin-top: 1px; }
-  .task-name { font-size: 14px; font-weight: 500; }
-  .task-meta { font-size: 12px; color: var(--muted); margin-top: 2px; }
-  @media (max-width: 600px) { .templates { grid-template-columns: 1fr; } }
+.templates { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.tmpl { background: white; border: 2px solid var(--border); border-radius: var(--radius); padding: 16px; cursor: pointer; transition: all 0.15s; user-select: none; position: relative; overflow: hidden; }
+.tmpl::before { content: ''; position: absolute; right: -15px; top: 50%; transform: translateY(-50%); width: 50px; height: 50px; clip-path: polygon(0 0, 70% 0, 100% 50%, 70% 100%, 0 100%, 30% 50%); opacity: 0; transition: opacity 0.15s; }
+.tmpl.selected::before { opacity: 1; background: var(--navy); }
+.tmpl:hover { border-color: var(--blue); }
+.tmpl.selected { border-color: var(--navy); background: #F0F5FA; }
+.tmpl-num { font-family: var(--font-display); font-size: 28px; font-weight: 900; color: var(--border); line-height: 1; margin-bottom: 6px; transition: color 0.15s; }
+.tmpl.selected .tmpl-num { color: var(--cyan); }
+.tmpl-name { font-size: 13px; font-weight: 700; color: var(--navy); margin-bottom: 3px; text-transform: uppercase; letter-spacing: 0.04em; }
+.tmpl-desc { font-size: 11px; color: var(--muted); line-height: 1.5; font-weight: 500; }
+.step-header { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
+.step-num { font-family: var(--font-display); font-size: 22px; font-weight: 900; color: var(--cyan); line-height: 1; }
+.step-label { font-size: 11px; font-weight: 700; color: var(--navy); text-transform: uppercase; letter-spacing: 0.08em; }
+#output-section { display: none; margin-top: 1.5rem; }
+.output-text { font-family: 'Courier New', monospace; font-size: 12.5px; line-height: 1.9; white-space: pre-wrap; color: var(--text); background: #F8FAFC; padding: 1.25rem; border-radius: var(--radius); border: 1px solid var(--border); max-height: 480px; overflow-y: auto; }
+.task-item { display: flex; gap: 12px; padding: 11px 0; border-bottom: 1px solid var(--border); }
+.task-item:last-child { border-bottom: none; }
+.task-arrow { color: var(--cyan); font-size: 14px; flex-shrink: 0; margin-top: 1px; font-weight: 700; }
+.task-name { font-size: 13px; font-weight: 700; color: var(--navy); }
+.task-meta { font-size: 11px; color: var(--muted); margin-top: 2px; font-weight: 500; }
+@media (max-width: 600px) { .templates { grid-template-columns: 1fr; } }
 </style>
 {% endblock %}
 {% block content %}
@@ -24,149 +30,125 @@
   <div class="page-header">
     <div>
       <h1>Nový zápis</h1>
-      <p>Vložte přepis ze schůzky a AI vygeneruje strukturovaný zápis</p>
+      <p>Vložte přepis ze schůzky — AI vygeneruje strukturovaný zápis a úkoly do Freela</p>
     </div>
+    <a href="{{ url_for('dashboard') }}" class="btn btn-secondary">← Zpět</a>
   </div>
 
-  <div class="card">
-    <div class="step-label">1. Šablona</div>
+  <div class="card" style="margin-bottom: 1rem;">
+    <div class="step-header"><span class="step-num">01</span><span class="step-label">Vyberte šablonu</span></div>
     <div class="templates">
       {% for key, name in template_names.items() %}
       <div class="tmpl {% if loop.first %}selected{% endif %}" onclick="selectTmpl(this, '{{ key }}')" id="tmpl-{{ key }}">
+        <div class="tmpl-num">0{{ loop.index }}</div>
         <div class="tmpl-name">{{ name }}</div>
         <div class="tmpl-desc">
           {% if key == 'audit' %}Zjištění, hodnocení oblastí, doporučené kroky, přínosy{% endif %}
-          {% if key == 'operativa' %}Probrané body, rozhodnutí, úkoly s odpovědností a termínem{% endif %}
+          {% if key == 'operativa' %}Body jednání, rozhodnutí, úkoly s termínem a odpovědností{% endif %}
           {% if key == 'obchod' %}Klient, závěry z jednání, next steps, follow-up{% endif %}
         </div>
       </div>
       {% endfor %}
     </div>
+  </div>
 
-    <hr>
-    <div class="step-label" style="margin-top: 1.5rem;">2. Přepis nebo poznámky ze schůzky</div>
-    <div class="form-group">
-      <textarea id="input-text" rows="10" placeholder="Vložte sem přepis z PLAUDu nebo vlastní poznámky...&#10;&#10;Tip: stačí i hrubý přepis s timestampy, AI si s tím poradí."></textarea>
+  <div class="card">
+    <div class="step-header"><span class="step-num">02</span><span class="step-label">Přepis nebo poznámky ze schůzky</span></div>
+    <div class="form-group" style="margin-bottom: 1rem;">
+      <textarea id="input-text" rows="10" placeholder="Vložte sem přepis z PLAUDu nebo vlastní poznámky...&#10;&#10;Funguje i hrubý přepis s timestampy a Speaker 1/2 — AI si s tím poradí."></textarea>
     </div>
-    <div style="display: flex; gap: 10px; align-items: center;">
-      <button class="btn btn-primary" id="gen-btn" onclick="generovat()">Generovat zápis</button>
-      <span id="gen-status" style="font-size: 13px; color: var(--muted);"></span>
+    <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+      <button class="btn btn-navy" id="gen-btn" onclick="generovat()">Generovat zápis →</button>
+      <span id="gen-status" style="font-size: 12px; color: var(--muted); font-weight: 500;"></span>
     </div>
   </div>
 
   <div id="output-section">
     <div class="card">
-      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
-        <h2 style="font-size: 18px; font-weight: 600;" id="output-title">Vygenerovaný zápis</h2>
-        <span class="badge badge-blue" id="output-badge"></span>
+      <div class="card-header">
+        <h2 id="output-title">Vygenerovaný zápis</h2>
+        <span class="badge badge-cyan" id="output-badge"></span>
       </div>
       <div class="output-text" id="output-text"></div>
     </div>
 
     <div class="card" id="tasks-card" style="display: none; margin-top: 1rem;">
-      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
-        <h2 style="font-size: 16px; font-weight: 600;">Úkoly pro Freelo</h2>
-        <button class="btn btn-success btn-sm" id="freelo-btn" onclick="odeslatDoFreela()">Odeslat do Freela</button>
+      <div class="card-header">
+        <h2>Úkoly pro Freelo</h2>
+        <button class="btn btn-success btn-sm" id="freelo-btn" onclick="odeslatDoFreela()">Odeslat do Freela →</button>
       </div>
       <div id="tasks-list"></div>
-      <div id="freelo-result" style="margin-top: 10px;"></div>
+      <div id="freelo-result" style="margin-top: 12px;"></div>
     </div>
 
-    <div style="margin-top: 1rem; display: flex; gap: 10px;">
+    <div style="margin-top: 1rem; display: flex; gap: 10px; flex-wrap: wrap;">
       <a href="{{ url_for('dashboard') }}" class="btn btn-secondary">← Zpět na přehled</a>
-      <a id="detail-link" href="#" class="btn btn-secondary" style="display:none;">Otevřít detail zápisu</a>
+      <a id="detail-link" href="#" class="btn btn-secondary" style="display:none;">Zobrazit detail →</a>
     </div>
   </div>
 </div>
-
 <script>
 let selectedTemplate = '{{ template_names.keys()|list|first }}';
 let currentZapisId = null;
-let currentTasks = [];
 const tmplNames = {{ template_names | tojson }};
-
 function selectTmpl(el, tmpl) {
   document.querySelectorAll('.tmpl').forEach(t => t.classList.remove('selected'));
   el.classList.add('selected');
   selectedTemplate = tmpl;
 }
-
 async function generovat() {
   const text = document.getElementById('input-text').value.trim();
   if (!text) { alert('Vložte prosím text schůzky.'); return; }
-
   const btn = document.getElementById('gen-btn');
   const status = document.getElementById('gen-status');
   btn.disabled = true;
   btn.innerHTML = '<span class="spinner"></span> Generuji...';
-  status.textContent = 'AI zpracovává text, může to trvat 10–30 sekund...';
-
+  status.textContent = 'AI zpracovává text (10–30 sekund)...';
   try {
     const resp = await fetch('/api/generovat', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ template: selectedTemplate, text })
     });
     const data = await resp.json();
     if (data.error) { alert('Chyba: ' + data.error); return; }
-
     currentZapisId = data.zapis_id;
-    currentTasks = data.tasks;
-
     document.getElementById('output-title').textContent = data.title;
     document.getElementById('output-badge').textContent = tmplNames[selectedTemplate];
     document.getElementById('output-text').textContent = data.text;
     document.getElementById('output-section').style.display = 'block';
     document.getElementById('detail-link').href = '/zapis/' + data.zapis_id;
     document.getElementById('detail-link').style.display = 'inline-flex';
-
     if (data.tasks && data.tasks.length > 0) {
-      const list = document.getElementById('tasks-list');
-      list.innerHTML = data.tasks.map(t => `
+      document.getElementById('tasks-list').innerHTML = data.tasks.map(t => `
         <div class="task-item">
-          <div class="task-check"></div>
-          <div>
-            <div class="task-name">${t.name}</div>
-            <div class="task-meta">${t.desc ? t.desc + ' &nbsp;·&nbsp; ' : ''}Termín: ${t.deadline}</div>
-          </div>
-        </div>
-      `).join('');
+          <div class="task-arrow">›</div>
+          <div><div class="task-name">${t.name}</div>
+          <div class="task-meta">${t.desc ? t.desc + ' · ' : ''}Termín: ${t.deadline}</div></div>
+        </div>`).join('');
       document.getElementById('tasks-card').style.display = 'block';
     }
-
     document.getElementById('output-section').scrollIntoView({ behavior: 'smooth' });
     status.textContent = '';
-  } catch (err) {
-    alert('Chyba při komunikaci se serverem: ' + err.message);
-  } finally {
-    btn.disabled = false;
-    btn.textContent = 'Generovat zápis';
-  }
+  } catch (err) { alert('Chyba: ' + err.message); }
+  finally { btn.disabled = false; btn.textContent = 'Generovat zápis →'; }
 }
-
 async function odeslatDoFreela() {
   if (!currentZapisId) return;
   const btn = document.getElementById('freelo-btn');
   btn.disabled = true;
   btn.innerHTML = '<span class="spinner"></span> Odesílám...';
-
   try {
     const resp = await fetch('/api/freelo/' + currentZapisId, { method: 'POST' });
     const data = await resp.json();
     const result = document.getElementById('freelo-result');
     if (data.created && data.created.length > 0) {
       result.innerHTML = '<div class="alert alert-success">✓ Odesláno ' + data.created.length + ' úkolů do Freela.</div>';
-      btn.textContent = 'Odesláno ✓';
+      btn.textContent = '✓ Odesláno';
     } else {
       result.innerHTML = '<div class="alert alert-error">Chyba: ' + (data.errors || ['Neznámá chyba']).join(', ') + '</div>';
-      btn.disabled = false;
-      btn.textContent = 'Odeslat do Freela';
+      btn.disabled = false; btn.textContent = 'Odeslat do Freela →';
     }
-  } catch (err) {
-    alert('Chyba: ' + err.message);
-    btn.disabled = false;
-    btn.textContent = 'Odeslat do Freela';
-  }
+  } catch (err) { alert('Chyba: ' + err.message); btn.disabled = false; btn.textContent = 'Odeslat do Freela →'; }
 }
 </script>
 {% endblock %}

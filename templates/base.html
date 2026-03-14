@@ -4,108 +4,155 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>{% block title %}Zápisy{% endblock %} — Commarec</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap');
-  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-  :root {
-    --bg: #F7F6F2;
-    --surface: #FFFFFF;
-    --border: #E5E3DC;
-    --text: #1A1A18;
-    --muted: #7A7870;
-    --accent: #185FA5;
-    --accent-light: #E6F1FB;
-    --success: #0F6E56;
-    --success-light: #E1F5EE;
-    --danger: #A32D2D;
-    --danger-light: #FCEBEB;
-    --radius: 10px;
-    --shadow: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
-  }
-  body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--text); font-size: 15px; line-height: 1.6; min-height: 100vh; }
-  a { color: var(--accent); text-decoration: none; }
-  a:hover { text-decoration: underline; }
+@font-face {
+  font-family: 'DrukCondensed';
+  src: url('/static/DrukCondensed-Super.otf') format('opentype');
+  font-weight: 900;
+  font-style: normal;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --navy:       #0B1F33;
+  --navy-mid:   #142d47;
+  --blue:       #0070C9;
+  --blue-light: #E5F2FC;
+  --cyan:       #00B4D8;
+  --white:      #FFFFFF;
+  --bg:         #F2F5F8;
+  --surface:    #FFFFFF;
+  --border:     #D8E0E9;
+  --text:       #0B1F33;
+  --muted:      #5A7089;
+  --success:    #0A7A5A;
+  --success-bg: #E2F5EE;
+  --danger:     #C0392B;
+  --danger-bg:  #FDECEA;
+  --radius:     6px;
+  --font-display: 'DrukCondensed', 'Impact', sans-serif;
+  --font-body:    'Montserrat', sans-serif;
+}
+body { font-family: var(--font-body); background: var(--bg); color: var(--text); font-size: 14px; line-height: 1.6; min-height: 100vh; }
+a { color: var(--blue); text-decoration: none; }
+a:hover { text-decoration: underline; }
 
-  /* Nav */
-  .nav { background: var(--surface); border-bottom: 1px solid var(--border); padding: 0 2rem; display: flex; align-items: center; justify-content: space-between; height: 56px; position: sticky; top: 0; z-index: 100; }
-  .nav-logo { font-size: 15px; font-weight: 600; color: var(--text); letter-spacing: -0.02em; }
-  .nav-logo span { color: var(--accent); }
-  .nav-links { display: flex; gap: 0.25rem; align-items: center; }
-  .nav-link { font-size: 14px; color: var(--muted); padding: 6px 12px; border-radius: 6px; transition: all 0.15s; }
-  .nav-link:hover { color: var(--text); background: var(--bg); text-decoration: none; }
-  .nav-link.active { color: var(--text); font-weight: 500; }
-  .nav-user { font-size: 13px; color: var(--muted); display: flex; align-items: center; gap: 12px; }
-  .nav-user strong { color: var(--text); }
+/* NAV */
+.nav {
+  background: var(--navy);
+  padding: 0 2rem;
+  display: flex; align-items: center; justify-content: space-between;
+  height: 56px; position: sticky; top: 0; z-index: 100;
+  border-bottom: 2px solid var(--cyan);
+}
+.nav-logo { display: flex; align-items: center; gap: 10px; text-decoration: none; }
+.nav-logo-svg { display: block; }
+.nav-logo-name {
+  font-family: var(--font-display);
+  font-size: 20px; font-weight: 900;
+  color: white; letter-spacing: 0.04em;
+  line-height: 1;
+}
+.nav-logo-name span {
+  color: var(--cyan);
+  font-family: var(--font-body);
+  font-size: 11px; font-weight: 500;
+  letter-spacing: 0.1em; text-transform: uppercase;
+  display: block; margin-top: -2px;
+}
+.nav-divider { width: 1px; height: 24px; background: rgba(255,255,255,0.15); margin: 0 4px; }
+.nav-links { display: flex; gap: 2px; }
+.nav-link { font-size: 12px; font-weight: 600; color: rgba(255,255,255,0.55); padding: 6px 13px; border-radius: 4px; transition: all 0.15s; text-transform: uppercase; letter-spacing: 0.05em; }
+.nav-link:hover { color: white; background: rgba(255,255,255,0.08); text-decoration: none; }
+.nav-link.active { color: white; }
+.nav-right { display: flex; align-items: center; gap: 12px; }
+.nav-user { font-size: 12px; color: rgba(255,255,255,0.5); font-weight: 500; }
+.nav-user strong { color: white; font-weight: 600; }
+.nav-logout { font-size: 11px; font-weight: 600; color: rgba(255,255,255,0.4); padding: 4px 10px; border: 1px solid rgba(255,255,255,0.15); border-radius: 4px; text-transform: uppercase; letter-spacing: 0.05em; transition: all 0.15s; }
+.nav-logout:hover { color: white; border-color: rgba(255,255,255,0.4); text-decoration: none; }
 
-  /* Layout */
-  .container { max-width: 900px; margin: 0 auto; padding: 2rem 1.5rem; }
-  .container-wide { max-width: 1100px; margin: 0 auto; padding: 2rem 1.5rem; }
+/* LAYOUT */
+.container { max-width: 960px; margin: 0 auto; padding: 2rem 1.5rem; }
 
-  /* Cards */
-  .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.5rem; box-shadow: var(--shadow); }
-  .card + .card { margin-top: 1rem; }
+/* CARDS */
+.card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.5rem; }
+.card + .card { margin-top: 1rem; }
+.card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; padding-bottom: 12px; border-bottom: 1px solid var(--border); }
+.card-header h2 { font-size: 13px; font-weight: 700; color: var(--navy); text-transform: uppercase; letter-spacing: 0.07em; }
 
-  /* Buttons */
-  .btn { display: inline-flex; align-items: center; gap: 6px; padding: 9px 18px; border-radius: 8px; font-size: 14px; font-weight: 500; cursor: pointer; border: 1px solid transparent; transition: all 0.15s; font-family: inherit; text-decoration: none; }
-  .btn:hover { text-decoration: none; }
-  .btn-primary { background: var(--accent); color: white; border-color: var(--accent); }
-  .btn-primary:hover { background: #0d4f8f; border-color: #0d4f8f; }
-  .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
-  .btn-secondary { background: var(--surface); color: var(--text); border-color: var(--border); }
-  .btn-secondary:hover { background: var(--bg); }
-  .btn-success { background: var(--success); color: white; border-color: var(--success); }
-  .btn-success:hover { background: #085041; }
-  .btn-danger { background: transparent; color: var(--danger); border-color: #F7C1C1; }
-  .btn-danger:hover { background: var(--danger-light); }
-  .btn-sm { padding: 6px 12px; font-size: 13px; }
+/* PAGE HEADER */
+.page-header { margin-bottom: 1.75rem; display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; flex-wrap: wrap; }
+.page-header h1 { font-family: var(--font-display); font-size: 32px; font-weight: 900; color: var(--navy); letter-spacing: 0.03em; text-transform: uppercase; line-height: 1.1; }
+.page-header p { color: var(--muted); font-size: 13px; margin-top: 4px; font-weight: 500; }
 
-  /* Form */
-  .form-group { margin-bottom: 1.25rem; }
-  label { display: block; font-size: 13px; font-weight: 500; color: var(--muted); margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.04em; }
-  input[type=text], input[type=email], input[type=password], textarea, select {
-    width: 100%; padding: 10px 12px; border: 1px solid var(--border); border-radius: 8px;
-    font-size: 14px; font-family: inherit; background: var(--surface); color: var(--text);
-    transition: border-color 0.15s; line-height: 1.5;
-  }
-  input:focus, textarea:focus, select:focus { outline: none; border-color: var(--accent); }
-  textarea { resize: vertical; min-height: 120px; }
+/* BUTTONS */
+.btn { display: inline-flex; align-items: center; gap: 6px; padding: 9px 18px; border-radius: var(--radius); font-size: 12px; font-weight: 700; cursor: pointer; border: 1.5px solid transparent; transition: all 0.15s; font-family: var(--font-body); text-decoration: none; letter-spacing: 0.04em; text-transform: uppercase; }
+.btn:hover { text-decoration: none; }
+.btn-primary { background: var(--blue); color: white; border-color: var(--blue); }
+.btn-primary:hover { background: #005fa8; }
+.btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+.btn-navy { background: var(--navy); color: white; border-color: var(--navy); }
+.btn-navy:hover { background: var(--navy-mid); }
+.btn-secondary { background: white; color: var(--navy); border-color: var(--border); }
+.btn-secondary:hover { background: var(--bg); }
+.btn-success { background: var(--success); color: white; border-color: var(--success); }
+.btn-success:hover { background: #085f45; }
+.btn-danger { background: transparent; color: var(--danger); border-color: #f0bcbc; }
+.btn-danger:hover { background: var(--danger-bg); }
+.btn-sm { padding: 5px 11px; font-size: 11px; }
 
-  /* Badge */
-  .badge { display: inline-block; font-size: 11px; font-weight: 500; padding: 3px 9px; border-radius: 20px; }
-  .badge-blue { background: var(--accent-light); color: var(--accent); }
-  .badge-green { background: var(--success-light); color: var(--success); }
-  .badge-gray { background: var(--bg); color: var(--muted); border: 1px solid var(--border); }
+/* FORMS */
+.form-group { margin-bottom: 1.25rem; }
+label { display: block; font-size: 11px; font-weight: 700; color: var(--muted); margin-bottom: 5px; text-transform: uppercase; letter-spacing: 0.07em; }
+input[type=text], input[type=email], input[type=password], textarea, select {
+  width: 100%; padding: 10px 12px; border: 1.5px solid var(--border); border-radius: var(--radius);
+  font-size: 14px; font-family: var(--font-body); background: white; color: var(--text);
+  transition: border-color 0.15s;
+}
+input:focus, textarea:focus, select:focus { outline: none; border-color: var(--blue); box-shadow: 0 0 0 3px rgba(0,112,201,0.1); }
+textarea { resize: vertical; min-height: 120px; line-height: 1.6; }
 
-  /* Alert */
-  .alert { padding: 10px 14px; border-radius: 8px; font-size: 14px; margin-bottom: 1rem; }
-  .alert-error { background: var(--danger-light); color: var(--danger); border: 1px solid #F7C1C1; }
-  .alert-success { background: var(--success-light); color: var(--success); border: 1px solid #9FE1CB; }
+/* BADGES */
+.badge { display: inline-block; font-size: 10px; font-weight: 700; padding: 3px 8px; border-radius: 3px; letter-spacing: 0.06em; text-transform: uppercase; }
+.badge-blue { background: var(--blue-light); color: var(--blue); }
+.badge-green { background: var(--success-bg); color: var(--success); }
+.badge-gray { background: var(--bg); color: var(--muted); border: 1px solid var(--border); }
+.badge-cyan { background: #E0F7FC; color: #006E8A; }
 
-  /* Spinner */
-  .spinner { display: inline-block; width: 16px; height: 16px; border: 2px solid rgba(255,255,255,0.3); border-top-color: white; border-radius: 50%; animation: spin 0.7s linear infinite; }
-  @keyframes spin { to { transform: rotate(360deg); } }
+/* ALERTS */
+.alert { padding: 10px 14px; border-radius: var(--radius); font-size: 13px; margin-bottom: 1rem; border-left: 3px solid; font-weight: 500; }
+.alert-error { background: var(--danger-bg); color: var(--danger); border-color: var(--danger); }
+.alert-success { background: var(--success-bg); color: var(--success); border-color: var(--success); }
 
-  /* Page header */
-  .page-header { margin-bottom: 1.5rem; display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; }
-  .page-header h1 { font-size: 22px; font-weight: 600; letter-spacing: -0.02em; }
-  .page-header p { color: var(--muted); font-size: 14px; margin-top: 3px; }
+/* SPINNER */
+.spinner { display: inline-block; width: 13px; height: 13px; border: 2px solid rgba(255,255,255,0.3); border-top-color: white; border-radius: 50%; animation: spin 0.7s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
 
-  /* Table */
-  table { width: 100%; border-collapse: collapse; font-size: 14px; }
-  th { text-align: left; font-size: 12px; font-weight: 500; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; padding: 8px 12px; border-bottom: 1px solid var(--border); }
-  td { padding: 10px 12px; border-bottom: 1px solid var(--border); vertical-align: middle; }
-  tr:last-child td { border-bottom: none; }
-  tr:hover td { background: var(--bg); }
-
-  /* Divider */
-  hr { border: none; border-top: 1px solid var(--border); margin: 1.5rem 0; }
+/* TABLE */
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+th { text-align: left; font-size: 10px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; padding: 10px 14px; border-bottom: 1px solid var(--border); background: var(--bg); }
+td { padding: 12px 14px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+tr:last-child td { border-bottom: none; }
+tr:hover td { background: #F8FAFC; }
+hr { border: none; border-top: 1px solid var(--border); margin: 1.5rem 0; }
 </style>
 {% block extra_head %}{% endblock %}
 </head>
 <body>
 {% if session.user_id %}
 <nav class="nav">
-  <div class="nav-logo">Commarec <span>Zápisy</span></div>
+  <a href="{{ url_for('dashboard') }}" class="nav-logo">
+    <svg class="nav-logo-svg" width="32" height="32" viewBox="0 0 32 32" fill="none">
+      <polygon points="0,0 20,0 32,16 20,32 0,32 12,16" fill="#00B4D8"/>
+      <polygon points="8,6 22,6 30,16 22,26 8,26 16,16" fill="#0B1F33" opacity="0.35"/>
+    </svg>
+    <div class="nav-logo-name">
+      COMMAREC
+      <span>Zápisy</span>
+    </div>
+  </a>
+  <div class="nav-divider"></div>
   <div class="nav-links">
     <a href="{{ url_for('dashboard') }}" class="nav-link {% if request.endpoint == 'dashboard' %}active{% endif %}">Přehled</a>
     <a href="{{ url_for('novy_zapis') }}" class="nav-link {% if request.endpoint == 'novy_zapis' %}active{% endif %}">+ Nový zápis</a>
@@ -113,9 +160,9 @@
     <a href="{{ url_for('admin') }}" class="nav-link {% if request.endpoint == 'admin' %}active{% endif %}">Správa</a>
     {% endif %}
   </div>
-  <div class="nav-user">
-    <strong>{{ session.user_name }}</strong>
-    <a href="{{ url_for('logout') }}" style="color: var(--muted); font-size: 13px;">Odhlásit</a>
+  <div class="nav-right">
+    <span class="nav-user"><strong>{{ session.user_name }}</strong></span>
+    <a href="{{ url_for('logout') }}" class="nav-logout">Odhlásit</a>
   </div>
 </nav>
 {% endif %}
