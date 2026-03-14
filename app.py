@@ -6,11 +6,19 @@ import anthropic
 import requests
 import os
 import json
+import re
 
 app = Flask(__name__)
 app.secret_key = os.environ.get("SECRET_KEY", "change-this-in-production")
-app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get("DATABASE_URL", "sqlite:///zapisy.db")
+
+# Fix Railway PostgreSQL URL (postgres:// -> postgresql://)
+database_url = os.environ.get("DATABASE_URL", "sqlite:///zapisy.db")
+if database_url.startswith("postgres://"):
+    database_url = database_url.replace("postgres://", "postgresql://", 1)
+
+app.config["SQLALCHEMY_DATABASE_URI"] = database_url
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {"pool_pre_ping": True}
 
 db = SQLAlchemy(app)
 
@@ -54,9 +62,6 @@ Datum: [datum pokud je uvedeno, jinak neuvedeno]
 
 HLAVNÍ ZJIŠTĚNÍ
 [klíčové poznatky jako odrážky s tučným názvem a popisem]
-
-HODNOCENÍ OBLASTÍ (pokud je relevantní)
-[tabulka nebo seznam oblastí s hodnocením]
 
 DOPORUČENÉ KROKY
 Krátkodobé (0–1 měsíc):
@@ -224,20 +229,18 @@ def generovat():
     if len(parts) > 1:
         for line in parts[1].strip().split("\n"):
             if "ÚKOL:" in line:
-                ukol_m = __import__("re").search(r"ÚKOL:\s*([^|]+)", line)
-                popis_m = __import__("re").search(r"POPIS:\s*([^|]+)", line)
-                termin_m = __import__("re").search(r"TERMÍN:\s*(.+)", line)
+                ukol_m = re.search(r"ÚKOL:\s*([^|]+)", line)
+                popis_m = re.search(r"POPIS:\s*([^|]+)", line)
+                termin_m = re.search(r"TERMÍN:\s*(.+)", line)
                 tasks.append({
                     "name": ukol_m.group(1).strip() if ukol_m else line,
                     "desc": popis_m.group(1).strip() if popis_m else "",
                     "deadline": termin_m.group(1).strip() if termin_m else "dle dohody"
                 })
 
-    # Auto-title from first line
     first_line = zapis_text.split("\n")[0].replace("ZÁPIS ZE SCHŮZKY –", "").replace("ZÁPIS ZE SCHŮZKY -", "").strip()
     title = first_line[:100] if first_line else "Zápis ze schůzky"
 
-    # Save
     zapis = Zapis(
         title=title,
         template=template,
@@ -259,10 +262,9 @@ def odeslat_do_freela(zapis_id):
     if not tasks:
         return jsonify({"error": "Žádné úkoly k odeslání"}), 400
 
-    # Get tasklists for the project
     headers = {"Content-Type": "application/json"}
     auth = ("apikey", FREELO_API_KEY)
-    
+
     try:
         tl_resp = requests.get(
             f"https://api.freelo.io/v1/project/{FREELO_PROJECT_ID}/tasklists",
@@ -279,10 +281,7 @@ def odeslat_do_freela(zapis_id):
     created = []
     errors = []
     for task in tasks:
-        payload = {
-            "name": task["name"],
-            "comment": task.get("desc", ""),
-        }
+        payload = {"name": task["name"], "comment": task.get("desc", "")}
         try:
             resp = requests.post(
                 f"https://api.freelo.io/v1/tasklist/{tasklist_id}/tasks",
@@ -297,7 +296,6 @@ def odeslat_do_freela(zapis_id):
 
     zapis.freelo_sent = True
     db.session.commit()
-
     return jsonify({"created": created, "errors": errors})
 
 @app.route("/admin")
@@ -334,8 +332,10 @@ def smazat_uzivatele(user_id):
     db.session.commit()
     return redirect(url_for("admin"))
 
-def init_db():
-    with app.app_context():
+# --- DB Init (runs on every startup) ---
+
+with app.app_context():
+    try:
         db.create_all()
         if not User.query.filter_by(is_admin=True).first():
             admin_user = User(
@@ -347,9 +347,8 @@ def init_db():
             db.session.add(admin_user)
             db.session.commit()
             print("Vytvořen výchozí admin: admin@commarec.cz / admin123")
-
-# Initialize DB on every startup (safe to call multiple times)
-init_db()
+    except Exception as e:
+        print(f"DB init error: {e}")
 
 if __name__ == "__main__":
     app.run(debug=False, host="0.0.0.0", port=int(os.environ.get("PORT", 5000)))
