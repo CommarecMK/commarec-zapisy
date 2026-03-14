@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Přihlášení — Commarec Zápisy</title>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+@font-face {
+  font-family: 'DrukCondensed';
+  src: url('/static/DrukCondensed-Super.otf') format('opentype');
+  font-weight: 900;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: 'Montserrat', sans-serif;
+  background: #0B1F33;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+.bg {
+  position: fixed; inset: 0;
+  background: #0B1F33;
+}
+.bg-line {
+  position: absolute;
+  width: 100%; height: 2px;
+  background: linear-gradient(90deg, transparent, #00B4D8, transparent);
+  top: 50%; transform: translateY(-50%);
+  opacity: 0.15;
+}
+.bg-chevron {
+  position: absolute;
+  right: -120px; top: 50%; transform: translateY(-50%);
+  width: 500px; height: 500px;
+  opacity: 0.04;
+}
+.login-wrap { position: relative; z-index: 1; width: 100%; max-width: 400px; padding: 1.5rem; }
+.logo { text-align: center; margin-bottom: 2.5rem; }
+.logo-mark {
+  display: flex; align-items: center; justify-content: center;
+  margin-bottom: 16px;
+}
+.logo-name {
+  font-family: 'DrukCondensed', 'Impact', sans-serif;
+  font-size: 36px; font-weight: 900;
+  color: white; letter-spacing: 0.06em;
+  text-transform: uppercase; line-height: 1;
+}
+.logo-sub { font-size: 11px; font-weight: 600; color: #00B4D8; letter-spacing: 0.15em; text-transform: uppercase; margin-top: 6px; }
+.card { background: white; border-radius: 6px; padding: 2rem; border-top: 3px solid #00B4D8; }
+.card-title { font-size: 11px; font-weight: 700; color: #5A7089; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 1.5rem; }
+.form-group { margin-bottom: 1.1rem; }
+label { display: block; font-size: 10px; font-weight: 700; color: #5A7089; margin-bottom: 5px; text-transform: uppercase; letter-spacing: 0.1em; }
+input {
+  width: 100%; padding: 11px 13px;
+  border: 1.5px solid #D8E0E9; border-radius: 6px;
+  font-size: 14px; font-family: 'Montserrat', sans-serif;
+  color: #0B1F33; transition: border-color 0.15s;
+}
+input:focus { outline: none; border-color: #0070C9; box-shadow: 0 0 0 3px rgba(0,112,201,0.1); }
+.btn {
+  width: 100%; padding: 12px;
+  background: #0B1F33; color: white;
+  border: none; border-radius: 6px;
+  font-size: 12px; font-weight: 700;
+  cursor: pointer; font-family: 'Montserrat', sans-serif;
+  margin-top: 0.75rem; letter-spacing: 0.06em;
+  text-transform: uppercase; transition: background 0.15s;
+}
+.btn:hover { background: #142d47; }
+.alert { padding: 10px 14px; background: #FDECEA; color: #C0392B; border-left: 3px solid #C0392B; border-radius: 6px; font-size: 12px; margin-bottom: 1rem; font-weight: 600; }
+.footer { text-align: center; margin-top: 2rem; color: rgba(255,255,255,0.2); font-size: 11px; font-weight: 500; letter-spacing: 0.05em; }
+</style>
+</head>
+<body>
+<div class="bg">
+  <div class="bg-line"></div>
+  <svg class="bg-chevron" viewBox="0 0 500 500" fill="none">
+    <polygon points="0,0 300,0 500,250 300,500 0,500 200,250" fill="white"/>
+  </svg>
+</div>
+<div class="login-wrap">
+  <div class="logo">
+    <div class="logo-mark">
+      <svg width="44" height="44" viewBox="0 0 44 44" fill="none">
+        <polygon points="0,0 28,0 44,22 28,44 0,44 16,22" fill="#00B4D8"/>
+        <polygon points="10,8 30,8 42,22 30,36 10,36 22,22" fill="#0B1F33" opacity="0.3"/>
+      </svg>
+    </div>
+    <div class="logo-name">COMMAREC</div>
+    <div class="logo-sub">Interní nástroj · Zápisy</div>
+  </div>
+  <div class="card">
+    <div class="card-title">Přihlaste se</div>
+    {% if error %}<div class="alert">{{ error }}</div>{% endif %}
+    <form method="POST">
+      <div class="form-group">
+        <label>E-mail</label>
+        <input type="email" name="email" required autofocus placeholder="vas@commarec.cz">
+      </div>
+      <div class="form-group">
+        <label>Heslo</label>
+        <input type="password" name="password" required placeholder="••••••••">
+      </div>
+      <button type="submit" class="btn">Přihlásit se →</button>
+    </form>
+  </div>
+  <div class="footer">Logistika není raketová věda.</div>
+</div>
+</body>
+</html>

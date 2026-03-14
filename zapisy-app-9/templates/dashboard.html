@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+{% block title %}Přehled{% endblock %}
+{% block extra_head %}
+<style>
+.stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 1.75rem; }
+.stat { background: var(--navy); border-radius: var(--radius); padding: 1.25rem 1.5rem; position: relative; overflow: hidden; }
+.stat::after { content: ''; position: absolute; right: -20px; top: 50%; transform: translateY(-50%); width: 80px; height: 80px; background: rgba(255,255,255,0.03); clip-path: polygon(0 0, 70% 0, 100% 50%, 70% 100%, 0 100%, 30% 50%); }
+.stat.accent { background: var(--blue); }
+.stat.accent2 { background: var(--navy-mid); }
+.stat-label { font-size: 10px; font-weight: 700; color: rgba(255,255,255,0.4); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 6px; }
+.stat-value { font-family: var(--font-display); font-size: 42px; font-weight: 900; color: white; line-height: 1; letter-spacing: 0.02em; }
+.stat-sub { font-size: 11px; color: rgba(255,255,255,0.35); margin-top: 4px; font-weight: 500; }
+.empty { text-align: center; padding: 3.5rem 2rem; }
+.empty p { color: var(--muted); margin-bottom: 1.25rem; font-weight: 500; }
+.td-title { font-weight: 600; color: var(--navy); font-size: 13px; }
+.td-title:hover { color: var(--blue); text-decoration: none; }
+</style>
+{% endblock %}
+{% block content %}
+<div class="container">
+  <div class="page-header">
+    <div>
+      <h1>Zápisy</h1>
+      <p>Přehled všech zápisů ze schůzek vašeho týmu</p>
+    </div>
+    <a href="{{ url_for('novy_zapis') }}" class="btn btn-navy">+ Nový zápis</a>
+  </div>
+
+  {% set total = zapisy|length %}
+  {% set freelo_count = zapisy|selectattr('freelo_sent')|list|length %}
+  <div class="stats">
+    <div class="stat">
+      <div class="stat-label">Celkem zápisů</div>
+      <div class="stat-value">{{ total }}</div>
+      <div class="stat-sub">posledních 20 zápisů</div>
+    </div>
+    <div class="stat accent">
+      <div class="stat-label">Odesláno do Freela</div>
+      <div class="stat-value">{{ freelo_count }}</div>
+      <div class="stat-sub">zápisů synchronizováno</div>
+    </div>
+    <div class="stat accent2">
+      <div class="stat-label">Šablony</div>
+      <div class="stat-value">3</div>
+      <div class="stat-sub">audit · operativa · obchod</div>
+    </div>
+  </div>
+
+  <div class="card" style="padding: 0; overflow: hidden;">
+    {% if zapisy %}
+    <table>
+      <thead>
+        <tr>
+          <th>Název zápisu</th>
+          <th>Šablona</th>
+          <th>Autor</th>
+          <th>Freelo</th>
+          <th>Datum</th>
+          <th style="width:80px;"></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for z in zapisy %}
+        <tr>
+          <td><a href="{{ url_for('detail_zapisu', zapis_id=z.id) }}" class="td-title">{{ z.title }}</a></td>
+          <td><span class="badge badge-blue">{{ template_names.get(z.template, z.template) }}</span></td>
+          <td style="color: var(--muted);">{{ z.author.name }}</td>
+          <td>
+            {% if z.freelo_sent %}<span class="badge badge-green">✓ Odesláno</span>
+            {% else %}<span class="badge badge-gray">Čeká</span>{% endif %}
+          </td>
+          <td style="color: var(--muted);">{{ z.created_at.strftime('%d. %m. %Y') }}</td>
+          <td><a href="{{ url_for('detail_zapisu', zapis_id=z.id) }}" class="btn btn-secondary btn-sm">Otevřít</a></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <div class="empty">
+      <p>Zatím žádné zápisy.</p>
+      <a href="{{ url_for('novy_zapis') }}" class="btn btn-navy">Vytvořit první zápis</a>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}
