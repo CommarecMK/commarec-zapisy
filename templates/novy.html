@@ -80,7 +80,7 @@
 </div>
 
 <script>
-let selectedTemplate = '{{ list(template_names.keys())[0] }}';
+let selectedTemplate = '{{ template_names.keys()|list|first }}';
 let currentZapisId = null;
 let currentTasks = [];
 const tmplNames = {{ template_names | tojson }};
