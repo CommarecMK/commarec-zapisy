@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+{% block title %}{{ zapis.title }}{% endblock %}
+{% block extra_head %}
+<style>
+  .output-text { font-family: 'DM Mono', monospace; font-size: 13px; line-height: 1.8; white-space: pre-wrap; color: var(--text); background: var(--bg); padding: 1.25rem; border-radius: 8px; border: 1px solid var(--border); }
+  .task-item { display: flex; gap: 10px; padding: 10px 0; border-bottom: 1px solid var(--border); align-items: flex-start; }
+  .task-item:last-child { border-bottom: none; }
+  .task-check { width: 18px; height: 18px; border: 1.5px solid var(--border); border-radius: 4px; flex-shrink: 0; margin-top: 1px; }
+  .task-name { font-size: 14px; font-weight: 500; }
+  .task-meta { font-size: 12px; color: var(--muted); margin-top: 2px; }
+</style>
+{% endblock %}
+{% block content %}
+<div class="container">
+  <div class="page-header">
+    <div>
+      <h1>{{ zapis.title }}</h1>
+      <p>
+        <span class="badge badge-blue">{{ template_names.get(zapis.template, zapis.template) }}</span>
+        &nbsp; {{ zapis.author.name }} &nbsp;·&nbsp; {{ zapis.created_at.strftime('%d. %m. %Y %H:%M') }}
+      </p>
+    </div>
+    <a href="{{ url_for('dashboard') }}" class="btn btn-secondary">← Zpět</a>
+  </div>
+
+  <div class="card">
+    <h2 style="font-size: 16px; font-weight: 600; margin-bottom: 1rem;">Zápis</h2>
+    <div class="output-text">{{ zapis.output_text }}</div>
+  </div>
+
+  {% if tasks %}
+  <div class="card" style="margin-top: 1rem;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+      <h2 style="font-size: 16px; font-weight: 600;">Úkoly pro Freelo</h2>
+      {% if zapis.freelo_sent %}
+      <span class="badge badge-green">Odesláno do Freela</span>
+      {% else %}
+      <button class="btn btn-success btn-sm" id="freelo-btn" onclick="odeslatDoFreela()">Odeslat do Freela</button>
+      {% endif %}
+    </div>
+    {% for task in tasks %}
+    <div class="task-item">
+      <div class="task-check"></div>
+      <div>
+        <div class="task-name">{{ task.name }}</div>
+        <div class="task-meta">{% if task.desc %}{{ task.desc }} &nbsp;·&nbsp; {% endif %}Termín: {{ task.deadline }}</div>
+      </div>
+    </div>
+    {% endfor %}
+    <div id="freelo-result" style="margin-top: 10px;"></div>
+  </div>
+  {% endif %}
+</div>
+
+<script>
+async function odeslatDoFreela() {
+  const btn = document.getElementById('freelo-btn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span> Odesílám...';
+  try {
+    const resp = await fetch('/api/freelo/{{ zapis.id }}', { method: 'POST' });
+    const data = await resp.json();
+    const result = document.getElementById('freelo-result');
+    if (data.created && data.created.length > 0) {
+      result.innerHTML = '<div class="alert alert-success">✓ Odesláno ' + data.created.length + ' úkolů do Freela.</div>';
+      btn.textContent = 'Odesláno ✓';
+    } else {
+      result.innerHTML = '<div class="alert alert-error">Chyba: ' + (data.errors || []).join(', ') + '</div>';
+      btn.disabled = false;
+      btn.textContent = 'Odeslat do Freela';
+    }
+  } catch(err) {
+    alert('Chyba: ' + err.message);
+    btn.disabled = false;
+    btn.textContent = 'Odeslat do Freela';
+  }
+}
+</script>
+{% endblock %}

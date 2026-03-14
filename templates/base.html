@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{% block title %}Zápisy{% endblock %} — Commarec</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap');
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #F7F6F2;
+    --surface: #FFFFFF;
+    --border: #E5E3DC;
+    --text: #1A1A18;
+    --muted: #7A7870;
+    --accent: #185FA5;
+    --accent-light: #E6F1FB;
+    --success: #0F6E56;
+    --success-light: #E1F5EE;
+    --danger: #A32D2D;
+    --danger-light: #FCEBEB;
+    --radius: 10px;
+    --shadow: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+  }
+  body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--text); font-size: 15px; line-height: 1.6; min-height: 100vh; }
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+
+  /* Nav */
+  .nav { background: var(--surface); border-bottom: 1px solid var(--border); padding: 0 2rem; display: flex; align-items: center; justify-content: space-between; height: 56px; position: sticky; top: 0; z-index: 100; }
+  .nav-logo { font-size: 15px; font-weight: 600; color: var(--text); letter-spacing: -0.02em; }
+  .nav-logo span { color: var(--accent); }
+  .nav-links { display: flex; gap: 0.25rem; align-items: center; }
+  .nav-link { font-size: 14px; color: var(--muted); padding: 6px 12px; border-radius: 6px; transition: all 0.15s; }
+  .nav-link:hover { color: var(--text); background: var(--bg); text-decoration: none; }
+  .nav-link.active { color: var(--text); font-weight: 500; }
+  .nav-user { font-size: 13px; color: var(--muted); display: flex; align-items: center; gap: 12px; }
+  .nav-user strong { color: var(--text); }
+
+  /* Layout */
+  .container { max-width: 900px; margin: 0 auto; padding: 2rem 1.5rem; }
+  .container-wide { max-width: 1100px; margin: 0 auto; padding: 2rem 1.5rem; }
+
+  /* Cards */
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.5rem; box-shadow: var(--shadow); }
+  .card + .card { margin-top: 1rem; }
+
+  /* Buttons */
+  .btn { display: inline-flex; align-items: center; gap: 6px; padding: 9px 18px; border-radius: 8px; font-size: 14px; font-weight: 500; cursor: pointer; border: 1px solid transparent; transition: all 0.15s; font-family: inherit; text-decoration: none; }
+  .btn:hover { text-decoration: none; }
+  .btn-primary { background: var(--accent); color: white; border-color: var(--accent); }
+  .btn-primary:hover { background: #0d4f8f; border-color: #0d4f8f; }
+  .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+  .btn-secondary { background: var(--surface); color: var(--text); border-color: var(--border); }
+  .btn-secondary:hover { background: var(--bg); }
+  .btn-success { background: var(--success); color: white; border-color: var(--success); }
+  .btn-success:hover { background: #085041; }
+  .btn-danger { background: transparent; color: var(--danger); border-color: #F7C1C1; }
+  .btn-danger:hover { background: var(--danger-light); }
+  .btn-sm { padding: 6px 12px; font-size: 13px; }
+
+  /* Form */
+  .form-group { margin-bottom: 1.25rem; }
+  label { display: block; font-size: 13px; font-weight: 500; color: var(--muted); margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.04em; }
+  input[type=text], input[type=email], input[type=password], textarea, select {
+    width: 100%; padding: 10px 12px; border: 1px solid var(--border); border-radius: 8px;
+    font-size: 14px; font-family: inherit; background: var(--surface); color: var(--text);
+    transition: border-color 0.15s; line-height: 1.5;
+  }
+  input:focus, textarea:focus, select:focus { outline: none; border-color: var(--accent); }
+  textarea { resize: vertical; min-height: 120px; }
+
+  /* Badge */
+  .badge { display: inline-block; font-size: 11px; font-weight: 500; padding: 3px 9px; border-radius: 20px; }
+  .badge-blue { background: var(--accent-light); color: var(--accent); }
+  .badge-green { background: var(--success-light); color: var(--success); }
+  .badge-gray { background: var(--bg); color: var(--muted); border: 1px solid var(--border); }
+
+  /* Alert */
+  .alert { padding: 10px 14px; border-radius: 8px; font-size: 14px; margin-bottom: 1rem; }
+  .alert-error { background: var(--danger-light); color: var(--danger); border: 1px solid #F7C1C1; }
+  .alert-success { background: var(--success-light); color: var(--success); border: 1px solid #9FE1CB; }
+
+  /* Spinner */
+  .spinner { display: inline-block; width: 16px; height: 16px; border: 2px solid rgba(255,255,255,0.3); border-top-color: white; border-radius: 50%; animation: spin 0.7s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* Page header */
+  .page-header { margin-bottom: 1.5rem; display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; }
+  .page-header h1 { font-size: 22px; font-weight: 600; letter-spacing: -0.02em; }
+  .page-header p { color: var(--muted); font-size: 14px; margin-top: 3px; }
+
+  /* Table */
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  th { text-align: left; font-size: 12px; font-weight: 500; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; padding: 8px 12px; border-bottom: 1px solid var(--border); }
+  td { padding: 10px 12px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: var(--bg); }
+
+  /* Divider */
+  hr { border: none; border-top: 1px solid var(--border); margin: 1.5rem 0; }
+</style>
+{% block extra_head %}{% endblock %}
+</head>
+<body>
+{% if session.user_id %}
+<nav class="nav">
+  <div class="nav-logo">Commarec <span>Zápisy</span></div>
+  <div class="nav-links">
+    <a href="{{ url_for('dashboard') }}" class="nav-link {% if request.endpoint == 'dashboard' %}active{% endif %}">Přehled</a>
+    <a href="{{ url_for('novy_zapis') }}" class="nav-link {% if request.endpoint == 'novy_zapis' %}active{% endif %}">+ Nový zápis</a>
+    {% if session.is_admin %}
+    <a href="{{ url_for('admin') }}" class="nav-link {% if request.endpoint == 'admin' %}active{% endif %}">Správa</a>
+    {% endif %}
+  </div>
+  <div class="nav-user">
+    <strong>{{ session.user_name }}</strong>
+    <a href="{{ url_for('logout') }}" style="color: var(--muted); font-size: 13px;">Odhlásit</a>
+  </div>
+</nav>
+{% endif %}
+{% block content %}{% endblock %}
+</body>
+</html>

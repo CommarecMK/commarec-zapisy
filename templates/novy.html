@@ -1,0 +1,172 @@
+{% extends "base.html" %}
+{% block title %}Nový zápis{% endblock %}
+{% block extra_head %}
+<style>
+  .templates { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 1.5rem; }
+  .tmpl { background: var(--surface); border: 1.5px solid var(--border); border-radius: var(--radius); padding: 14px 16px; cursor: pointer; transition: all 0.15s; user-select: none; }
+  .tmpl:hover { border-color: #B5D4F4; }
+  .tmpl.selected { border-color: var(--accent); background: var(--accent-light); }
+  .tmpl-name { font-size: 14px; font-weight: 500; margin-bottom: 4px; }
+  .tmpl-desc { font-size: 12px; color: var(--muted); line-height: 1.5; }
+  .step-label { font-size: 12px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 10px; }
+  #output-section { display: none; margin-top: 2rem; }
+  .output-text { font-family: 'DM Mono', monospace; font-size: 13px; line-height: 1.8; white-space: pre-wrap; color: var(--text); background: var(--bg); padding: 1.25rem; border-radius: 8px; border: 1px solid var(--border); max-height: 500px; overflow-y: auto; }
+  .task-item { display: flex; gap: 10px; padding: 10px 0; border-bottom: 1px solid var(--border); align-items: flex-start; }
+  .task-item:last-child { border-bottom: none; }
+  .task-check { width: 18px; height: 18px; border: 1.5px solid var(--border); border-radius: 4px; flex-shrink: 0; margin-top: 1px; }
+  .task-name { font-size: 14px; font-weight: 500; }
+  .task-meta { font-size: 12px; color: var(--muted); margin-top: 2px; }
+  @media (max-width: 600px) { .templates { grid-template-columns: 1fr; } }
+</style>
+{% endblock %}
+{% block content %}
+<div class="container">
+  <div class="page-header">
+    <div>
+      <h1>Nový zápis</h1>
+      <p>Vložte přepis ze schůzky a AI vygeneruje strukturovaný zápis</p>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="step-label">1. Šablona</div>
+    <div class="templates">
+      {% for key, name in template_names.items() %}
+      <div class="tmpl {% if loop.first %}selected{% endif %}" onclick="selectTmpl(this, '{{ key }}')" id="tmpl-{{ key }}">
+        <div class="tmpl-name">{{ name }}</div>
+        <div class="tmpl-desc">
+          {% if key == 'audit' %}Zjištění, hodnocení oblastí, doporučené kroky, přínosy{% endif %}
+          {% if key == 'operativa' %}Probrané body, rozhodnutí, úkoly s odpovědností a termínem{% endif %}
+          {% if key == 'obchod' %}Klient, závěry z jednání, next steps, follow-up{% endif %}
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+
+    <hr>
+    <div class="step-label" style="margin-top: 1.5rem;">2. Přepis nebo poznámky ze schůzky</div>
+    <div class="form-group">
+      <textarea id="input-text" rows="10" placeholder="Vložte sem přepis z PLAUDu nebo vlastní poznámky...&#10;&#10;Tip: stačí i hrubý přepis s timestampy, AI si s tím poradí."></textarea>
+    </div>
+    <div style="display: flex; gap: 10px; align-items: center;">
+      <button class="btn btn-primary" id="gen-btn" onclick="generovat()">Generovat zápis</button>
+      <span id="gen-status" style="font-size: 13px; color: var(--muted);"></span>
+    </div>
+  </div>
+
+  <div id="output-section">
+    <div class="card">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+        <h2 style="font-size: 18px; font-weight: 600;" id="output-title">Vygenerovaný zápis</h2>
+        <span class="badge badge-blue" id="output-badge"></span>
+      </div>
+      <div class="output-text" id="output-text"></div>
+    </div>
+
+    <div class="card" id="tasks-card" style="display: none; margin-top: 1rem;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+        <h2 style="font-size: 16px; font-weight: 600;">Úkoly pro Freelo</h2>
+        <button class="btn btn-success btn-sm" id="freelo-btn" onclick="odeslatDoFreela()">Odeslat do Freela</button>
+      </div>
+      <div id="tasks-list"></div>
+      <div id="freelo-result" style="margin-top: 10px;"></div>
+    </div>
+
+    <div style="margin-top: 1rem; display: flex; gap: 10px;">
+      <a href="{{ url_for('dashboard') }}" class="btn btn-secondary">← Zpět na přehled</a>
+      <a id="detail-link" href="#" class="btn btn-secondary" style="display:none;">Otevřít detail zápisu</a>
+    </div>
+  </div>
+</div>
+
+<script>
+let selectedTemplate = '{{ list(template_names.keys())[0] }}';
+let currentZapisId = null;
+let currentTasks = [];
+const tmplNames = {{ template_names | tojson }};
+
+function selectTmpl(el, tmpl) {
+  document.querySelectorAll('.tmpl').forEach(t => t.classList.remove('selected'));
+  el.classList.add('selected');
+  selectedTemplate = tmpl;
+}
+
+async function generovat() {
+  const text = document.getElementById('input-text').value.trim();
+  if (!text) { alert('Vložte prosím text schůzky.'); return; }
+
+  const btn = document.getElementById('gen-btn');
+  const status = document.getElementById('gen-status');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span> Generuji...';
+  status.textContent = 'AI zpracovává text, může to trvat 10–30 sekund...';
+
+  try {
+    const resp = await fetch('/api/generovat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ template: selectedTemplate, text })
+    });
+    const data = await resp.json();
+    if (data.error) { alert('Chyba: ' + data.error); return; }
+
+    currentZapisId = data.zapis_id;
+    currentTasks = data.tasks;
+
+    document.getElementById('output-title').textContent = data.title;
+    document.getElementById('output-badge').textContent = tmplNames[selectedTemplate];
+    document.getElementById('output-text').textContent = data.text;
+    document.getElementById('output-section').style.display = 'block';
+    document.getElementById('detail-link').href = '/zapis/' + data.zapis_id;
+    document.getElementById('detail-link').style.display = 'inline-flex';
+
+    if (data.tasks && data.tasks.length > 0) {
+      const list = document.getElementById('tasks-list');
+      list.innerHTML = data.tasks.map(t => `
+        <div class="task-item">
+          <div class="task-check"></div>
+          <div>
+            <div class="task-name">${t.name}</div>
+            <div class="task-meta">${t.desc ? t.desc + ' &nbsp;·&nbsp; ' : ''}Termín: ${t.deadline}</div>
+          </div>
+        </div>
+      `).join('');
+      document.getElementById('tasks-card').style.display = 'block';
+    }
+
+    document.getElementById('output-section').scrollIntoView({ behavior: 'smooth' });
+    status.textContent = '';
+  } catch (err) {
+    alert('Chyba při komunikaci se serverem: ' + err.message);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Generovat zápis';
+  }
+}
+
+async function odeslatDoFreela() {
+  if (!currentZapisId) return;
+  const btn = document.getElementById('freelo-btn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span> Odesílám...';
+
+  try {
+    const resp = await fetch('/api/freelo/' + currentZapisId, { method: 'POST' });
+    const data = await resp.json();
+    const result = document.getElementById('freelo-result');
+    if (data.created && data.created.length > 0) {
+      result.innerHTML = '<div class="alert alert-success">✓ Odesláno ' + data.created.length + ' úkolů do Freela.</div>';
+      btn.textContent = 'Odesláno ✓';
+    } else {
+      result.innerHTML = '<div class="alert alert-error">Chyba: ' + (data.errors || ['Neznámá chyba']).join(', ') + '</div>';
+      btn.disabled = false;
+      btn.textContent = 'Odeslat do Freela';
+    }
+  } catch (err) {
+    alert('Chyba: ' + err.message);
+    btn.disabled = false;
+    btn.textContent = 'Odeslat do Freela';
+  }
+}
+</script>
+{% endblock %}

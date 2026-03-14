@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% block title %}Přehled{% endblock %}
+{% block content %}
+<div class="container">
+  <div class="page-header">
+    <div>
+      <h1>Zápisy</h1>
+      <p>Všechny záznamy ze schůzek vašeho týmu</p>
+    </div>
+    <a href="{{ url_for('novy_zapis') }}" class="btn btn-primary">+ Nový zápis</a>
+  </div>
+
+  {% if zapisy %}
+  <div class="card" style="padding: 0;">
+    <table>
+      <thead>
+        <tr>
+          <th>Název</th>
+          <th>Šablona</th>
+          <th>Autor</th>
+          <th>Freelo</th>
+          <th>Datum</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for z in zapisy %}
+        <tr>
+          <td><a href="{{ url_for('detail_zapisu', zapis_id=z.id) }}" style="font-weight: 500; color: var(--text);">{{ z.title }}</a></td>
+          <td><span class="badge badge-blue">{{ template_names.get(z.template, z.template) }}</span></td>
+          <td style="color: var(--muted);">{{ z.author.name }}</td>
+          <td>
+            {% if z.freelo_sent %}
+            <span class="badge badge-green">Odesláno</span>
+            {% else %}
+            <span class="badge badge-gray">Neodesláno</span>
+            {% endif %}
+          </td>
+          <td style="color: var(--muted); font-size: 13px;">{{ z.created_at.strftime('%d. %m. %Y') }}</td>
+          <td><a href="{{ url_for('detail_zapisu', zapis_id=z.id) }}" class="btn btn-secondary btn-sm">Otevřít</a></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="card" style="text-align: center; padding: 3rem;">
+    <p style="color: var(--muted); margin-bottom: 1rem;">Zatím žádné zápisy.</p>
+    <a href="{{ url_for('novy_zapis') }}" class="btn btn-primary">Vytvořit první zápis</a>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

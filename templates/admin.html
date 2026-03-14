@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+{% block title %}Správa uživatelů{% endblock %}
+{% block content %}
+<div class="container">
+  <div class="page-header">
+    <div>
+      <h1>Správa uživatelů</h1>
+      <p>Přidávejte a spravujte přístupy kolegů</p>
+    </div>
+  </div>
+
+  <div class="card" style="margin-bottom: 1.5rem;">
+    <h2 style="font-size: 16px; font-weight: 600; margin-bottom: 1rem;">Přidat uživatele</h2>
+    <form method="POST" action="{{ url_for('pridat_uzivatele') }}">
+      <div style="display: grid; grid-template-columns: 1fr 1fr 1fr auto; gap: 12px; align-items: end;">
+        <div class="form-group" style="margin: 0;">
+          <label>Jméno</label>
+          <input type="text" name="name" required placeholder="Jan Novák">
+        </div>
+        <div class="form-group" style="margin: 0;">
+          <label>E-mail</label>
+          <input type="email" name="email" required placeholder="jan@firma.cz">
+        </div>
+        <div class="form-group" style="margin: 0;">
+          <label>Heslo</label>
+          <input type="password" name="password" required placeholder="••••••••">
+        </div>
+        <button type="submit" class="btn btn-primary">Přidat</button>
+      </div>
+      <div style="margin-top: 10px;">
+        <label style="display: flex; align-items: center; gap: 8px; text-transform: none; font-size: 13px; color: var(--text); cursor: pointer;">
+          <input type="checkbox" name="is_admin" style="width: auto;"> Admin (může spravovat uživatele)
+        </label>
+      </div>
+    </form>
+  </div>
+
+  <div class="card" style="padding: 0;">
+    <table>
+      <thead>
+        <tr>
+          <th>Jméno</th>
+          <th>E-mail</th>
+          <th>Role</th>
+          <th>Registrován</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for user in users %}
+        <tr>
+          <td style="font-weight: 500;">{{ user.name }}</td>
+          <td style="color: var(--muted);">{{ user.email }}</td>
+          <td>
+            {% if user.is_admin %}
+            <span class="badge badge-blue">Admin</span>
+            {% else %}
+            <span class="badge badge-gray">Uživatel</span>
+            {% endif %}
+          </td>
+          <td style="color: var(--muted); font-size: 13px;">{{ user.created_at.strftime('%d. %m. %Y') }}</td>
+          <td>
+            {% if user.id != session.user_id %}
+            <form method="POST" action="{{ url_for('smazat_uzivatele', user_id=user.id) }}" onsubmit="return confirm('Opravdu smazat uživatele {{ user.name }}?')">
+              <button type="submit" class="btn btn-danger btn-sm">Smazat</button>
+            </form>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}
