@@ -44,11 +44,11 @@
 {% block content %}
 
 <!-- GAME MODAL -->
-<div id="game-modal" style="display:none; position:fixed; inset:0; background:rgba(11,31,51,0.96); z-index:1000; align-items:center; justify-content:center; gap:28px; flex-wrap:wrap; padding:20px;">
+<div id="game-modal" style="display:none; position:fixed; inset:0; background:rgba(14,33,62,0.97); z-index:1000; align-items:center; justify-content:center; gap:28px; flex-wrap:wrap; padding:20px;">
 
   <div style="display:flex; flex-direction:column; align-items:center; gap:10px;">
     <div style="text-align:center;">
-      <div style="font-family:'DrukCondensed','Impact',sans-serif; font-size:24px; color:#00B4D8; letter-spacing:0.12em; text-transform:uppercase; line-height:1;">AI generuje zápis</div>
+      <div style="font-family:'DrukCondensed','Impact',sans-serif; font-size:24px; color:#00AFF0; letter-spacing:0.12em; text-transform:uppercase; line-height:1;">AI generuje zápis</div>
       <div style="color:rgba(255,255,255,0.4); font-size:11px; margin-top:4px; font-weight:500; letter-spacing:0.05em;">WAREHOUSE TETRIS — poskládej paletu!</div>
     </div>
     <div style="display:flex; gap:16px; align-items:center;">
@@ -59,7 +59,7 @@
       <div style="width:1px; height:40px; background:rgba(255,255,255,0.1);"></div>
       <div style="text-align:center;">
         <div style="color:rgba(255,255,255,0.35); font-size:10px; font-weight:600; text-transform:uppercase; letter-spacing:0.08em;">Level</div>
-        <div id="game-level" style="color:#00B4D8; font-family:'DrukCondensed','Impact',sans-serif; font-size:32px; font-weight:900; line-height:1;">1</div>
+        <div id="game-level" style="color:#00AFF0; font-family:'DrukCondensed','Impact',sans-serif; font-size:32px; font-weight:900; line-height:1;">1</div>
       </div>
       <div style="width:1px; height:40px; background:rgba(255,255,255,0.1);"></div>
       <div style="text-align:center;">
@@ -69,7 +69,7 @@
     </div>
     <canvas id="gameCanvas" width="240" height="480" style="border:1px solid rgba(0,180,216,0.2); border-radius:6px; display:block;"></canvas>
     <div style="color:rgba(255,255,255,0.3); font-size:10px; font-weight:500; letter-spacing:0.06em; text-transform:uppercase;">← → pohyb &nbsp;|&nbsp; ↑ rotace &nbsp;|&nbsp; ↓ rychle &nbsp;|&nbsp; mezerník drop</div>
-    <div id="game-bonus-msg" style="color:#00B4D8; font-size:13px; font-weight:700; letter-spacing:0.05em; height:18px; text-align:center;"></div>
+    <div id="game-bonus-msg" style="color:#00AFF0; font-size:13px; font-weight:700; letter-spacing:0.05em; height:18px; text-align:center;"></div>
   </div>
 
   <div style="width:220px; display:flex; flex-direction:column; gap:14px;">
@@ -80,8 +80,8 @@
     <div style="background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); border-radius:8px; padding:14px;">
       <div style="color:rgba(255,255,255,0.35); font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.1em; margin-bottom:10px;">Bonusy</div>
       <div style="font-size:11px; color:rgba(255,255,255,0.5); line-height:1.8;">
-        <div>Stejná ikona vedle sebe <span style="color:#00B4D8;">+30</span></div>
-        <div>Stejná barva (3+) <span style="color:#00B4D8;">+50</span></div>
+        <div>Stejná ikona vedle sebe <span style="color:#00AFF0;">+30</span></div>
+        <div>Stejná barva (3+) <span style="color:#00AFF0;">+50</span></div>
         <div>Plná řada <span style="color:#BA7517;">+100</span></div>
         <div>Hard drop <span style="color:#0A7A5A;">+2/pole</span></div>
       </div>
@@ -91,6 +91,99 @@
       <div id="leaderboard-list" style="font-size:12px; color:rgba(255,255,255,0.6); line-height:1.9;">
         <div style="color:rgba(255,255,255,0.25); font-style:italic;">Načítám...</div>
       </div>
+    </div>
+  </div>
+</div>
+
+<div class="container">
+  <div class="page-header">
+    <div>
+      <h1 style="font-family:'DrukCondensed','Impact',sans-serif; font-size:36px; font-weight:900; text-transform:uppercase; letter-spacing:0.05em; color:#173767; line-height:1;">Nový zápis</h1>
+      <p class="perex" style="font-size:13px; font-weight:500; color:#4A6080; margin-top:6px;">Vyplňte informace o schůzce a vložte přepis — AI vygeneruje profesionální zápis.</p>
+    </div>
+    <a href="{{ url_for('dashboard') }}" class="btn btn-secondary">← Zpět</a>
+  </div>
+
+  <!-- STEP 1: Template -->
+  <div class="card" style="margin-bottom: 1rem;">
+    <div class="step-header"><span class="step-num" style="font-family:\'DrukCondensed\',\'Impact\',sans-serif; font-size:28px; font-weight:900; color:#00AFF0; letter-spacing:0.05em;">01</span><span class="step-label">Typ zápisu</span></div>
+    <div class="templates">
+      {% for key, name in template_names.items() %}
+      <div class="tmpl {% if loop.first %}selected{% endif %}" onclick="selectTmpl(this, '{{ key }}')" id="tmpl-{{ key }}">
+        <div class="tmpl-num">0{{ loop.index }}</div>
+        <div class="tmpl-name">{{ name }}</div>
+        <div class="tmpl-desc">
+          {% if key == 'audit' %}Diagnostika provozu, hodnocení oblastí, doporučené kroky{% endif %}
+          {% if key == 'operativa' %}Body jednání, rozhodnutí, úkoly s termínem a odpovědností{% endif %}
+          {% if key == 'obchod' %}Klient, závěry z jednání, next steps, follow-up{% endif %}
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <!-- STEP 2: Client info -->
+  <div class="card" style="margin-bottom: 1rem;">
+    <div class="step-header"><span class="step-num" style="font-family:\'DrukCondensed\',\'Impact\',sans-serif; font-size:28px; font-weight:900; color:#00AFF0; letter-spacing:0.05em;">02</span><span class="step-label">Informace o schůzce</span></div>
+    <div class="form-grid" style="margin-bottom: 12px;">
+      <div class="form-group" style="margin:0;"><label>Název firmy / klienta</label><input type="text" id="client-name" placeholder="např. Merlin Plus s.r.o."></div>
+      <div class="form-group" style="margin:0;"><label>Kontaktní osoba klienta</label><input type="text" id="client-contact" placeholder="např. Michal Mynarčík"></div>
+    </div>
+    <div class="form-grid-3">
+      <div class="form-group" style="margin:0;"><label>Za Commarec</label><input type="text" id="commarec-rep" placeholder="např. Martin Komárek"></div>
+      <div class="form-group" style="margin:0;"><label>Datum schůzky</label><input type="text" id="meeting-date" placeholder="např. 9. 3. 2026"></div>
+      <div class="form-group" style="margin:0;"><label>Místo</label><input type="text" id="meeting-place" placeholder="např. Sídlo klienta, Brno"></div>
+    </div>
+  </div>
+
+  <!-- STEP 3: Blocks -->
+  <div class="card" style="margin-bottom: 1rem;">
+    <div class="step-header"><span class="step-num" style="font-family:\'DrukCondensed\',\'Impact\',sans-serif; font-size:28px; font-weight:900; color:#00AFF0; letter-spacing:0.05em;">03</span><span class="step-label">Sekce zápisu</span></div>
+    <div class="blocks-grid">
+      <div class="block-check checked" onclick="toggleBlock(this, 'uvod')"><div class="block-dot"></div><span class="block-label">Úvod a účel</span></div>
+      <div class="block-check checked" onclick="toggleBlock(this, 'zjisteni')"><div class="block-dot"></div><span class="block-label">Hlavní zjištění</span></div>
+      <div class="block-check checked" onclick="toggleBlock(this, 'hodnoceni')"><div class="block-dot"></div><span class="block-label">Hodnocení oblastí</span></div>
+      <div class="block-check checked" onclick="toggleBlock(this, 'procesy')"><div class="block-dot"></div><span class="block-label">Popis procesů</span></div>
+      <div class="block-check checked" onclick="toggleBlock(this, 'rizika')"><div class="block-dot"></div><span class="block-label">Rizika a problémy</span></div>
+      <div class="block-check checked" onclick="toggleBlock(this, 'kroky')"><div class="block-dot"></div><span class="block-label">Akční kroky</span></div>
+      <div class="block-check checked" onclick="toggleBlock(this, 'prinosy')"><div class="block-dot"></div><span class="block-label">Očekávané přínosy</span></div>
+      <div class="block-check checked" onclick="toggleBlock(this, 'poznamky')"><div class="block-dot"></div><span class="block-label">Poznámky z terénu</span></div>
+      <div class="block-check checked" onclick="toggleBlock(this, 'dalsi_krok')"><div class="block-dot"></div><span class="block-label">Další krok spolupráce</span></div>
+    </div>
+  </div>
+
+  <!-- STEP 4: Transcript -->
+  <div class="card">
+    <div class="step-header"><span class="step-num" style="font-family:\'DrukCondensed\',\'Impact\',sans-serif; font-size:28px; font-weight:900; color:#00AFF0; letter-spacing:0.05em;">04</span><span class="step-label">Přepis nebo poznámky ze schůzky</span></div>
+    <div class="form-group" style="margin-bottom: 1rem;">
+      <textarea id="input-text" rows="10" placeholder="Vložte sem přepis z PLAUDu nebo vlastní poznámky...&#10;&#10;Funguje i hrubý přepis s timestampy a Speaker 1/2 — AI si s tím poradí."></textarea>
+    </div>
+    <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+      <button class="btn btn-navy" id="gen-btn" onclick="generovat()">Generovat zápis →</button>
+      <span id="gen-status" style="font-size: 12px; color: var(--muted); font-weight: 500;"></span>
+    </div>
+  </div>
+
+  <!-- OUTPUT -->
+  <div id="output-section" style="display:none; margin-top:1.5rem;">
+    <div class="card">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.25rem; padding-bottom:12px; border-bottom:1px solid var(--border);">
+        <h2 style="font-size:13px; font-weight:700; color:var(--navy); text-transform:uppercase; letter-spacing:0.07em;" id="output-title">Vygenerovaný zápis</h2>
+        <span class="badge badge-cyan" id="output-badge"></span>
+      </div>
+      <div id="output-text" style="font-size:13px;line-height:1.7;padding:1rem;background:var(--bg);border-radius:var(--radius);border:1px solid var(--border);max-height:500px;overflow-y:auto;"></div>
+    </div>
+    <div class="card" id="tasks-card" style="display: none; margin-top: 1rem;">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.25rem; padding-bottom:12px; border-bottom:1px solid var(--border);">
+        <h2 style="font-size:13px; font-weight:700; color:var(--navy); text-transform:uppercase; letter-spacing:0.07em;">Úkoly pro Freelo</h2>
+        <button class="btn btn-success btn-sm" id="freelo-btn" onclick="odeslatDoFreela()">Odeslat do Freela →</button>
+      </div>
+      <div id="tasks-list"></div>
+      <div id="freelo-result" style="margin-top: 12px;"></div>
+    </div>
+    <div style="margin-top: 1rem; display: flex; gap: 10px; flex-wrap: wrap;">
+      <a href="{{ url_for('dashboard') }}" class="btn btn-secondary">← Zpět na přehled</a>
+      <a id="detail-link" href="#" class="btn btn-secondary" style="display:none;">Zobrazit detail →</a>
     </div>
   </div>
 </div>
@@ -124,7 +217,7 @@ let lastDrop = 0;
 let particles = [];
 
 const COLS = 10, ROWS = 20, CELL = 24;
-const COLORS = ['#00B4D8','#1B6FC8','#0A7A5A','#BA7517','#C0392B','#8E44AD','#E67E22'];
+const COLORS = ['#00AFF0','#1B6FC8','#0A7A5A','#BA7517','#C0392B','#8E44AD','#E67E22'];
 const ICONS = ['P','K','O','B','F','D','M'];
 const ICON_LABELS = {'P':'📦','K':'🗃️','O':'📫','B':'🧴','F':'🥫','D':'📮','M':'📮'};
 
@@ -253,14 +346,14 @@ async function loadLeaderboard() {
     el.innerHTML = data.slice(0,8).map((s,i)=>`
       <div style="display:flex;justify-content:space-between;align-items:center;padding:2px 0;border-bottom:1px solid rgba(255,255,255,0.05);">
         <span>${medals[i]||'  '} ${s.name}</span>
-        <span style="color:#00B4D8;font-weight:700;">${s.score.toLocaleString()}</span>
+        <span style="color:#00AFF0;font-weight:700;">${s.score.toLocaleString()}</span>
       </div>`).join('');
   } catch(e) {}
 }
 
 function drawBoard(ctx) {
   const canvas = document.getElementById('gameCanvas');
-  ctx.fillStyle = '#0B1F33';
+  ctx.fillStyle = '#173767';
   ctx.fillRect(0,0,canvas.width,canvas.height);
   
   ctx.strokeStyle='rgba(0,180,216,0.06)';
@@ -294,8 +387,8 @@ function drawBoard(ctx) {
   ctx.globalAlpha=1;
   
   if (gameOver) {
-    ctx.fillStyle='rgba(11,31,51,0.88)';ctx.fillRect(0,0,canvas.width,canvas.height);
-    ctx.fillStyle='#00B4D8';ctx.font='bold 22px DrukCondensed,Impact,sans-serif';ctx.textAlign='center';
+    ctx.fillStyle='rgba(5,11,21,0.88)';ctx.fillRect(0,0,canvas.width,canvas.height);
+    ctx.fillStyle='#00AFF0';ctx.font='bold 22px DrukCondensed,Impact,sans-serif';ctx.textAlign='center';
     ctx.fillText('SKLAD PLNÝ!',canvas.width/2,canvas.height/2-30);
     ctx.fillStyle='white';ctx.font='14px Montserrat,sans-serif';
     ctx.fillText('Skóre: '+gameScore.toLocaleString(),canvas.width/2,canvas.height/2+5);
@@ -314,7 +407,7 @@ function drawCell(ctx, x, y, color, icon) {
 }
 
 function drawNext(ctx) {
-  ctx.fillStyle='#0B1F33';ctx.fillRect(0,0,100,100);
+  ctx.fillStyle='#173767';ctx.fillRect(0,0,100,100);
   if (!nextPiece) return;
   const s=nextPiece.shape;
   const ox=Math.floor((4-s[0].length)/2)*22+8, oy=Math.floor((4-s.length)/2)*22+8;

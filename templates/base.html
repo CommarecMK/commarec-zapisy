@@ -15,21 +15,27 @@
 }
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 :root {
-  --navy:       #0B1F33;
-  --navy-mid:   #142d47;
-  --blue:       #0070C9;
-  --blue-light: #E5F2FC;
-  --cyan:       #00B4D8;
+  /* === COMMAREC BRAND COLORS === */
+  /* Navy palette */
+  --navy:       #173767;   /* primary navy #173767 RGB 23/55/103 */
+  --navy-dark:  #0E213E;   /* dark navy #0E213E RGB 14/33/62 */
+  --navy-black: #050B15;   /* near-black #050B15 RGB 5/11/21 */
+  --navy-mid:   #254f8a;   /* mid navy for hover states */
+  /* Cyan palette */
+  --cyan:       #00AFF0;   /* primary cyan #00AFF0 RGB 0/175/240 */
+  --cyan-dark:  #008ABD;   /* secondary cyan #008ABD RGB 0/138/189 */
+  --cyan-bg:    #E0F5FD;   /* light cyan background */
+  /* UI colors */
   --white:      #FFFFFF;
-  --bg:         #F2F5F8;
+  --bg:         #F0F3F7;
   --surface:    #FFFFFF;
-  --border:     #D8E0E9;
-  --text:       #0B1F33;
-  --muted:      #5A7089;
+  --border:     #D0DAE8;
+  --text:       #0E213E;
+  --muted:      #4A6080;
   --success:    #0A7A5A;
   --success-bg: #E2F5EE;
   --danger:     #C0392B;
-  --danger-bg:  #FDECEA;
+  --danger-bg:  #FCEAEA;
   --radius:     6px;
   --font-display: 'DrukCondensed', 'Impact', sans-serif;
   --font-body:    'Montserrat', sans-serif;
@@ -40,11 +46,16 @@ a:hover { text-decoration: underline; }
 
 /* NAV */
 .nav {
-  background: var(--navy);
+  background: #173767;
+  border-bottom: 3px solid #00AFF0;
   padding: 0 2rem;
-  display: flex; align-items: center; justify-content: space-between;
-  height: 56px; position: sticky; top: 0; z-index: 100;
-  border-bottom: 2px solid var(--cyan);
+  height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: sticky;
+  top: 0;
+  z-index: 100;
 }
 .nav-logo { display: flex; align-items: center; gap: 10px; text-decoration: none; }
 .nav-logo-svg { display: block; }
@@ -63,7 +74,7 @@ a:hover { text-decoration: underline; }
 }
 .nav-divider { width: 1px; height: 24px; background: rgba(255,255,255,0.15); margin: 0 4px; }
 .nav-links { display: flex; gap: 2px; }
-.nav-link { font-size: 12px; font-weight: 600; color: rgba(255,255,255,0.55); padding: 6px 13px; border-radius: 4px; transition: all 0.15s; text-transform: uppercase; letter-spacing: 0.05em; }
+.nav-link { font-size: 10px; font-weight: 400; font-family: 'Montserrat', sans-serif; color: rgba(255,255,255,0.55); padding: 6px 13px; border-radius: 4px; transition: all 0.15s; text-transform: uppercase; letter-spacing: 0.12em; }
 .nav-link:hover { color: white; background: rgba(255,255,255,0.08); text-decoration: none; }
 .nav-link.active { color: white; }
 .nav-right { display: flex; align-items: center; gap: 12px; }
@@ -83,7 +94,14 @@ a:hover { text-decoration: underline; }
 
 /* PAGE HEADER */
 .page-header { margin-bottom: 1.75rem; display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; flex-wrap: wrap; }
-.page-header h1 { font-family: var(--font-display); font-size: 32px; font-weight: 900; color: var(--navy); letter-spacing: 0.03em; text-transform: uppercase; line-height: 1.1; }
+.page-header /* H1: Druk Condensed Super, Verzálky / All Caps */
+h1 { font-family: var(--font-display); font-size: 36px; font-weight: 900; color: var(--navy); letter-spacing: 0.05em; text-transform: uppercase; line-height: 1.0; }
+/* H2: Montserrat Bold */
+h2 { font-family: var(--font-body); font-size: 16px; font-weight: 700; color: var(--navy); line-height: 1.3; }
+/* H3: Montserrat Bold, Verzálky */
+h3 { font-family: var(--font-body); font-size: 11px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.1em; }
+.label-caps { font-family: var(--font-body); font-size: 10px; font-weight: 400; text-transform: uppercase; letter-spacing: 0.12em; color: var(--muted); }
+.perex { font-family: var(--font-body); font-size: 15px; font-weight: 500; color: var(--text); line-height: 1.7; }
 .page-header p { color: var(--muted); font-size: 13px; margin-top: 4px; font-weight: 500; }
 
 /* BUTTONS */
@@ -92,7 +110,7 @@ a:hover { text-decoration: underline; }
 .btn-primary { background: var(--blue); color: white; border-color: var(--blue); }
 .btn-primary:hover { background: #005fa8; }
 .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
-.btn-navy { background: var(--navy); color: white; border-color: var(--navy); }
+.btn-navy { background: #173767; color: white; border-color: var(--navy); }
 .btn-navy:hover { background: var(--navy-mid); }
 .btn-secondary { background: white; color: var(--navy); border-color: var(--border); }
 .btn-secondary:hover { background: var(--bg); }
@@ -149,7 +167,7 @@ hr { border: none; border-top: 1px solid var(--border); margin: 1.5rem 0; }
   <div class="nav-divider"></div>
   <div class="nav-links">
     <a href="{{ url_for('dashboard') }}" class="nav-link {% if request.endpoint == 'dashboard' %}active{% endif %}">Přehled</a>
-    <a href="{{ url_for('novy_zapis') }}" class="nav-link {% if request.endpoint == 'novy_zapis' %}active{% endif %}">+ Nový zápis</a>
+    <a href="{{ url_for('novy_zapis') }}" class="nav-link {% if request.endpoint == 'novy_zapis' %}active{% endif %}" style="background:#00AFF0; color:#0E213E; padding:5px 14px; border-radius:4px; font-family:'DrukCondensed','Impact',sans-serif; font-weight:900; font-size:13px; letter-spacing:0.06em; text-transform:uppercase;">+ Nový zápis</a>
     {% if session.is_admin %}
     <a href="{{ url_for('admin') }}" class="nav-link {% if request.endpoint == 'admin' %}active{% endif %}">Správa</a>
     {% endif %}
