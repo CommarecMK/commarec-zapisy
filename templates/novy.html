@@ -15,6 +15,18 @@
 .step-header { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
 .step-num { font-family: var(--font-display); font-size: 22px; font-weight: 900; color: var(--cyan); line-height: 1; }
 .step-label { font-size: 11px; font-weight: 700; color: var(--navy); text-transform: uppercase; letter-spacing: 0.08em; }
+.form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.form-grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
+.blocks-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.block-check { display: flex; align-items: center; gap: 8px; padding: 10px 12px; border: 1.5px solid var(--border); border-radius: var(--radius); cursor: pointer; transition: all 0.15s; user-select: none; }
+.block-check:hover { border-color: var(--blue); }
+.block-check.checked { border-color: var(--navy); background: #F0F5FA; }
+.block-check input { display: none; }
+.block-dot { width: 16px; height: 16px; border: 2px solid var(--border); border-radius: 3px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; transition: all 0.15s; }
+.block-check.checked .block-dot { background: var(--navy); border-color: var(--navy); }
+.block-dot::after { content: '✓'; font-size: 10px; color: white; display: none; font-weight: 700; }
+.block-check.checked .block-dot::after { display: block; }
+.block-label { font-size: 12px; font-weight: 600; color: var(--navy); }
 #output-section { display: none; margin-top: 1.5rem; }
 .output-text { font-family: 'Courier New', monospace; font-size: 12.5px; line-height: 1.9; white-space: pre-wrap; color: var(--text); background: #F8FAFC; padding: 1.25rem; border-radius: var(--radius); border: 1px solid var(--border); max-height: 480px; overflow-y: auto; }
 .task-item { display: flex; gap: 12px; padding: 11px 0; border-bottom: 1px solid var(--border); }
@@ -22,351 +34,411 @@
 .task-arrow { color: var(--cyan); font-size: 14px; flex-shrink: 0; margin-top: 1px; font-weight: 700; }
 .task-name { font-size: 13px; font-weight: 700; color: var(--navy); }
 .task-meta { font-size: 11px; color: var(--muted); margin-top: 2px; font-weight: 500; }
-@media (max-width: 600px) { .templates { grid-template-columns: 1fr; } }
+@media (max-width: 600px) { .templates, .form-grid, .form-grid-3, .blocks-grid { grid-template-columns: 1fr; } }
+
+/* GAME MODAL */
+#game-modal { display: none; position: fixed; inset: 0; background: rgba(11,31,51,0.95); z-index: 1000; align-items: center; justify-content: center; flex-direction: column; }
 </style>
 {% endblock %}
 {% block content %}
-<div class="container">
-  <div class="page-header">
-    <div>
-      <h1>Nový zápis</h1>
-      <p>Vložte přepis ze schůzky — AI vygeneruje strukturovaný zápis a úkoly do Freela</p>
-    </div>
-    <a href="{{ url_for('dashboard') }}" class="btn btn-secondary">← Zpět</a>
-  </div>
 
-  <div class="card" style="margin-bottom: 1rem;">
-    <div class="step-header"><span class="step-num">01</span><span class="step-label">Vyberte šablonu</span></div>
-    <div class="templates">
-      {% for key, name in template_names.items() %}
-      <div class="tmpl {% if loop.first %}selected{% endif %}" onclick="selectTmpl(this, '{{ key }}')" id="tmpl-{{ key }}">
-        <div class="tmpl-num">0{{ loop.index }}</div>
-        <div class="tmpl-name">{{ name }}</div>
-        <div class="tmpl-desc">
-          {% if key == 'audit' %}Zjištění, hodnocení oblastí, doporučené kroky, přínosy{% endif %}
-          {% if key == 'operativa' %}Body jednání, rozhodnutí, úkoly s termínem a odpovědností{% endif %}
-          {% if key == 'obchod' %}Klient, závěry z jednání, next steps, follow-up{% endif %}
-        </div>
+<!-- GAME MODAL -->
+<div id="game-modal" style="display:none; position:fixed; inset:0; background:rgba(11,31,51,0.96); z-index:1000; align-items:center; justify-content:center; gap:28px; flex-wrap:wrap; padding:20px;">
+
+  <div style="display:flex; flex-direction:column; align-items:center; gap:10px;">
+    <div style="text-align:center;">
+      <div style="font-family:'DrukCondensed','Impact',sans-serif; font-size:24px; color:#00B4D8; letter-spacing:0.12em; text-transform:uppercase; line-height:1;">AI generuje zápis</div>
+      <div style="color:rgba(255,255,255,0.4); font-size:11px; margin-top:4px; font-weight:500; letter-spacing:0.05em;">WAREHOUSE TETRIS — poskládej paletu!</div>
+    </div>
+    <div style="display:flex; gap:16px; align-items:center;">
+      <div style="text-align:center;">
+        <div style="color:rgba(255,255,255,0.35); font-size:10px; font-weight:600; text-transform:uppercase; letter-spacing:0.08em;">Skóre</div>
+        <div id="game-score" style="color:white; font-family:'DrukCondensed','Impact',sans-serif; font-size:32px; font-weight:900; line-height:1;">0</div>
       </div>
-      {% endfor %}
-    </div>
-  </div>
-
-  <div class="card">
-    <div class="step-header"><span class="step-num">02</span><span class="step-label">Přepis nebo poznámky ze schůzky</span></div>
-    <div class="form-group" style="margin-bottom: 1rem;">
-      <textarea id="input-text" rows="10" placeholder="Vložte sem přepis z PLAUDu nebo vlastní poznámky...&#10;&#10;Funguje i hrubý přepis s timestampy a Speaker 1/2 — AI si s tím poradí."></textarea>
-    </div>
-    <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
-      <button class="btn btn-navy" id="gen-btn" onclick="generovat()">Generovat zápis →</button>
-      <span id="gen-status" style="font-size: 12px; color: var(--muted); font-weight: 500;"></span>
-    </div>
-  </div>
-
-  <div id="output-section">
-    <div class="card">
-      <div class="card-header">
-        <h2 id="output-title">Vygenerovaný zápis</h2>
-        <span class="badge badge-cyan" id="output-badge"></span>
+      <div style="width:1px; height:40px; background:rgba(255,255,255,0.1);"></div>
+      <div style="text-align:center;">
+        <div style="color:rgba(255,255,255,0.35); font-size:10px; font-weight:600; text-transform:uppercase; letter-spacing:0.08em;">Level</div>
+        <div id="game-level" style="color:#00B4D8; font-family:'DrukCondensed','Impact',sans-serif; font-size:32px; font-weight:900; line-height:1;">1</div>
       </div>
-      <div class="output-text" id="output-text"></div>
-    </div>
-
-    <div class="card" id="tasks-card" style="display: none; margin-top: 1rem;">
-      <div class="card-header">
-        <h2>Úkoly pro Freelo</h2>
-        <button class="btn btn-success btn-sm" id="freelo-btn" onclick="odeslatDoFreela()">Odeslat do Freela →</button>
+      <div style="width:1px; height:40px; background:rgba(255,255,255,0.1);"></div>
+      <div style="text-align:center;">
+        <div style="color:rgba(255,255,255,0.35); font-size:10px; font-weight:600; text-transform:uppercase; letter-spacing:0.08em;">Linie</div>
+        <div id="game-lines" style="color:#BA7517; font-family:'DrukCondensed','Impact',sans-serif; font-size:32px; font-weight:900; line-height:1;">0</div>
       </div>
-      <div id="tasks-list"></div>
-      <div id="freelo-result" style="margin-top: 12px;"></div>
     </div>
+    <canvas id="gameCanvas" width="240" height="480" style="border:1px solid rgba(0,180,216,0.2); border-radius:6px; display:block;"></canvas>
+    <div style="color:rgba(255,255,255,0.3); font-size:10px; font-weight:500; letter-spacing:0.06em; text-transform:uppercase;">← → pohyb &nbsp;|&nbsp; ↑ rotace &nbsp;|&nbsp; ↓ rychle &nbsp;|&nbsp; mezerník drop</div>
+    <div id="game-bonus-msg" style="color:#00B4D8; font-size:13px; font-weight:700; letter-spacing:0.05em; height:18px; text-align:center;"></div>
+  </div>
 
-    <div style="margin-top: 1rem; display: flex; gap: 10px; flex-wrap: wrap;">
-      <a href="{{ url_for('dashboard') }}" class="btn btn-secondary">← Zpět na přehled</a>
-      <a id="detail-link" href="#" class="btn btn-secondary" style="display:none;">Zobrazit detail →</a>
+  <div style="width:220px; display:flex; flex-direction:column; gap:14px;">
+    <div style="background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); border-radius:8px; padding:14px;">
+      <div style="color:rgba(255,255,255,0.35); font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.1em; margin-bottom:10px;">Další blok</div>
+      <canvas id="nextCanvas" width="100" height="100" style="display:block; margin:0 auto;"></canvas>
+    </div>
+    <div style="background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); border-radius:8px; padding:14px;">
+      <div style="color:rgba(255,255,255,0.35); font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.1em; margin-bottom:10px;">Bonusy</div>
+      <div style="font-size:11px; color:rgba(255,255,255,0.5); line-height:1.8;">
+        <div>Stejná ikona vedle sebe <span style="color:#00B4D8;">+30</span></div>
+        <div>Stejná barva (3+) <span style="color:#00B4D8;">+50</span></div>
+        <div>Plná řada <span style="color:#BA7517;">+100</span></div>
+        <div>Hard drop <span style="color:#0A7A5A;">+2/pole</span></div>
+      </div>
+    </div>
+    <div style="background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); border-radius:8px; padding:14px;">
+      <div style="color:rgba(255,255,255,0.35); font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.1em; margin-bottom:10px;">Leaderboard</div>
+      <div id="leaderboard-list" style="font-size:12px; color:rgba(255,255,255,0.6); line-height:1.9;">
+        <div style="color:rgba(255,255,255,0.25); font-style:italic;">Načítám...</div>
+      </div>
     </div>
   </div>
-</div>
-<!-- LOADING GAME MODAL -->
-<div id="game-modal" style="display:none; position:fixed; inset:0; background:rgba(11,31,51,0.92); z-index:1000; align-items:center; justify-content:center; flex-direction:column;">
-  <div style="text-align:center; margin-bottom:16px;">
-    <div style="font-family:'DrukCondensed','Impact',sans-serif; font-size:28px; color:#00B4D8; letter-spacing:0.1em; text-transform:uppercase;">AI generuje zápis</div>
-    <div style="color:rgba(255,255,255,0.5); font-size:13px; margin-top:4px; font-weight:500;">Zatímco čekáš, poskládej balíky na paletu!</div>
-  </div>
-  <canvas id="gameCanvas" width="360" height="420" style="border:1px solid rgba(0,180,216,0.3); border-radius:8px; display:block;"></canvas>
-  <div style="margin-top:12px; display:flex; gap:24px; align-items:center;">
-    <div style="color:rgba(255,255,255,0.5); font-size:12px;">← → pohyb &nbsp;|&nbsp; MEZERNÍK upustit</div>
-    <div style="color:#00B4D8; font-size:13px; font-weight:700;">Skóre: <span id="game-score">0</span></div>
-  </div>
-  <div id="game-status" style="margin-top:10px; color:rgba(255,255,255,0.4); font-size:12px; font-weight:500;">⏳ Zpracovávám přepis...</div>
 </div>
 
 <script>
 let selectedTemplate = 'audit';
 let currentZapisId = null;
 const tmplNames = {"audit": "Audit", "operativa": "Operativní schůzka", "obchod": "Obchodní schůzka"};
+const activeBlocks = new Set(['uvod','zjisteni','hodnoceni','procesy','rizika','kroky','prinosy','poznamky','dalsi_krok']);
+
 function selectTmpl(el, tmpl) {
   document.querySelectorAll('.tmpl').forEach(t => t.classList.remove('selected'));
   el.classList.add('selected');
   selectedTemplate = tmpl;
 }
-// === WAREHOUSE STACKING GAME ===
+
+function toggleBlock(el, key) {
+  el.classList.toggle('checked');
+  if (activeBlocks.has(key)) activeBlocks.delete(key);
+  else activeBlocks.add(key);
+}
+
+// ===== TETRIS GAME =====
 let gameLoop = null;
 let gameScore = 0;
+let gameLevel = 1;
+let gameLines = 0;
+let gameOver = false;
+let dropInterval = 800;
+let lastDrop = 0;
+let particles = [];
+
+const COLS = 10, ROWS = 20, CELL = 24;
+const COLORS = ['#00B4D8','#1B6FC8','#0A7A5A','#BA7517','#C0392B','#8E44AD','#E67E22'];
+const ICONS = ['P','K','O','B','F','D','M'];
+const ICON_LABELS = {'P':'📦','K':'🗃️','O':'📫','B':'🧴','F':'🥫','D':'📮','M':'📮'};
+
+const PIECES = [
+  [[1,1,1,1]],
+  [[1,1],[1,1]],
+  [[0,1,0],[1,1,1]],
+  [[1,0,0],[1,1,1]],
+  [[0,0,1],[1,1,1]],
+  [[0,1,1],[1,1,0]],
+  [[1,1,0],[0,1,1]]
+];
+
+let board = Array.from({length:ROWS}, ()=>Array(COLS).fill(null));
+let current = null;
+let nextPiece = null;
+
+function randomPiece() {
+  const shape = PIECES[Math.floor(Math.random()*PIECES.length)];
+  const colorIdx = Math.floor(Math.random()*COLORS.length);
+  return {
+    shape, color: COLORS[colorIdx], icon: ICONS[colorIdx],
+    x: Math.floor(COLS/2) - Math.floor(shape[0].length/2), y: 0
+  };
+}
+
+function isValid(piece, dx=0, dy=0, shape=null) {
+  const s = shape || piece.shape;
+  for (let r=0; r<s.length; r++) for (let c=0; c<s[r].length; c++) {
+    if (!s[r][c]) continue;
+    const nx = piece.x+c+dx, ny = piece.y+r+dy;
+    if (nx<0||nx>=COLS||ny>=ROWS) return false;
+    if (ny>=0 && board[ny][nx]) return false;
+  }
+  return true;
+}
+
+function rotate(shape) {
+  return shape[0].map((_,i)=>shape.map(r=>r[i]).reverse());
+}
+
+function placePiece() {
+  let bonusMsg = '';
+  for (let r=0; r<current.shape.length; r++) for (let c=0; c<current.shape[r].length; c++) {
+    if (!current.shape[r][c]) continue;
+    const ny = current.y+r, nx = current.x+c;
+    if (ny<0) { endGame(); return; }
+    board[ny][nx] = {color: current.color, icon: current.icon};
+  }
+  
+  // Check bonuses: same icon neighbors
+  let iconBonus = 0;
+  for (let r=0; r<current.shape.length; r++) for (let c=0; c<current.shape[r].length; c++) {
+    if (!current.shape[r][c]) continue;
+    const ny = current.y+r, nx = current.x+c;
+    const neighbors = [[0,1],[0,-1],[1,0],[-1,0]];
+    for (const [dr,dc] of neighbors) {
+      const nr=ny+dr, nc=nx+dc;
+      if (nr>=0&&nr<ROWS&&nc>=0&&nc<COLS&&board[nr][nc]&&board[nr][nc].icon===current.icon) iconBonus+=15;
+    }
+  }
+  if (iconBonus>0) { gameScore+=iconBonus; bonusMsg = '+'+iconBonus+' MATCH BONUS!'; }
+  
+  // Check same color streaks
+  let colorBonus = 0;
+  for (let r=0; r<ROWS; r++) {
+    let streak=1, prevColor=null;
+    for (let c=0; c<COLS; c++) {
+      const cell = board[r][c];
+      if (cell && cell.color===prevColor) { streak++; if(streak>=3) colorBonus+=25; }
+      else { streak=1; prevColor=cell?cell.color:null; }
+    }
+  }
+  if (colorBonus>0) { gameScore+=colorBonus; bonusMsg = (bonusMsg||'') + ' +'+colorBonus+' COLOR!'; }
+  
+  // Clear lines
+  let linesCleared = 0;
+  for (let r=ROWS-1; r>=0; r--) {
+    if (board[r].every(c=>c!==null)) {
+      for (let c=0;c<COLS;c++) particles.push({x:(c+0.5)*CELL,y:(r+0.5)*CELL,vx:(Math.random()-.5)*5,vy:(Math.random()-2)*4,life:1,color:board[r][c].color});
+      board.splice(r,1); board.unshift(Array(COLS).fill(null)); r++; linesCleared++;
+    }
+  }
+  if (linesCleared>0) {
+    const pts = [0,100,300,500,800][linesCleared]*gameLevel;
+    gameScore+=pts; gameLines+=linesCleared;
+    gameLevel = Math.floor(gameLines/10)+1;
+    dropInterval = Math.max(100, 800-((gameLevel-1)*70));
+    bonusMsg = '+'+pts+' | '+linesCleared+' LINI'+(linesCleared===1?'E':'E')+'!';
+  }
+  
+  if (bonusMsg) showBonus(bonusMsg);
+  document.getElementById('game-score').textContent = gameScore;
+  document.getElementById('game-level').textContent = gameLevel;
+  document.getElementById('game-lines').textContent = gameLines;
+  
+  current = nextPiece;
+  nextPiece = randomPiece();
+  if (!isValid(current)) endGame();
+}
+
+function showBonus(msg) {
+  const el = document.getElementById('game-bonus-msg');
+  el.textContent = msg;
+  setTimeout(()=>{ if(el.textContent===msg) el.textContent=''; }, 1500);
+}
+
+function endGame() {
+  gameOver = true;
+  saveScore();
+  loadLeaderboard();
+}
+
+async function saveScore() {
+  if (gameScore <= 0) return;
+  try { await fetch('/api/leaderboard', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({score:gameScore}) }); } catch(e) {}
+}
+
+async function loadLeaderboard() {
+  try {
+    const resp = await fetch('/api/leaderboard');
+    const data = await resp.json();
+    const el = document.getElementById('leaderboard-list');
+    if (!data.length) { el.innerHTML='<div style="color:rgba(255,255,255,0.25);font-style:italic;">Zatím žádné skóre</div>'; return; }
+    const medals = ['🥇','🥈','🥉'];
+    el.innerHTML = data.slice(0,8).map((s,i)=>`
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:2px 0;border-bottom:1px solid rgba(255,255,255,0.05);">
+        <span>${medals[i]||'  '} ${s.name}</span>
+        <span style="color:#00B4D8;font-weight:700;">${s.score.toLocaleString()}</span>
+      </div>`).join('');
+  } catch(e) {}
+}
+
+function drawBoard(ctx) {
+  const canvas = document.getElementById('gameCanvas');
+  ctx.fillStyle = '#0B1F33';
+  ctx.fillRect(0,0,canvas.width,canvas.height);
+  
+  ctx.strokeStyle='rgba(0,180,216,0.06)';
+  ctx.lineWidth=0.5;
+  for(let r=0;r<=ROWS;r++){ctx.beginPath();ctx.moveTo(0,r*CELL);ctx.lineTo(COLS*CELL,r*CELL);ctx.stroke();}
+  for(let c=0;c<=COLS;c++){ctx.beginPath();ctx.moveTo(c*CELL,0);ctx.lineTo(c*CELL,ROWS*CELL);ctx.stroke();}
+  
+  for(let r=0;r<ROWS;r++) for(let c=0;c<COLS;c++) if(board[r][c]) drawCell(ctx,c*CELL,r*CELL,board[r][c].color,board[r][c].icon);
+  
+  if (current && !gameOver) {
+    let ghostY = current.y;
+    while(isValid(current,0,ghostY-current.y+1)) ghostY++;
+    for(let r=0;r<current.shape.length;r++) for(let c=0;c<current.shape[r].length;c++) {
+      if(!current.shape[r][c]) continue;
+      ctx.fillStyle=current.color+'20';
+      ctx.fillRect((current.x+c)*CELL+2,(ghostY+r)*CELL+2,CELL-4,CELL-4);
+    }
+    for(let r=0;r<current.shape.length;r++) for(let c=0;c<current.shape[r].length;c++) {
+      if(!current.shape[r][c]) continue;
+      drawCell(ctx,(current.x+c)*CELL,(current.y+r)*CELL,current.color,current.icon);
+    }
+  }
+  
+  particles = particles.filter(p=>p.life>0);
+  particles.forEach(p=>{
+    ctx.globalAlpha=p.life;
+    ctx.fillStyle=p.color;
+    ctx.beginPath();ctx.arc(p.x,p.y,4*p.life,0,Math.PI*2);ctx.fill();
+    p.x+=p.vx;p.y+=p.vy;p.vy+=0.25;p.life-=0.06;
+  });
+  ctx.globalAlpha=1;
+  
+  if (gameOver) {
+    ctx.fillStyle='rgba(11,31,51,0.88)';ctx.fillRect(0,0,canvas.width,canvas.height);
+    ctx.fillStyle='#00B4D8';ctx.font='bold 22px DrukCondensed,Impact,sans-serif';ctx.textAlign='center';
+    ctx.fillText('SKLAD PLNÝ!',canvas.width/2,canvas.height/2-30);
+    ctx.fillStyle='white';ctx.font='14px Montserrat,sans-serif';
+    ctx.fillText('Skóre: '+gameScore.toLocaleString(),canvas.width/2,canvas.height/2+5);
+    ctx.fillStyle='rgba(255,255,255,0.4)';ctx.font='11px Montserrat,sans-serif';
+    ctx.fillText('MEZERNÍK = nová hra',canvas.width/2,canvas.height/2+30);
+  }
+}
+
+function drawCell(ctx, x, y, color, icon) {
+  ctx.fillStyle = color;
+  ctx.beginPath();ctx.roundRect(x+2,y+2,CELL-4,CELL-4,3);ctx.fill();
+  ctx.fillStyle='rgba(255,255,255,0.15)';ctx.fillRect(x+2,y+2,CELL-4,5);
+  ctx.font=`${Math.round(CELL*0.55)}px serif`;ctx.textAlign='center';ctx.textBaseline='middle';
+  ctx.fillStyle='rgba(0,0,0,0)';
+  ctx.fillText(ICON_LABELS[icon]||'📦',x+CELL/2,y+CELL/2+1);
+}
+
+function drawNext(ctx) {
+  ctx.fillStyle='#0B1F33';ctx.fillRect(0,0,100,100);
+  if (!nextPiece) return;
+  const s=nextPiece.shape;
+  const ox=Math.floor((4-s[0].length)/2)*22+8, oy=Math.floor((4-s.length)/2)*22+8;
+  for(let r=0;r<s.length;r++) for(let c=0;c<s[r].length;c++) {
+    if(!s[r][c]) continue;
+    drawCell(ctx,ox+c*22,oy+r*22,nextPiece.color,nextPiece.icon);
+  }
+}
 
 function startGame() {
   document.getElementById('game-modal').style.display = 'flex';
-  gameScore = 0;
-  document.getElementById('game-score').textContent = '0';
+  board = Array.from({length:ROWS},()=>Array(COLS).fill(null));
+  gameScore=0; gameLevel=1; gameLines=0; gameOver=false;
+  dropInterval=800; lastDrop=0; particles=[];
+  document.getElementById('game-score').textContent='0';
+  document.getElementById('game-level').textContent='1';
+  document.getElementById('game-lines').textContent='0';
+  current = randomPiece(); nextPiece = randomPiece();
+  
+  loadLeaderboard();
   
   const canvas = document.getElementById('gameCanvas');
   const ctx = canvas.getContext('2d');
-  const W = canvas.width, H = canvas.height;
-
-  // Game state
-  const COLS = 6;
-  const CELL = 52;
-  const GRID_X = (W - COLS * CELL) / 2;
-  const GRID_Y = 60;
-  const ROWS = 6;
+  const nctx = document.getElementById('nextCanvas').getContext('2d');
   
-  const colors = ['#00B4D8','#1B6FC8','#0A7A5A','#BA7517','#C0392B','#8E44AD'];
-  const labels = ['📦','🗃️','📫','🧴','🥫','📮'];
-  
-  let grid = Array.from({length: ROWS}, () => Array(COLS).fill(null));
-  let current = { col: 2, color: colors[Math.floor(Math.random()*colors.length)], label: labels[Math.floor(Math.random()*labels.length)] };
-  let dropY = 0;
-  let dropping = false;
-  let gameOver = false;
-  let particles = [];
-
-  function newPiece() {
-    current = {
-      col: Math.floor(Math.random() * COLS),
-      color: colors[Math.floor(Math.random()*colors.length)],
-      label: labels[Math.floor(Math.random()*labels.length)]
-    };
-    dropY = GRID_Y - CELL;
-    dropping = false;
-  }
-
-  function getDropRow() {
-    for (let r = ROWS-1; r >= 0; r--) {
-      if (!grid[r][current.col]) return r;
-    }
-    return -1;
-  }
-
-  function placePiece() {
-    const row = getDropRow();
-    if (row === -1) { gameOver = true; return; }
-    grid[row][current.col] = { color: current.color, label: current.label };
-    gameScore += 10;
-    document.getElementById('game-score').textContent = gameScore;
-    
-    // Check full rows
-    for (let r = ROWS-1; r >= 0; r--) {
-      if (grid[r].every(c => c !== null)) {
-        // Particles
-        for (let c = 0; c < COLS; c++) {
-          for (let p = 0; p < 5; p++) {
-            particles.push({
-              x: GRID_X + c*CELL + CELL/2, y: GRID_Y + r*CELL + CELL/2,
-              vx: (Math.random()-0.5)*6, vy: (Math.random()-2)*4,
-              life: 1, color: grid[r][c].color
-            });
-          }
-        }
-        grid.splice(r, 1);
-        grid.unshift(Array(COLS).fill(null));
-        gameScore += 50;
-        document.getElementById('game-score').textContent = gameScore;
-      }
-    }
-    newPiece();
-  }
-
-  function draw() {
-    ctx.clearRect(0, 0, W, H);
-    
-    // Background
-    ctx.fillStyle = '#0B1F33';
-    ctx.fillRect(0, 0, W, H);
-    
-    // Pallet at bottom
-    ctx.fillStyle = '#8B6914';
-    ctx.fillRect(GRID_X - 4, GRID_Y + ROWS*CELL, COLS*CELL + 8, 18);
-    ctx.fillStyle = '#A0781A';
-    for (let i = 0; i < 3; i++) {
-      ctx.fillRect(GRID_X + i * (COLS*CELL/2.5), GRID_Y + ROWS*CELL + 4, 12, 14);
-    }
-    
-    // Grid lines
-    ctx.strokeStyle = 'rgba(0,180,216,0.1)';
-    ctx.lineWidth = 1;
-    for (let r = 0; r <= ROWS; r++) {
-      ctx.beginPath();
-      ctx.moveTo(GRID_X, GRID_Y + r*CELL);
-      ctx.lineTo(GRID_X + COLS*CELL, GRID_Y + r*CELL);
-      ctx.stroke();
-    }
-    for (let c = 0; c <= COLS; c++) {
-      ctx.beginPath();
-      ctx.moveTo(GRID_X + c*CELL, GRID_Y);
-      ctx.lineTo(GRID_X + c*CELL, GRID_Y + ROWS*CELL);
-      ctx.stroke();
-    }
-    
-    // Placed pieces
-    for (let r = 0; r < ROWS; r++) {
-      for (let c = 0; c < COLS; c++) {
-        if (grid[r][c]) {
-          const x = GRID_X + c*CELL, y = GRID_Y + r*CELL;
-          ctx.fillStyle = grid[r][c].color;
-          ctx.beginPath();
-          ctx.roundRect(x+3, y+3, CELL-6, CELL-6, 4);
-          ctx.fill();
-          ctx.fillStyle = 'rgba(255,255,255,0.15)';
-          ctx.fillRect(x+3, y+3, CELL-6, 8);
-          ctx.font = `${CELL*0.45}px serif`;
-          ctx.textAlign = 'center';
-          ctx.textBaseline = 'middle';
-          ctx.fillText(grid[r][c].label, x + CELL/2, y + CELL/2 + 2);
-        }
-      }
-    }
-    
-    // Ghost piece
-    const ghostRow = getDropRow();
-    if (ghostRow >= 0 && !gameOver) {
-      const gx = GRID_X + current.col*CELL, gy = GRID_Y + ghostRow*CELL;
-      ctx.fillStyle = current.color + '33';
-      ctx.beginPath();
-      ctx.roundRect(gx+3, gy+3, CELL-6, CELL-6, 4);
-      ctx.fill();
-      ctx.strokeStyle = current.color + '66';
-      ctx.lineWidth = 1.5;
-      ctx.beginPath();
-      ctx.roundRect(gx+3, gy+3, CELL-6, CELL-6, 4);
-      ctx.stroke();
-    }
-    
-    // Falling piece
-    if (!gameOver) {
-      const fx = GRID_X + current.col*CELL;
-      const fy = dropping ? dropY : GRID_Y - CELL;
-      ctx.fillStyle = current.color;
-      ctx.beginPath();
-      ctx.roundRect(fx+3, fy+3, CELL-6, CELL-6, 4);
-      ctx.fill();
-      ctx.fillStyle = 'rgba(255,255,255,0.2)';
-      ctx.fillRect(fx+3, fy+3, CELL-6, 8);
-      ctx.font = `${CELL*0.45}px serif`;
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.fillText(current.label, fx + CELL/2, fy + CELL/2 + 2);
-      
-      if (dropping) {
-        dropY += 6;
-        const targetY = GRID_Y + ghostRow * CELL;
-        if (dropY >= targetY) { placePiece(); dropping = false; }
-      }
-    }
-    
-    // Particles
-    particles = particles.filter(p => p.life > 0);
-    particles.forEach(p => {
-      ctx.globalAlpha = p.life;
-      ctx.fillStyle = p.color;
-      ctx.beginPath();
-      ctx.arc(p.x, p.y, 5 * p.life, 0, Math.PI*2);
-      ctx.fill();
-      p.x += p.vx; p.y += p.vy; p.vy += 0.3; p.life -= 0.05;
-    });
-    ctx.globalAlpha = 1;
-    
-    // Score header
-    ctx.fillStyle = 'rgba(0,180,216,0.8)';
-    ctx.font = 'bold 12px Montserrat, sans-serif';
-    ctx.textAlign = 'left';
-    ctx.fillText('WAREHOUSE STACKER', GRID_X, 24);
-    ctx.fillStyle = 'rgba(255,255,255,0.4)';
-    ctx.font = '11px Montserrat, sans-serif';
-    ctx.fillText('← → pohyb  |  MEZERNÍK hodit', GRID_X, 42);
-    
-    // Game over
-    if (gameOver) {
-      ctx.fillStyle = 'rgba(11,31,51,0.85)';
-      ctx.fillRect(0, 0, W, H);
-      ctx.fillStyle = '#00B4D8';
-      ctx.font = 'bold 32px DrukCondensed, Impact, sans-serif';
-      ctx.textAlign = 'center';
-      ctx.fillText('SKLAD PLNÝ!', W/2, H/2 - 20);
-      ctx.fillStyle = 'white';
-      ctx.font = '16px Montserrat, sans-serif';
-      ctx.fillText('Skóre: ' + gameScore, W/2, H/2 + 20);
-      ctx.fillStyle = 'rgba(255,255,255,0.5)';
-      ctx.font = '13px Montserrat, sans-serif';
-      ctx.fillText('Stiskni MEZERNÍK pro restart', W/2, H/2 + 50);
-    }
-  }
-
   function handleKey(e) {
     if (gameOver) {
-      if (e.code === 'Space') { gameOver = false; grid = Array.from({length: ROWS}, () => Array(COLS).fill(null)); newPiece(); }
+      if (e.code==='Space') { board=Array.from({length:ROWS},()=>Array(COLS).fill(null)); gameScore=0;gameLevel=1;gameLines=0;gameOver=false;dropInterval=800;lastDrop=0;particles=[];document.getElementById('game-score').textContent='0';document.getElementById('game-level').textContent='1';document.getElementById('game-lines').textContent='0';current=randomPiece();nextPiece=randomPiece(); }
       return;
     }
-    if (e.code === 'ArrowLeft') { current.col = Math.max(0, current.col - 1); e.preventDefault(); }
-    if (e.code === 'ArrowRight') { current.col = Math.min(COLS-1, current.col + 1); e.preventDefault(); }
-    if (e.code === 'Space') { if (!dropping) dropping = true; e.preventDefault(); }
+    if (e.code==='ArrowLeft'&&isValid(current,-1)) { current.x--; e.preventDefault(); }
+    if (e.code==='ArrowRight'&&isValid(current,1)) { current.x++; e.preventDefault(); }
+    if (e.code==='ArrowDown') { if(isValid(current,0,1)) current.y++; else placePiece(); e.preventDefault(); }
+    if (e.code==='ArrowUp') { const rot=rotate(current.shape); if(isValid(current,0,0,rot)) current.shape=rot; e.preventDefault(); }
+    if (e.code==='Space') {
+      let drop=0;
+      while(isValid(current,0,1)){current.y++;drop++;}
+      gameScore+=drop*2; document.getElementById('game-score').textContent=gameScore;
+      placePiece(); e.preventDefault();
+    }
   }
-
   document.addEventListener('keydown', handleKey);
-  newPiece();
   
   if (gameLoop) cancelAnimationFrame(gameLoop);
-  function tick() { draw(); gameLoop = requestAnimationFrame(tick); }
-  tick();
-  
-  // Store cleanup
-  window._gameCleanup = () => {
-    cancelAnimationFrame(gameLoop);
-    document.removeEventListener('keydown', handleKey);
-  };
+  let last=0;
+  function tick(ts) {
+    gameLoop = requestAnimationFrame(tick);
+    drawBoard(ctx);
+    drawNext(nctx);
+    if(!gameOver && ts-lastDrop>dropInterval) {
+      lastDrop=ts;
+      if(isValid(current,0,1)) current.y++;
+      else placePiece();
+    }
+  }
+  requestAnimationFrame(tick);
+  window._gameCleanup = ()=>{ cancelAnimationFrame(gameLoop); document.removeEventListener('keydown',handleKey); };
 }
 
 function stopGame() {
   if (window._gameCleanup) window._gameCleanup();
+  saveScore();
   document.getElementById('game-modal').style.display = 'none';
+}
+
+function formatZapis(text) {
+  const lines = text.split('\n');
+  let html = '';
+  let inUl = false, inTable = false;
+  function closeUl(){if(inUl){html+='</ul>';inUl=false;}}
+  function closeTable(){if(inTable){html+='</tbody></table></div>';inTable=false;}}
+  function closeAll(){closeUl();closeTable();}
+  for(let i=0;i<lines.length;i++){
+    let line=lines[i].trim();
+    if(!line){closeAll();html+='<div style="height:6px"></div>';continue;}
+    if(line.includes('|')&&line.split('|').length>=3){
+      const cells=line.split('|').map(c=>c.trim()).filter(c=>c);
+      if(cells.every(c=>c.match(/^[-:]+$/)))continue;
+      if(!inTable){closeUl();html+='<div style="overflow-x:auto;margin:6px 0;"><table style="width:100%;border-collapse:collapse;font-size:13px;"><thead><tr>';cells.forEach(c=>{html+=`<th style="text-align:left;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.07em;padding:5px 8px;background:var(--bg);border-bottom:1px solid var(--border);">${c}</th>`;});html+='</tr></thead><tbody>';inTable=true;}
+      else{html+='<tr>';cells.forEach(c=>{const p=parseInt(c);const isScore=/^\d+\s*%$/.test(c);if(isScore){const cls=p>=65?'#0A7A5A':p>=45?'#BA7517':'#C0392B';html+=`<td style="padding:6px 8px;border-bottom:1px solid var(--border);"><span style="background:${cls};color:white;font-size:11px;font-weight:700;padding:2px 7px;border-radius:20px;">${c}</span></td>`;}else{html+=`<td style="padding:6px 8px;border-bottom:1px solid var(--border);font-size:13px;">${c}</td>`;}});html+='</tr>';}
+      continue;
+    }
+    closeTable();
+    if(line===line.toUpperCase()&&line.length>3&&!line.startsWith('•')&&/^[A-ZÁČĎÉĚÍŇÓŘŠŤÚŮÝŽ\s\/\-–]+$/.test(line)){closeAll();html+=`<div style="font-size:12px;font-weight:700;color:var(--navy);text-transform:uppercase;letter-spacing:0.08em;border-bottom:2px solid var(--cyan);padding-bottom:4px;margin:14px 0 6px;">${line}</div>`;continue;}
+    if(line.endsWith(':')&&!line.startsWith('•')&&line.length<80){closeUl();html+=`<div style="font-size:12px;font-weight:700;color:var(--navy);text-transform:uppercase;letter-spacing:0.05em;margin:8px 0 3px;">${line.slice(0,-1)}</div>`;continue;}
+    if(line.startsWith('•')||line.startsWith('-')||line.startsWith('–')){const t=line.replace(/^[•\-–]\s*/,'');if(!inUl){html+='<ul style="list-style:none;padding:0;margin:0;">';inUl=true;}html+=`<li style="font-size:13px;line-height:1.7;padding:1px 0 1px 14px;position:relative;"><span style="position:absolute;left:0;color:var(--cyan);font-weight:700;">•</span>${t}</li>`;continue;}
+    if(/^\d+\.\s/.test(line)){const t=line.replace(/^\d+\.\s*/,'');if(!inUl){html+='<ul style="list-style:none;padding:0;margin:0;">';inUl=true;}html+=`<li style="font-size:13px;line-height:1.7;padding:1px 0 1px 14px;position:relative;"><span style="position:absolute;left:0;color:var(--cyan);font-weight:700;">›</span>${t}</li>`;continue;}
+    closeUl();html+=`<p style="font-size:13px;line-height:1.7;margin-bottom:4px;">${line}</p>`;
+  }
+  closeAll();
+  return html;
 }
 
 async function generovat() {
   const text = document.getElementById('input-text').value.trim();
   if (!text) { alert('Vložte prosím text schůzky.'); return; }
   const btn = document.getElementById('gen-btn');
-  const status = document.getElementById('gen-status');
   btn.disabled = true;
   btn.innerHTML = '<span class="spinner"></span> Generuji...';
-  status.textContent = 'AI zpracovává text...';
   startGame();
+
+  const clientInfo = {
+    client_name: document.getElementById('client-name').value.trim(),
+    client_contact: document.getElementById('client-contact').value.trim(),
+    commarec_rep: document.getElementById('commarec-rep').value.trim(),
+    meeting_date: document.getElementById('meeting-date').value.trim(),
+    meeting_place: document.getElementById('meeting-place').value.trim(),
+    blocks: Array.from(activeBlocks)
+  };
+
   try {
-    const resp = await fetch('/api/generovat', {
+    const rawResp = await fetch('/api/generovat', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ template: selectedTemplate, text })
+      body: JSON.stringify({ template: selectedTemplate, text, client_info: clientInfo })
     });
-    const rawText = await resp.text();
+    const rawText = await rawResp.text();
     let data;
-    try {
-      data = JSON.parse(rawText);
-    } catch(e) {
-      alert('Chyba serveru: ' + rawText.substring(0, 200));
-      return;
-    }
-    if (data.error) { alert('Chyba: ' + data.error); return; }
+    try { data = JSON.parse(rawText); }
+    catch(e) { stopGame(); alert('Chyba serveru: ' + rawText.substring(0, 300)); return; }
+    if (data.error) { stopGame(); alert('Chyba: ' + data.error); return; }
+
     currentZapisId = data.zapis_id;
     document.getElementById('output-title').textContent = data.title;
     document.getElementById('output-badge').textContent = tmplNames[selectedTemplate];
-    document.getElementById('output-text').textContent = data.text;
+    document.getElementById('output-text').innerHTML = formatZapis(data.text);
     document.getElementById('output-section').style.display = 'block';
     document.getElementById('detail-link').href = '/zapis/' + data.zapis_id;
     document.getElementById('detail-link').style.display = 'inline-flex';
@@ -375,21 +447,20 @@ async function generovat() {
         <div class="task-item">
           <div class="task-arrow">›</div>
           <div><div class="task-name">${t.name}</div>
-          <div class="task-meta">${t.desc ? t.desc + ' · ' : ''}Termín: ${t.deadline}</div></div>
+          <div class="task-meta">${t.desc ? t.desc+' · ' : ''}Termín: ${t.deadline}</div></div>
         </div>`).join('');
       document.getElementById('tasks-card').style.display = 'block';
     }
-    document.getElementById('output-section').scrollIntoView({ behavior: 'smooth' });
-    status.textContent = '';
     stopGame();
+    document.getElementById('output-section').scrollIntoView({ behavior: 'smooth' });
   } catch (err) { stopGame(); alert('Chyba: ' + err.message); }
   finally { btn.disabled = false; btn.textContent = 'Generovat zápis →'; }
 }
+
 async function odeslatDoFreela() {
   if (!currentZapisId) return;
   const btn = document.getElementById('freelo-btn');
-  btn.disabled = true;
-  btn.innerHTML = '<span class="spinner"></span> Odesílám...';
+  btn.disabled = true; btn.innerHTML = '<span class="spinner"></span> Odesílám...';
   try {
     const resp = await fetch('/api/freelo/' + currentZapisId, { method: 'POST' });
     const data = await resp.json();

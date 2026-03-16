@@ -2,39 +2,86 @@
 {% block title %}{{ zapis.title }}{% endblock %}
 {% block extra_head %}
 <style>
-.output-text { font-family: 'Courier New', monospace; font-size: 12.5px; line-height: 1.9; white-space: pre-wrap; color: var(--text); background: #F8FAFC; padding: 1.25rem; border-radius: var(--radius); border: 1px solid var(--border); }
-.task-item { display: flex; gap: 12px; padding: 11px 0; border-bottom: 1px solid var(--border); }
+@media print {
+  .nav, .page-header .btn, .card-actions, .tasks-section, #print-btn { display: none !important; }
+  body { background: white !important; }
+  .container { max-width: 100% !important; padding: 0 !important; }
+  .zapis-card { border: none !important; box-shadow: none !important; padding: 0 !important; }
+  .zapis-meta { border-bottom: 2px solid #0B1F33 !important; padding-bottom: 12px !important; margin-bottom: 20px !important; }
+  .zapis-body { font-size: 11pt !important; }
+}
+
+.zapis-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); }
+.zapis-meta { display: flex; align-items: flex-start; justify-content: space-between; flex-wrap: wrap; gap: 12px; padding: 1.5rem; border-bottom: 1px solid var(--border); }
+.zapis-meta-logo { display: flex; align-items: center; gap: 10px; }
+.zapis-meta-info { text-align: right; font-size: 12px; color: var(--muted); line-height: 1.8; }
+.zapis-body { padding: 1.5rem 2rem; }
+.zapis-body h1 { font-family: var(--font-display); font-size: 26px; font-weight: 900; color: var(--navy); text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 4px; }
+.zapis-body h2 { font-size: 12px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 1.5rem; }
+.zapis-section { margin-bottom: 1.5rem; }
+.zapis-section-title { font-family: var(--font-display); font-size: 15px; font-weight: 900; color: var(--navy); text-transform: uppercase; letter-spacing: 0.06em; border-bottom: 2px solid var(--cyan); padding-bottom: 5px; margin-bottom: 10px; }
+.zapis-section p { font-size: 14px; line-height: 1.7; color: var(--text); margin-bottom: 6px; }
+.zapis-section ul { list-style: none; padding: 0; margin: 0; }
+.zapis-section ul li { font-size: 14px; line-height: 1.7; color: var(--text); padding: 2px 0; padding-left: 16px; position: relative; }
+.zapis-section ul li::before { content: '•'; position: absolute; left: 0; color: var(--cyan); font-weight: 700; }
+.zapis-subsection { font-size: 13px; font-weight: 700; color: var(--navy); margin: 10px 0 4px 0; text-transform: uppercase; letter-spacing: 0.04em; }
+.zapis-table { width: 100%; border-collapse: collapse; font-size: 13px; margin: 8px 0; }
+.zapis-table th { text-align: left; font-size: 11px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.07em; padding: 6px 10px; background: var(--bg); border-bottom: 1px solid var(--border); }
+.zapis-table td { padding: 7px 10px; border-bottom: 1px solid var(--border); vertical-align: top; font-size: 13px; }
+.zapis-table tr:last-child td { border-bottom: none; }
+.score-pill { display: inline-block; background: var(--navy); color: white; font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 20px; }
+.score-pill.high { background: var(--success); }
+.score-pill.mid { background: #BA7517; }
+.score-pill.low { background: var(--danger); }
+.task-item { display: flex; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--border); }
 .task-item:last-child { border-bottom: none; }
 .task-arrow { color: var(--cyan); font-size: 14px; flex-shrink: 0; margin-top: 1px; font-weight: 700; }
 .task-name { font-size: 13px; font-weight: 700; color: var(--navy); }
 .task-meta { font-size: 11px; color: var(--muted); margin-top: 2px; font-weight: 500; }
-.meta-row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-top: 5px; }
+.card-actions { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 10px; }
 </style>
 {% endblock %}
 {% block content %}
 <div class="container">
-  <div class="page-header">
-    <div>
-      <h1>{{ zapis.title }}</h1>
-      <div class="meta-row">
-        <span class="badge badge-blue">{{ template_names.get(zapis.template, zapis.template) }}</span>
-        <span style="color: var(--muted); font-size: 12px; font-weight: 500;">{{ zapis.author.name }}</span>
-        <span style="color: var(--border);">·</span>
-        <span style="color: var(--muted); font-size: 12px;">{{ zapis.created_at.strftime('%d. %m. %Y %H:%M') }}</span>
+  <div class="card-actions">
+    <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+      <h1 style="font-family:var(--font-display);font-size:26px;font-weight:900;color:var(--navy);text-transform:uppercase;letter-spacing:0.04em;">{{ zapis.title }}</h1>
+      <span class="badge badge-blue">{{ template_names.get(zapis.template, zapis.template) }}</span>
+    </div>
+    <div style="display:flex; gap:8px;">
+      <button id="print-btn" class="btn btn-secondary" onclick="printZapis()">Exportovat PDF</button>
+      <a href="{{ url_for('dashboard') }}" class="btn btn-secondary">← Zpět</a>
+    </div>
+  </div>
+
+  <div class="zapis-card" id="zapis-print">
+    <div class="zapis-meta">
+      <div class="zapis-meta-logo">
+        <img src="/static/logo-dark.svg" alt="Commarec" style="height:22px;width:auto;">
+      </div>
+      <div class="zapis-meta-info">
+        <div>{{ zapis.created_at.strftime('%d. %m. %Y') }}</div>
+        <div>{{ zapis.author.name }}</div>
+        {% if zapis.template == 'audit' %}
+        <div style="margin-top:4px;"><span class="badge badge-blue">Audit / diagnostika</span></div>
+        {% elif zapis.template == 'operativa' %}
+        <div style="margin-top:4px;"><span class="badge badge-blue">Operativní schůzka</span></div>
+        {% else %}
+        <div style="margin-top:4px;"><span class="badge badge-blue">Obchodní schůzka</span></div>
+        {% endif %}
       </div>
     </div>
-    <a href="{{ url_for('dashboard') }}" class="btn btn-secondary">← Zpět</a>
+    <div class="zapis-body" id="zapis-formatted">
+      {{ zapis.output_text | safe }}
+    </div>
   </div>
-  <div class="card" style="margin-bottom: 1rem;">
-    <div class="card-header"><h2>Zápis</h2></div>
-    <div class="output-text">{{ zapis.output_text }}</div>
-  </div>
+
   {% if tasks %}
-  <div class="card">
-    <div class="card-header">
-      <h2>Úkoly pro Freelo</h2>
+  <div class="card tasks-section" style="margin-top: 1rem;">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem; padding-bottom:10px; border-bottom:1px solid var(--border);">
+      <h2 style="font-size:13px;font-weight:700;color:var(--navy);text-transform:uppercase;letter-spacing:0.07em;">Úkoly pro Freelo</h2>
       {% if zapis.freelo_sent %}
-      <span class="badge badge-green">✓ Odesláno do Freela</span>
+      <span class="badge badge-green">✓ Odesláno</span>
       {% else %}
       <button class="btn btn-success btn-sm" id="freelo-btn" onclick="odeslatDoFreela()">Odeslat do Freela →</button>
       {% endif %}
@@ -42,30 +89,126 @@
     {% for task in tasks %}
     <div class="task-item">
       <div class="task-arrow">›</div>
-      <div><div class="task-name">{{ task.name }}</div>
-      <div class="task-meta">{% if task.desc %}{{ task.desc }} · {% endif %}Termín: {{ task.deadline }}</div></div>
+      <div>
+        <div class="task-name">{{ task.name }}</div>
+        <div class="task-meta">{% if task.desc %}{{ task.desc }} · {% endif %}Termín: {{ task.deadline }}</div>
+      </div>
     </div>
     {% endfor %}
-    <div id="freelo-result" style="margin-top: 12px;"></div>
+    <div id="freelo-result" style="margin-top:12px;"></div>
   </div>
   {% endif %}
 </div>
+
 <script>
+function formatZapis(text) {
+  const lines = text.split('\n');
+  let html = '';
+  let inSection = false;
+  let inUl = false;
+  let inTable = false;
+  let tableHeaders = [];
+
+  function closeUl() { if(inUl){html+='</ul>';inUl=false;} }
+  function closeTable() { if(inTable){html+='</tbody></table></div>';inTable=false;tableHeaders=[];} }
+  function closeAll() { closeUl(); closeTable(); }
+
+  for (let i=0; i<lines.length; i++) {
+    let line = lines[i].trim();
+    if (!line) { closeAll(); html += '<div style="height:8px"></div>'; continue; }
+
+    // Table row (contains |)
+    if (line.includes('|') && line.split('|').length >= 3) {
+      const cells = line.split('|').map(c=>c.trim()).filter(c=>c);
+      if (cells.every(c=>c.match(/^[-:]+$/))) continue; // separator row
+      if (!inTable) {
+        closeUl();
+        tableHeaders = cells;
+        html += '<div style="overflow-x:auto;margin:8px 0;"><table class="zapis-table"><thead><tr>';
+        cells.forEach(c => { html += `<th>${c}</th>`; });
+        html += '</tr></thead><tbody>';
+        inTable = true;
+      } else {
+        html += '<tr>';
+        cells.forEach((c,idx) => {
+          const isScore = /^\d+\s*%$/.test(c);
+          if (isScore) {
+            const pct = parseInt(c);
+            const cls = pct>=65?'high':pct>=45?'mid':'low';
+            html += `<td><span class="score-pill ${cls}">${c}</span></td>`;
+          } else {
+            html += `<td>${c}</td>`;
+          }
+        });
+        html += '</tr>';
+      }
+      continue;
+    }
+    closeTable();
+
+    // Main section heading (ALL CAPS, no special chars)
+    if (line === line.toUpperCase() && line.length > 3 && !line.startsWith('•') && /^[A-ZÁČĎÉĚÍŇÓŘŠŤÚŮÝŽ\s\/\-–]+$/.test(line)) {
+      closeAll();
+      html += `<div class="zapis-section"><div class="zapis-section-title">${line}</div>`;
+      inSection = true;
+      continue;
+    }
+
+    // Subsection (ends with colon, not a bullet)
+    if (line.endsWith(':') && !line.startsWith('•') && line.length < 80) {
+      closeUl();
+      html += `<div class="zapis-subsection">${line.slice(0,-1)}</div>`;
+      continue;
+    }
+
+    // Bullet point
+    if (line.startsWith('•') || line.startsWith('-') || line.startsWith('–')) {
+      const text = line.replace(/^[•\-–]\s*/, '');
+      if (!inUl) { html += '<ul>'; inUl = true; }
+      html += `<li>${text}</li>`;
+      continue;
+    }
+
+    // Numbered list
+    if (/^\d+\.\s/.test(line)) {
+      const text = line.replace(/^\d+\.\s*/, '');
+      if (!inUl) { html += '<ul>'; inUl = true; }
+      html += `<li>${text}</li>`;
+      continue;
+    }
+
+    // Regular paragraph
+    closeUl();
+    html += `<p>${line}</p>`;
+  }
+  closeAll();
+  if (inSection) html += '</div>';
+  return html;
+}
+
+// Format on load
+const rawText = document.getElementById('zapis-formatted').textContent;
+document.getElementById('zapis-formatted').innerHTML = formatZapis(rawText);
+
+function printZapis() {
+  window.print();
+}
+
 async function odeslatDoFreela() {
   const btn = document.getElementById('freelo-btn');
-  btn.disabled = true; btn.innerHTML = '<span class="spinner"></span> Odesílám...';
+  btn.disabled=true; btn.innerHTML='<span class="spinner"></span> Odesílám...';
   try {
-    const resp = await fetch('/api/freelo/{{ zapis.id }}', { method: 'POST' });
+    const resp = await fetch('/api/freelo/{{ zapis.id }}', {method:'POST'});
     const data = await resp.json();
     const result = document.getElementById('freelo-result');
-    if (data.created && data.created.length > 0) {
-      result.innerHTML = '<div class="alert alert-success">✓ Odesláno ' + data.created.length + ' úkolů do Freela.</div>';
-      btn.textContent = '✓ Odesláno';
+    if (data.created&&data.created.length>0) {
+      result.innerHTML='<div class="alert alert-success">✓ Odesláno '+data.created.length+' úkolů do Freela.</div>';
+      btn.textContent='✓ Odesláno';
     } else {
-      result.innerHTML = '<div class="alert alert-error">Chyba: ' + (data.errors || []).join(', ') + '</div>';
-      btn.disabled = false; btn.textContent = 'Odeslat do Freela →';
+      result.innerHTML='<div class="alert alert-error">Chyba: '+(data.errors||[]).join(', ')+'</div>';
+      btn.disabled=false; btn.textContent='Odeslat do Freela →';
     }
-  } catch(err) { alert('Chyba: ' + err.message); btn.disabled = false; btn.textContent = 'Odeslat do Freela →'; }
+  } catch(err) { alert('Chyba: '+err.message); btn.disabled=false; btn.textContent='Odeslat do Freela →'; }
 }
 </script>
 {% endblock %}
