@@ -51,82 +51,116 @@ class Zapis(db.Model):
 
 # --- System prompts ---
 
-SYSTEM_PROMPTS = {
-    "audit": """Jsi asistent pro tvorbu zápisů z konzultačních a auditorských schůzek firmy Commarec. Na základě přepisu nebo poznámek vytvoř strukturovaný profesionální zápis v češtině s těmito sekcemi:
+def build_system_prompt(template, client_info, blocks):
+    """Builds dynamic system prompt based on selected blocks and client info."""
+    
+    client_section = ""
+    if any([client_info.get('client_name'), client_info.get('meeting_date')]):
+        client_section = f"""
+Na začátku zápisu uveď hlavičku:
+Zápis ze schůzky: {client_info.get('meeting_date', 'neuvedeno')}
+Zastoupení Commarec: {client_info.get('commarec_rep', 'neuvedeno')}
+Zastoupení klienta: {client_info.get('client_contact', 'neuvedeno')} ({client_info.get('client_name', 'neuvedeno')})
+Místo: {client_info.get('meeting_place', 'neuvedeno')}
+"""
 
-ZÁPIS ZE SCHŮZKY – [název projektu/klienta]
-Datum: [datum pokud je uvedeno, jinak neuvedeno]
-Účastníci: [pokud jsou uvedeni]
+    block_map = {
+        'uvod': """
+ÚVOD A ÚČEL NÁVŠTĚVY
+- Shrň proč se návštěva/schůzka konala a co bylo jejím cílem
+- Uveď jaké procesy nebo oblasti byly pozorovány/diskutovány
+- Zakončit větou: "Audit se zaměřil na efektivitu procesů, plánování, využití kapacit, ergonomii a úroveň standardizace." (nebo přizpůsobit kontextu)""",
+        
+        'zjisteni': """
+SHRNUTÍ HLAVNÍCH ZJIŠTĚNÍ
+- Použij odrážky (•) pro přehlednost
+- Uveď nejdůležitější fakta ze schůzky
+- Odděl POZITIVNÍ zjištění a RIZIKA/PROBLÉMY
+- Buď konkrétní, používej čísla pokud zazněla""",
+        
+        'hodnoceni': """
+HODNOCENÍ HLAVNÍCH OBLASTÍ
+Vytvoř tabulku s hodnocením (0-100%) ve formátu:
+Oblast | Hodnocení (%) | Komentář
+- Vyber relevantní oblasti podle kontextu (logistika, výroba, IT, obchod...)
+- Na konci uveď: Celkové skóre, Nejlepší oblasti, Nejkritičtější oblasti, Klíčová priorita""",
+        
+        'procesy': """
+POPIS PROCESŮ A VIZUÁLNÍ POZOROVÁNÍ
+- Rozděl na logické sekce podle toho co bylo pozorováno/diskutováno
+- Popiš konkrétně co bylo vidět nebo slyšet
+- Uveď silné stránky i slabiny každé oblasti
+- Pokud zazněly citace klienta, dej je do uvozovek a kurzívy""",
+        
+        'rizika': """
+KLÍČOVÉ PROBLÉMY A RIZIKA
+- Použij krátké, silné body s dopadem
+- Formát: Problém → důsledek/riziko
+- Řaď od nejkritičtějšího""",
+        
+        'kroky': """
+DOPORUČENÉ AKČNÍ KROKY
+Rozděl do tří fází:
+Krátkodobé (0–1 měsíc): konkrétní, okamžitě realizovatelné kroky
+Střednědobé (1–3 měsíce): systémové změny, implementace
+Dlouhodobé (3+ měsíců): strategické kroky, digitalizace, automatizace
 
-ÚVOD A ÚČEL
-[stručný popis účelu schůzky, 2-3 věty]
-
-HLAVNÍ ZJIŠTĚNÍ
-[klíčové poznatky jako odrážky s tučným názvem a popisem]
-
-DOPORUČENÉ KROKY
-Krátkodobé (0–1 měsíc):
-1. [úkol] | Odpovědný: [osoba nebo "neurčeno"] | Termín: [termín nebo "dle dohody"]
-
-Střednědobé (1–3 měsíce):
-1. [úkol]
-
-ZÁVĚR
-[stručné shrnutí, 2-3 věty]
-
-Na konci přidej sekci oddělenou řádkem ---ÚKOLY PRO FREELO---:
-ÚKOL: [název úkolu] | POPIS: [stručný popis] | TERMÍN: [termín]
-(jeden řádek na úkol, pouze krátkodobé/konkrétní akční kroky)
-
-Piš profesionálně, věcně a stručně. Odpovídej pouze zápisem bez komentářů.""",
-
-    "operativa": """Jsi asistent pro tvorbu zápisů z operativních porad. Na základě přepisu vytvoř stručný přehledný zápis v češtině:
-
-ZÁPIS Z OPERATIVNÍ PORADY
-Datum: [datum]
-Účastníci: [účastníci]
-
-PROBRANÉ BODY
-1. [bod jednání a jeho výsledek]
-
-ROZHODNUTÍ
-- [přijaté rozhodnutí]
-
-ÚKOLY
-- [úkol] | Odpovědný: [osoba] | Termín: [termín]
-
-PŘÍŠTÍ SCHŮZKA
-[termín pokud je uveden]
-
+DŮLEŽITÉ: Za touto sekcí přidej oddělený blok:
 ---ÚKOLY PRO FREELO---
-ÚKOL: [název] | POPIS: [detail] | TERMÍN: [termín]
-
-Piš stručně a věcně. Odpovídej pouze zápisem.""",
-
-    "obchod": """Jsi asistent pro tvorbu zápisů z obchodních schůzek. Na základě přepisu vytvoř profesionální obchodní zápis v češtině:
-
-ZÁPIS Z OBCHODNÍ SCHŮZKY
-Datum: [datum]
-Klient: [název klienta]
-Účastníci: [účastníci]
-
-KONTEXT A CÍL SCHŮZKY
-[shrnutí situace a cíle, 2-3 věty]
-
-ZÁVĚRY Z JEDNÁNÍ
-- [klíčový závěr nebo informace]
-
-NEXT STEPS
-1. [akce] | Odpovědný: [osoba] | Termín: [termín]
-
-FOLLOW-UP
-[co je potřeba sledovat nebo připravit]
-
+(každý konkrétní úkol na nový řádek ve formátu:)
+ÚKOL: [název úkolu] | POPIS: [stručný popis co udělat] | TERMÍN: [termín nebo "dle dohody"]
+(vypiš pouze krátkodobé a střednědobé úkoly, max 8 úkolů)""",
+        
+        'prinosy': """
+OČEKÁVANÉ PŘÍNOSY
+- Uveď konkrétní kvantifikované přínosy (%)
+- Ke každému přínosu přidej krátké vysvětlení proč
+- Příklady: snížení backlogu, zvýšení produktivity, úspora času, stabilizace výkonu""",
+        
+        'poznamky': """
+POZNÁMKY Z TERÉNU
+- Volná sekce pro osobní postřehy
+- Přístup lidí, atmosféra, komentáře vedoucích
+- Spontánní nápady nebo překvapení""",
+        
+        'dalsi_krok': """
+DALŠÍ KROK SPOLUPRÁCE
+- Shrň co bylo dohodnuto jako next step
+- Uveď termíny pokud zazněly
+- Co Commarec připraví / pošle klientovi"""
+    }
+    
+    selected_blocks = "\n".join([block_map[b] for b in ['uvod','zjisteni','hodnoceni','procesy','rizika','kroky','prinosy','poznamky','dalsi_krok'] if b in blocks])
+    
+    if not selected_blocks and 'kroky' not in blocks:
+        # Always need to extract tasks even if block not shown
+        selected_blocks += """
 ---ÚKOLY PRO FREELO---
-ÚKOL: [název] | POPIS: [detail] | TERMÍN: [termín]
+ÚKOL: [název] | POPIS: [detail] | TERMÍN: [termín]"""
 
-Piš profesionálně. Odpovídej pouze zápisem."""
-}
+    base = f"""Jsi expertní asistent společnosti Commarec pro tvorbu profesionálních zápisů z diagnostických návštěv, obchodních schůzek a porad.
+
+Tvůj styl: odborný, ale lidský. Žádné korporátní fráze ani zbytečné omáčky. Konkrétní, strukturovaný, čitelný.
+FORMÁTOVÁNÍ - používej PŘESNĚ takto:
+- Nadpisy sekcí pište VELKÝMI PÍSMENY bez speciálních znaků (např. HLAVNÍ ZJIŠTĚNÍ)
+- Podnadpisy uváděj na samostatném řádku s dvojtečkou na konci (např. Profil firmy:)
+- Odrážky: začínaj řádek znakem "• " (bullet + mezera)
+- Pro tabulky použij formát: Oblast | Hodnocení | Komentář (oddělené svislítky)
+- NIKDY nepoužívej **hvězdičky**, _podtržítka_, #hashtag nebo jiné markdown znaky
+- NIKDY nepoužívej emotikony
+- Citace klienta dej do "uvozovek"
+
+{client_section}
+
+Vytvoř zápis s těmito sekcemi (v tomto pořadí):
+{selected_blocks}
+
+Pokud data v přepisu nejsou úplná, doplň rozumné odhady na základě kontextu.
+Pokud zazněla čísla (počty lidí, dny backlogu, rozměry, termíny), zahrň je do výsledku.
+Nepiš žádný úvod, rovnou začni zápisem."""
+
+    return base
+
 
 TEMPLATE_NAMES = {
     "audit": "Audit / diagnostika",
@@ -228,6 +262,10 @@ def generovat():
     if not input_text:
         return jsonify({"error": "Prázdný text"}), 400
 
+    client_info = data.get("client_info", {})
+    blocks = set(client_info.get("blocks", ["uvod","zjisteni","hodnoceni","procesy","rizika","kroky","prinosy","poznamky","dalsi_krok"]))
+    system_prompt = build_system_prompt(template, client_info, blocks)
+
     client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
     parts_text = split_transcript(input_text, max_chars=8000)
 
@@ -235,8 +273,8 @@ def generovat():
         if len(parts_text) == 1:
             message = client.messages.create(
                 model="claude-sonnet-4-5",
-                max_tokens=2000,
-                system=SYSTEM_PROMPTS.get(template, SYSTEM_PROMPTS["audit"]),
+                max_tokens=3000,
+                system=system_prompt,
                 messages=[{"role": "user", "content": input_text}]
             )
             full_text = message.content[0].text
@@ -245,17 +283,17 @@ def generovat():
             for i, part in enumerate(parts_text):
                 part_msg = client.messages.create(
                     model="claude-sonnet-4-5",
-                    max_tokens=1000,
-                    system=f"Jsi asistent pro analýzu přepisů schůzek. Toto je část {i+1} z {len(parts_text)} přepisu. Vyextrahuj klíčové body, rozhodnutí, úkoly a důležité informace. Piš stručně v češtině.",
+                    max_tokens=1500,
+                    system=f"Jsi asistent pro analýzu přepisů schůzek. Toto je část {i+1} z {len(parts_text)} přepisu schůzky. Vyextrahuj VŠECHNY klíčové body, rozhodnutí, čísla, problémy, úkoly a důležité informace. Zachovej citace. Piš strukturovaně v češtině.",
                     messages=[{"role": "user", "content": part}]
                 )
                 summaries.append(f"=== ČÁST {i+1}/{len(parts_text)} ===\n{part_msg.content[0].text}")
             combined = "\n\n".join(summaries)
-            final_prompt = f"Na základě těchto shrnutí částí schůzky vytvoř kompletní strukturovaný zápis:\n\n{combined}"
+            final_prompt = f"Na základě těchto shrnutí jednotlivých částí schůzky vytvoř kompletní profesionální zápis:\n\n{combined}"
             message = client.messages.create(
                 model="claude-sonnet-4-5",
-                max_tokens=2000,
-                system=SYSTEM_PROMPTS.get(template, SYSTEM_PROMPTS["audit"]),
+                max_tokens=3000,
+                system=system_prompt,
                 messages=[{"role": "user", "content": final_prompt}]
             )
             full_text = message.content[0].text
@@ -370,6 +408,42 @@ def smazat_uzivatele(user_id):
     db.session.delete(user)
     db.session.commit()
     return redirect(url_for("admin"))
+
+# --- Leaderboard ---
+
+@app.route("/api/leaderboard", methods=["GET"])
+@login_required
+def get_leaderboard():
+    import json as json_mod
+    try:
+        scores = json_mod.loads(open("/tmp/leaderboard.json").read()) if __import__("os").path.exists("/tmp/leaderboard.json") else []
+    except:
+        scores = []
+    return jsonify(scores)
+
+@app.route("/api/leaderboard", methods=["POST"])
+@login_required
+def post_leaderboard():
+    import json as json_mod, os
+    data = request.json
+    score = int(data.get("score", 0))
+    name = session.get("user_name", "?")
+    try:
+        scores = json_mod.loads(open("/tmp/leaderboard.json").read()) if os.path.exists("/tmp/leaderboard.json") else []
+    except:
+        scores = []
+    # Update or insert
+    existing = next((s for s in scores if s["name"] == name), None)
+    if existing:
+        if score > existing["score"]:
+            existing["score"] = score
+    else:
+        scores.append({"name": name, "score": score})
+    scores.sort(key=lambda x: x["score"], reverse=True)
+    scores = scores[:10]
+    with open("/tmp/leaderboard.json", "w") as f:
+        json_mod.dump(scores, f)
+    return jsonify({"ok": True})
 
 # --- DB Init (runs on every startup) ---
 
