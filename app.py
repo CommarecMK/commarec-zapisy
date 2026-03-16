@@ -18,6 +18,7 @@ if database_url.startswith("postgres://"):
 
 app.config["SQLALCHEMY_DATABASE_URI"] = database_url
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+app.config["JSON_AS_ASCII"] = False
 app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {"pool_pre_ping": True}
 
 db = SQLAlchemy(app)
@@ -202,6 +203,22 @@ def detail_zapisu(zapis_id):
     tasks = json.loads(zapis.tasks_json or "[]")
     return render_template("detail.html", zapis=zapis, tasks=tasks, template_names=TEMPLATE_NAMES)
 
+def split_transcript(text, max_chars=8000):
+    if len(text) <= max_chars:
+        return [text]
+    parts = []
+    current = ""
+    paragraphs = text.split("\n\n")
+    for para in paragraphs:
+        if len(current) + len(para) > max_chars and current:
+            parts.append(current.strip())
+            current = para
+        else:
+            current += "\n\n" + para if current else para
+    if current.strip():
+        parts.append(current.strip())
+    return parts
+
 @app.route("/api/generovat", methods=["POST"])
 @login_required
 def generovat():
@@ -212,47 +229,38 @@ def generovat():
         return jsonify({"error": "Prázdný text"}), 400
 
     client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
+    parts_text = split_transcript(input_text, max_chars=8000)
+
     try:
-        message = client.messages.create(
-            model="claude-opus-4-5-20251101",
-            max_tokens=2000,
-            system=SYSTEM_PROMPTS.get(template, SYSTEM_PROMPTS["audit"]),
-            messages=[{"role": "user", "content": input_text}]
-        )
-        full_text = message.content[0].text
+        if len(parts_text) == 1:
+            message = client.messages.create(
+                model="claude-sonnet-4-5",
+                max_tokens=2000,
+                system=SYSTEM_PROMPTS.get(template, SYSTEM_PROMPTS["audit"]),
+                messages=[{"role": "user", "content": input_text}]
+            )
+            full_text = message.content[0].text
+        else:
+            summaries = []
+            for i, part in enumerate(parts_text):
+                part_msg = client.messages.create(
+                    model="claude-sonnet-4-5",
+                    max_tokens=1000,
+                    system=f"Jsi asistent pro analýzu přepisů schůzek. Toto je část {i+1} z {len(parts_text)} přepisu. Vyextrahuj klíčové body, rozhodnutí, úkoly a důležité informace. Piš stručně v češtině.",
+                    messages=[{"role": "user", "content": part}]
+                )
+                summaries.append(f"=== ČÁST {i+1}/{len(parts_text)} ===\n{part_msg.content[0].text}")
+            combined = "\n\n".join(summaries)
+            final_prompt = f"Na základě těchto shrnutí částí schůzky vytvoř kompletní strukturovaný zápis:\n\n{combined}"
+            message = client.messages.create(
+                model="claude-sonnet-4-5",
+                max_tokens=2000,
+                system=SYSTEM_PROMPTS.get(template, SYSTEM_PROMPTS["audit"]),
+                messages=[{"role": "user", "content": final_prompt}]
+            )
+            full_text = message.content[0].text
     except Exception as e:
         return jsonify({"error": f"Chyba API: {str(e)}"}), 500
-
-    parts = full_text.split("---ÚKOLY PRO FREELO---")
-    zapis_text = parts[0].strip()
-    tasks = []
-    if len(parts) > 1:
-        for line in parts[1].strip().split("\n"):
-            if "ÚKOL:" in line:
-                ukol_m = re.search(r"ÚKOL:\s*([^|]+)", line)
-                popis_m = re.search(r"POPIS:\s*([^|]+)", line)
-                termin_m = re.search(r"TERMÍN:\s*(.+)", line)
-                tasks.append({
-                    "name": ukol_m.group(1).strip() if ukol_m else line,
-                    "desc": popis_m.group(1).strip() if popis_m else "",
-                    "deadline": termin_m.group(1).strip() if termin_m else "dle dohody"
-                })
-
-    first_line = zapis_text.split("\n")[0].replace("ZÁPIS ZE SCHŮZKY –", "").replace("ZÁPIS ZE SCHŮZKY -", "").strip()
-    title = first_line[:100] if first_line else "Zápis ze schůzky"
-
-    zapis = Zapis(
-        title=title,
-        template=template,
-        input_text=input_text,
-        output_text=zapis_text,
-        tasks_json=json.dumps(tasks, ensure_ascii=False),
-        user_id=session["user_id"]
-    )
-    db.session.add(zapis)
-    db.session.commit()
-
-    return jsonify({"zapis_id": zapis.id, "text": zapis_text, "tasks": tasks, "title": title})
 
 @app.route("/api/freelo/<int:zapis_id>", methods=["POST"])
 @login_required

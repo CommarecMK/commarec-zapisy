@@ -90,7 +90,7 @@
 <script>
 let selectedTemplate = 'audit';
 let currentZapisId = null;
-const tmplNames = {{ template_names | tojson }};
+const tmplNames = {"audit": "Audit", "operativa": "Operativní schůzka", "obchod": "Obchodní schůzka"};
 function selectTmpl(el, tmpl) {
   document.querySelectorAll('.tmpl').forEach(t => t.classList.remove('selected'));
   el.classList.add('selected');

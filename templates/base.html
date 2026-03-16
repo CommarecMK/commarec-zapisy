@@ -142,15 +142,9 @@ hr { border: none; border-top: 1px solid var(--border); margin: 1.5rem 0; }
 <body>
 {% if session.user_id %}
 <nav class="nav">
-  <a href="{{ url_for('dashboard') }}" class="nav-logo">
-    <svg class="nav-logo-svg" width="32" height="32" viewBox="0 0 32 32" fill="none">
-      <polygon points="0,0 20,0 32,16 20,32 0,32 12,16" fill="#00B4D8"/>
-      <polygon points="8,6 22,6 30,16 22,26 8,26 16,16" fill="#0B1F33" opacity="0.35"/>
-    </svg>
-    <div class="nav-logo-name">
-      COMMAREC
-      <span>Zápisy</span>
-    </div>
+  <a href="{{ url_for('dashboard') }}" class="nav-logo" style="display:flex;align-items:center;gap:10px;text-decoration:none;">
+    <img src="/static/logo-white.svg" alt="Commarec" style="height:26px;width:auto;display:block;">
+    <span style="color:rgba(255,255,255,0.4);font-size:11px;font-weight:600;letter-spacing:0.12em;text-transform:uppercase;border-left:1px solid rgba(255,255,255,0.2);padding-left:10px;">Zápisy</span>
   </a>
   <div class="nav-divider"></div>
   <div class="nav-links">
