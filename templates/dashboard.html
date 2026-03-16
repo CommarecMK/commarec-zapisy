@@ -2,51 +2,112 @@
 {% block title %}Přehled{% endblock %}
 {% block extra_head %}
 <style>
-.stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 1.75rem; }
-.stat { background: var(--navy); border-radius: var(--radius); padding: 1.25rem 1.5rem; position: relative; overflow: hidden; }
-.stat::after { content: ''; position: absolute; right: -20px; top: 50%; transform: translateY(-50%); width: 80px; height: 80px; background: rgba(255,255,255,0.03); clip-path: polygon(0 0, 70% 0, 100% 50%, 70% 100%, 0 100%, 30% 50%); }
-.stat.accent { background: var(--blue); }
-.stat.accent2 { background: var(--navy-mid); }
-.stat-label { font-size: 10px; font-weight: 700; color: rgba(255,255,255,0.4); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 6px; }
-.stat-value { font-family: var(--font-display); font-size: 42px; font-weight: 900; color: white; line-height: 1; letter-spacing: 0.02em; }
-.stat-sub { font-size: 11px; color: rgba(255,255,255,0.35); margin-top: 4px; font-weight: 500; }
-.empty { text-align: center; padding: 3.5rem 2rem; }
-.empty p { color: var(--muted); margin-bottom: 1.25rem; font-weight: 500; }
-.td-title { font-weight: 600; color: var(--navy); font-size: 13px; }
-.td-title:hover { color: var(--blue); text-decoration: none; }
+/* STAT CARDS */
+.stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+  margin-bottom: 1.75rem;
+}
+.stat {
+  background: #173767;
+  border-radius: 8px;
+  padding: 1.25rem 1.5rem;
+  position: relative;
+  overflow: hidden;
+  border: 1px solid rgba(255,255,255,0.06);
+}
+/* Decorative chevron shape — per brand guidelines */
+.stat::after {
+  content: '';
+  position: absolute;
+  right: -10px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 90px;
+  height: 90px;
+  background: rgba(255,255,255,0.04);
+  clip-path: polygon(0 0, 65% 0, 100% 50%, 65% 100%, 0 100%, 35% 50%);
+}
+.stat-label {
+  font-family: 'Montserrat', sans-serif;
+  font-size: 10px;
+  font-weight: 400;
+  color: rgba(255,255,255,0.4);
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  margin-bottom: 8px;
+}
+.stat-value {
+  font-family: 'DrukCondensed', 'Impact', sans-serif;
+  font-size: 48px;
+  font-weight: 900;
+  color: white;
+  line-height: 1;
+  letter-spacing: 0.02em;
+}
+.stat-sub {
+  font-family: 'Montserrat', sans-serif;
+  font-size: 11px;
+  color: rgba(255,255,255,0.3);
+  margin-top: 6px;
+  font-weight: 400;
+}
+.stat-cyan { background: #0E213E; border-top: 3px solid #00AFF0; }
+.stat-cyan .stat-value { color: #00AFF0; }
+.stat-dark { background: #0E213E; }
+
+/* TABLE */
+.td-title { font-weight: 700; color: #173767; font-size: 13px; }
+.td-title:hover { color: #00AFF0; text-decoration: none; }
+
+/* EMPTY STATE */
+.empty { text-align: center; padding: 4rem 2rem; }
+.empty-title {
+  font-family: 'DrukCondensed', 'Impact', sans-serif;
+  font-size: 22px;
+  font-weight: 900;
+  color: #173767;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 8px;
+}
+.empty-sub { color: #4A6080; font-size: 13px; font-weight: 400; margin-bottom: 1.5rem; }
 </style>
 {% endblock %}
+
 {% block content %}
 <div class="container">
   <div class="page-header">
     <div>
       <h1>Zápisy</h1>
-      <p>Přehled všech zápisů ze schůzek vašeho týmu</p>
+      <p class="perex" style="font-size:13px; font-weight:500; color:#4A6080; margin-top:4px;">Přehled všech zápisů ze schůzek vašeho týmu</p>
     </div>
-    <a href="{{ url_for('novy_zapis') }}" class="btn btn-navy">+ Nový zápis</a>
+    <a href="{{ url_for('novy_zapis') }}" class="btn btn-navy" style="font-family:'DrukCondensed','Impact',sans-serif; font-size:14px; font-weight:900; letter-spacing:0.06em; text-transform:uppercase; background:#173767; color:white; border:none; padding:10px 20px; border-radius:5px;">+ Nový zápis</a>
   </div>
 
   {% set total = zapisy|length %}
   {% set freelo_count = zapisy|selectattr('freelo_sent')|list|length %}
+
   <div class="stats">
     <div class="stat">
       <div class="stat-label">Celkem zápisů</div>
       <div class="stat-value">{{ total }}</div>
       <div class="stat-sub">posledních 20 zápisů</div>
     </div>
-    <div class="stat accent">
+    <div class="stat stat-cyan">
       <div class="stat-label">Odesláno do Freela</div>
       <div class="stat-value">{{ freelo_count }}</div>
       <div class="stat-sub">zápisů synchronizováno</div>
     </div>
-    <div class="stat accent2">
+    <div class="stat stat-dark">
       <div class="stat-label">Šablony</div>
       <div class="stat-value">3</div>
       <div class="stat-sub">audit · operativa · obchod</div>
     </div>
   </div>
 
-  <div class="card" style="padding: 0; overflow: hidden;">
+  <div class="card" style="padding:0; overflow:hidden;">
     {% if zapisy %}
     <table>
       <thead>
@@ -64,21 +125,22 @@
         <tr>
           <td><a href="{{ url_for('detail_zapisu', zapis_id=z.id) }}" class="td-title">{{ z.title }}</a></td>
           <td><span class="badge badge-blue">{{ template_names.get(z.template, z.template) }}</span></td>
-          <td style="color: var(--muted);">{{ z.author.name }}</td>
+          <td style="color:#4A6080; font-size:12px;">{{ z.author.name }}</td>
           <td>
             {% if z.freelo_sent %}<span class="badge badge-green">✓ Odesláno</span>
             {% else %}<span class="badge badge-gray">Čeká</span>{% endif %}
           </td>
-          <td style="color: var(--muted);">{{ z.created_at.strftime('%d. %m. %Y') }}</td>
-          <td><a href="{{ url_for('detail_zapisu', zapis_id=z.id) }}" class="btn btn-secondary btn-sm">Otevřít</a></td>
+          <td style="color:#4A6080; font-size:12px; white-space:nowrap;">{{ z.created_at.strftime('%d. %m. %Y') }}</td>
+          <td><a href="{{ url_for('detail_zapisu', zapis_id=z.id) }}" class="btn btn-secondary btn-sm">Detail →</a></td>
         </tr>
         {% endfor %}
       </tbody>
     </table>
     {% else %}
     <div class="empty">
-      <p>Zatím žádné zápisy.</p>
-      <a href="{{ url_for('novy_zapis') }}" class="btn btn-navy">Vytvořit první zápis</a>
+      <div class="empty-title">Zatím žádné zápisy</div>
+      <div class="empty-sub">Vytvořte první zápis ze schůzky — AI ho vygeneruje za vás.</div>
+      <a href="{{ url_for('novy_zapis') }}" class="btn btn-navy" style="font-family:'DrukCondensed','Impact',sans-serif; font-size:14px; font-weight:900; letter-spacing:0.06em; text-transform:uppercase; background:#173767; color:white; border:none; padding:10px 24px; border-radius:5px;">Vytvořit první zápis</a>
     </div>
     {% endif %}
   </div>
