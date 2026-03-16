@@ -262,6 +262,37 @@ def generovat():
     except Exception as e:
         return jsonify({"error": f"Chyba API: {str(e)}"}), 500
 
+    parts = full_text.split("---ÚKOLY PRO FREELO---")
+    zapis_text = parts[0].strip()
+    tasks = []
+    if len(parts) > 1:
+        for line in parts[1].strip().split("\n"):
+            if "ÚKOL:" in line:
+                ukol_m = re.search(r"ÚKOL:\s*([^|]+)", line)
+                popis_m = re.search(r"POPIS:\s*([^|]+)", line)
+                termin_m = re.search(r"TERMÍN:\s*(.+)", line)
+                tasks.append({
+                    "name": ukol_m.group(1).strip() if ukol_m else line,
+                    "desc": popis_m.group(1).strip() if popis_m else "",
+                    "deadline": termin_m.group(1).strip() if termin_m else "dle dohody"
+                })
+
+    first_line = zapis_text.split("\n")[0].replace("ZÁPIS ZE SCHŮZKY –", "").replace("ZÁPIS ZE SCHŮZKY -", "").strip()
+    title = first_line[:100] if first_line else "Zápis ze schůzky"
+
+    zapis = Zapis(
+        title=title,
+        template=template,
+        input_text=input_text,
+        output_text=zapis_text,
+        tasks_json=json.dumps(tasks, ensure_ascii=False),
+        user_id=session["user_id"]
+    )
+    db.session.add(zapis)
+    db.session.commit()
+
+    return jsonify({"zapis_id": zapis.id, "text": zapis_text, "tasks": tasks, "title": title})
+
 @app.route("/api/freelo/<int:zapis_id>", methods=["POST"])
 @login_required
 def odeslat_do_freela(zapis_id):
