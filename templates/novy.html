@@ -87,6 +87,20 @@
     </div>
   </div>
 </div>
+<!-- LOADING GAME MODAL -->
+<div id="game-modal" style="display:none; position:fixed; inset:0; background:rgba(11,31,51,0.92); z-index:1000; align-items:center; justify-content:center; flex-direction:column;">
+  <div style="text-align:center; margin-bottom:16px;">
+    <div style="font-family:'DrukCondensed','Impact',sans-serif; font-size:28px; color:#00B4D8; letter-spacing:0.1em; text-transform:uppercase;">AI generuje zápis</div>
+    <div style="color:rgba(255,255,255,0.5); font-size:13px; margin-top:4px; font-weight:500;">Zatímco čekáš, poskládej balíky na paletu!</div>
+  </div>
+  <canvas id="gameCanvas" width="360" height="420" style="border:1px solid rgba(0,180,216,0.3); border-radius:8px; display:block;"></canvas>
+  <div style="margin-top:12px; display:flex; gap:24px; align-items:center;">
+    <div style="color:rgba(255,255,255,0.5); font-size:12px;">← → pohyb &nbsp;|&nbsp; MEZERNÍK upustit</div>
+    <div style="color:#00B4D8; font-size:13px; font-weight:700;">Skóre: <span id="game-score">0</span></div>
+  </div>
+  <div id="game-status" style="margin-top:10px; color:rgba(255,255,255,0.4); font-size:12px; font-weight:500;">⏳ Zpracovávám přepis...</div>
+</div>
+
 <script>
 let selectedTemplate = 'audit';
 let currentZapisId = null;
@@ -96,6 +110,236 @@ function selectTmpl(el, tmpl) {
   el.classList.add('selected');
   selectedTemplate = tmpl;
 }
+// === WAREHOUSE STACKING GAME ===
+let gameLoop = null;
+let gameScore = 0;
+
+function startGame() {
+  document.getElementById('game-modal').style.display = 'flex';
+  gameScore = 0;
+  document.getElementById('game-score').textContent = '0';
+  
+  const canvas = document.getElementById('gameCanvas');
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+
+  // Game state
+  const COLS = 6;
+  const CELL = 52;
+  const GRID_X = (W - COLS * CELL) / 2;
+  const GRID_Y = 60;
+  const ROWS = 6;
+  
+  const colors = ['#00B4D8','#1B6FC8','#0A7A5A','#BA7517','#C0392B','#8E44AD'];
+  const labels = ['📦','🗃️','📫','🧴','🥫','📮'];
+  
+  let grid = Array.from({length: ROWS}, () => Array(COLS).fill(null));
+  let current = { col: 2, color: colors[Math.floor(Math.random()*colors.length)], label: labels[Math.floor(Math.random()*labels.length)] };
+  let dropY = 0;
+  let dropping = false;
+  let gameOver = false;
+  let particles = [];
+
+  function newPiece() {
+    current = {
+      col: Math.floor(Math.random() * COLS),
+      color: colors[Math.floor(Math.random()*colors.length)],
+      label: labels[Math.floor(Math.random()*labels.length)]
+    };
+    dropY = GRID_Y - CELL;
+    dropping = false;
+  }
+
+  function getDropRow() {
+    for (let r = ROWS-1; r >= 0; r--) {
+      if (!grid[r][current.col]) return r;
+    }
+    return -1;
+  }
+
+  function placePiece() {
+    const row = getDropRow();
+    if (row === -1) { gameOver = true; return; }
+    grid[row][current.col] = { color: current.color, label: current.label };
+    gameScore += 10;
+    document.getElementById('game-score').textContent = gameScore;
+    
+    // Check full rows
+    for (let r = ROWS-1; r >= 0; r--) {
+      if (grid[r].every(c => c !== null)) {
+        // Particles
+        for (let c = 0; c < COLS; c++) {
+          for (let p = 0; p < 5; p++) {
+            particles.push({
+              x: GRID_X + c*CELL + CELL/2, y: GRID_Y + r*CELL + CELL/2,
+              vx: (Math.random()-0.5)*6, vy: (Math.random()-2)*4,
+              life: 1, color: grid[r][c].color
+            });
+          }
+        }
+        grid.splice(r, 1);
+        grid.unshift(Array(COLS).fill(null));
+        gameScore += 50;
+        document.getElementById('game-score').textContent = gameScore;
+      }
+    }
+    newPiece();
+  }
+
+  function draw() {
+    ctx.clearRect(0, 0, W, H);
+    
+    // Background
+    ctx.fillStyle = '#0B1F33';
+    ctx.fillRect(0, 0, W, H);
+    
+    // Pallet at bottom
+    ctx.fillStyle = '#8B6914';
+    ctx.fillRect(GRID_X - 4, GRID_Y + ROWS*CELL, COLS*CELL + 8, 18);
+    ctx.fillStyle = '#A0781A';
+    for (let i = 0; i < 3; i++) {
+      ctx.fillRect(GRID_X + i * (COLS*CELL/2.5), GRID_Y + ROWS*CELL + 4, 12, 14);
+    }
+    
+    // Grid lines
+    ctx.strokeStyle = 'rgba(0,180,216,0.1)';
+    ctx.lineWidth = 1;
+    for (let r = 0; r <= ROWS; r++) {
+      ctx.beginPath();
+      ctx.moveTo(GRID_X, GRID_Y + r*CELL);
+      ctx.lineTo(GRID_X + COLS*CELL, GRID_Y + r*CELL);
+      ctx.stroke();
+    }
+    for (let c = 0; c <= COLS; c++) {
+      ctx.beginPath();
+      ctx.moveTo(GRID_X + c*CELL, GRID_Y);
+      ctx.lineTo(GRID_X + c*CELL, GRID_Y + ROWS*CELL);
+      ctx.stroke();
+    }
+    
+    // Placed pieces
+    for (let r = 0; r < ROWS; r++) {
+      for (let c = 0; c < COLS; c++) {
+        if (grid[r][c]) {
+          const x = GRID_X + c*CELL, y = GRID_Y + r*CELL;
+          ctx.fillStyle = grid[r][c].color;
+          ctx.beginPath();
+          ctx.roundRect(x+3, y+3, CELL-6, CELL-6, 4);
+          ctx.fill();
+          ctx.fillStyle = 'rgba(255,255,255,0.15)';
+          ctx.fillRect(x+3, y+3, CELL-6, 8);
+          ctx.font = `${CELL*0.45}px serif`;
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText(grid[r][c].label, x + CELL/2, y + CELL/2 + 2);
+        }
+      }
+    }
+    
+    // Ghost piece
+    const ghostRow = getDropRow();
+    if (ghostRow >= 0 && !gameOver) {
+      const gx = GRID_X + current.col*CELL, gy = GRID_Y + ghostRow*CELL;
+      ctx.fillStyle = current.color + '33';
+      ctx.beginPath();
+      ctx.roundRect(gx+3, gy+3, CELL-6, CELL-6, 4);
+      ctx.fill();
+      ctx.strokeStyle = current.color + '66';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.roundRect(gx+3, gy+3, CELL-6, CELL-6, 4);
+      ctx.stroke();
+    }
+    
+    // Falling piece
+    if (!gameOver) {
+      const fx = GRID_X + current.col*CELL;
+      const fy = dropping ? dropY : GRID_Y - CELL;
+      ctx.fillStyle = current.color;
+      ctx.beginPath();
+      ctx.roundRect(fx+3, fy+3, CELL-6, CELL-6, 4);
+      ctx.fill();
+      ctx.fillStyle = 'rgba(255,255,255,0.2)';
+      ctx.fillRect(fx+3, fy+3, CELL-6, 8);
+      ctx.font = `${CELL*0.45}px serif`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(current.label, fx + CELL/2, fy + CELL/2 + 2);
+      
+      if (dropping) {
+        dropY += 6;
+        const targetY = GRID_Y + ghostRow * CELL;
+        if (dropY >= targetY) { placePiece(); dropping = false; }
+      }
+    }
+    
+    // Particles
+    particles = particles.filter(p => p.life > 0);
+    particles.forEach(p => {
+      ctx.globalAlpha = p.life;
+      ctx.fillStyle = p.color;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, 5 * p.life, 0, Math.PI*2);
+      ctx.fill();
+      p.x += p.vx; p.y += p.vy; p.vy += 0.3; p.life -= 0.05;
+    });
+    ctx.globalAlpha = 1;
+    
+    // Score header
+    ctx.fillStyle = 'rgba(0,180,216,0.8)';
+    ctx.font = 'bold 12px Montserrat, sans-serif';
+    ctx.textAlign = 'left';
+    ctx.fillText('WAREHOUSE STACKER', GRID_X, 24);
+    ctx.fillStyle = 'rgba(255,255,255,0.4)';
+    ctx.font = '11px Montserrat, sans-serif';
+    ctx.fillText('← → pohyb  |  MEZERNÍK hodit', GRID_X, 42);
+    
+    // Game over
+    if (gameOver) {
+      ctx.fillStyle = 'rgba(11,31,51,0.85)';
+      ctx.fillRect(0, 0, W, H);
+      ctx.fillStyle = '#00B4D8';
+      ctx.font = 'bold 32px DrukCondensed, Impact, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('SKLAD PLNÝ!', W/2, H/2 - 20);
+      ctx.fillStyle = 'white';
+      ctx.font = '16px Montserrat, sans-serif';
+      ctx.fillText('Skóre: ' + gameScore, W/2, H/2 + 20);
+      ctx.fillStyle = 'rgba(255,255,255,0.5)';
+      ctx.font = '13px Montserrat, sans-serif';
+      ctx.fillText('Stiskni MEZERNÍK pro restart', W/2, H/2 + 50);
+    }
+  }
+
+  function handleKey(e) {
+    if (gameOver) {
+      if (e.code === 'Space') { gameOver = false; grid = Array.from({length: ROWS}, () => Array(COLS).fill(null)); newPiece(); }
+      return;
+    }
+    if (e.code === 'ArrowLeft') { current.col = Math.max(0, current.col - 1); e.preventDefault(); }
+    if (e.code === 'ArrowRight') { current.col = Math.min(COLS-1, current.col + 1); e.preventDefault(); }
+    if (e.code === 'Space') { if (!dropping) dropping = true; e.preventDefault(); }
+  }
+
+  document.addEventListener('keydown', handleKey);
+  newPiece();
+  
+  if (gameLoop) cancelAnimationFrame(gameLoop);
+  function tick() { draw(); gameLoop = requestAnimationFrame(tick); }
+  tick();
+  
+  // Store cleanup
+  window._gameCleanup = () => {
+    cancelAnimationFrame(gameLoop);
+    document.removeEventListener('keydown', handleKey);
+  };
+}
+
+function stopGame() {
+  if (window._gameCleanup) window._gameCleanup();
+  document.getElementById('game-modal').style.display = 'none';
+}
+
 async function generovat() {
   const text = document.getElementById('input-text').value.trim();
   if (!text) { alert('Vložte prosím text schůzky.'); return; }
@@ -103,7 +347,8 @@ async function generovat() {
   const status = document.getElementById('gen-status');
   btn.disabled = true;
   btn.innerHTML = '<span class="spinner"></span> Generuji...';
-  status.textContent = 'AI zpracovává text (10–30 sekund)...';
+  status.textContent = 'AI zpracovává text...';
+  startGame();
   try {
     const resp = await fetch('/api/generovat', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -136,7 +381,8 @@ async function generovat() {
     }
     document.getElementById('output-section').scrollIntoView({ behavior: 'smooth' });
     status.textContent = '';
-  } catch (err) { alert('Chyba: ' + err.message); }
+    stopGame();
+  } catch (err) { stopGame(); alert('Chyba: ' + err.message); }
   finally { btn.disabled = false; btn.textContent = 'Generovat zápis →'; }
 }
 async function odeslatDoFreela() {
