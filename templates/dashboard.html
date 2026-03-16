@@ -92,17 +92,26 @@
   <div class="stats">
     <div class="stat">
       <div class="stat-label">Celkem zápisů</div>
-      <div class="stat-value">{{ total }}</div>
+      <div style="display:flex;align-items:flex-end;justify-content:space-between;">
+        <div class="stat-value">{{ total }}</div>
+        <svg width="40" height="40" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" style="opacity:0.15;flex-shrink:0;"><path d="M17.5 4V11.5H25V28H7V4H17.5ZM19 4L25 10H19V4ZM10.375 14.5H9.625V15.25V16.75V20.5V24.25V25H10.375H14.125H17.875H21.625H22.375V24.25V20.5V16.75V15.25V14.5H21.625H10.375ZM11.125 19.75V17.5H13.375V19.75H11.125ZM14.875 19.75V17.5H17.125V19.75H14.875ZM18.625 19.75V17.5H20.875V19.75H18.625ZM18.625 21.25H20.875V23.5H18.625V21.25ZM17.125 21.25V23.5H14.875V21.25H17.125ZM13.375 21.25V23.5H11.125V21.25H13.375Z" fill="white"/></svg>
+      </div>
       <div class="stat-sub">posledních 20 zápisů</div>
     </div>
     <div class="stat stat-cyan">
       <div class="stat-label">Odesláno do Freela</div>
-      <div class="stat-value">{{ freelo_count }}</div>
+      <div style="display:flex;align-items:flex-end;justify-content:space-between;">
+        <div class="stat-value">{{ freelo_count }}</div>
+        <svg width="40" height="40" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" style="opacity:0.2;flex-shrink:0;"><path d="M11.1484 8.125L7.77344 11.875L7.11719 12.5781L6.41406 11.9219L4.53906 10.0469L3.88281 9.34375L5.24219 8.03125L5.89844 8.6875L7.07031 9.85938L9.78906 6.85938L10.3984 6.15625L11.8047 7.42188L11.1484 8.125ZM11.1484 15.625L7.77344 19.375L7.11719 20.0781L6.41406 19.4219L4.53906 17.5469L3.88281 16.8438L5.24219 15.5312L5.89844 16.1875L7.07031 17.3594L9.78906 14.3594L10.3984 13.6562L11.8047 14.9219L11.1484 15.625ZM13.1172 8.21875H28.1172V10.4688H13.1172V8.21875ZM13.1172 15.7188H28.1172V17.9688H13.1172V15.7188ZM11.6172 23.2188H28.1172V25.4688H11.6172V23.2188ZM8.61719 24.3438C8.61719 25.1875 7.91406 25.8438 7.11719 25.8438C6.27344 25.8438 5.61719 25.1875 5.61719 24.3438C5.61719 23.5469 6.27344 22.8438 7.11719 22.8438C7.91406 22.8438 8.61719 23.5469 8.61719 24.3438Z" fill="white"/></svg>
+      </div>
       <div class="stat-sub">zápisů synchronizováno</div>
     </div>
     <div class="stat stat-dark">
       <div class="stat-label">Šablony</div>
-      <div class="stat-value">3</div>
+      <div style="display:flex;align-items:flex-end;justify-content:space-between;">
+        <div class="stat-value">3</div>
+        <svg width="40" height="40" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" style="opacity:0.15;flex-shrink:0;"><path d="M19.9141 12.4375C23.1953 12.4375 25.9141 15.1094 25.9141 18.4375C25.9141 19.6562 25.4922 20.8281 24.8359 21.8125L27.7891 24.7188L28.5859 25.5156L27.0391 27.1094L23.2891 23.3594C22.3047 24.0156 21.1328 24.4375 19.9141 24.4375C16.5859 24.4375 13.9141 21.7188 13.9141 18.4375C13.9141 15.1094 16.5859 12.4375 19.9141 12.4375ZM14.668 12.3906C12.9798 13.8551 11.9141 16.0164 11.9141 18.4375C11.9141 21.8024 14.0185 24.7209 17.0107 25.8906H3.41406V12.3906H14.668ZM19.9141 14.6875C18.5547 14.6875 17.3359 15.3906 16.6328 16.5625C15.9766 17.6875 15.9766 19.1406 16.6328 20.3125C17.3359 21.4375 18.5547 22.1875 19.9141 22.1875C21.2266 22.1875 22.4453 21.4375 23.1484 20.3125C23.8047 19.1406 23.8047 17.6875 23.1484 16.5625C22.4453 15.3906 21.2266 14.6875 19.9141 14.6875ZM13.1641 10.8906H3.41406L6.41406 4.89062H13.1641V10.8906ZM24.4141 10.8906H14.6641V4.89062H21.4141L24.4141 10.8906Z" fill="white"/></svg>
+      </div>
       <div class="stat-sub">audit · operativa · obchod</div>
     </div>
   </div>
