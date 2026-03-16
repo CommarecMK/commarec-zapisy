@@ -39,6 +39,7 @@
 /* GAME MODAL */
 #game-modal { display: none; position: fixed; inset: 0; background: rgba(11,31,51,0.95); z-index: 1000; align-items: center; justify-content: center; flex-direction: column; }
 </style>
+<script src="/static/format.js"></script>
 {% endblock %}
 {% block content %}
 
@@ -377,34 +378,6 @@ function stopGame() {
   if (window._gameCleanup) window._gameCleanup();
   saveScore();
   document.getElementById('game-modal').style.display = 'none';
-}
-
-function formatZapis(text) {
-  const lines = text.split('\n');
-  let html = '';
-  let inUl = false, inTable = false;
-  function closeUl(){if(inUl){html+='</ul>';inUl=false;}}
-  function closeTable(){if(inTable){html+='</tbody></table></div>';inTable=false;}}
-  function closeAll(){closeUl();closeTable();}
-  for(let i=0;i<lines.length;i++){
-    let line=lines[i].trim();
-    if(!line){closeAll();html+='<div style="height:6px"></div>';continue;}
-    if(line.includes('|')&&line.split('|').length>=3){
-      const cells=line.split('|').map(c=>c.trim()).filter(c=>c);
-      if(cells.every(c=>c.match(/^[-:]+$/)))continue;
-      if(!inTable){closeUl();html+='<div style="overflow-x:auto;margin:6px 0;"><table style="width:100%;border-collapse:collapse;font-size:13px;"><thead><tr>';cells.forEach(c=>{html+=`<th style="text-align:left;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.07em;padding:5px 8px;background:var(--bg);border-bottom:1px solid var(--border);">${c}</th>`;});html+='</tr></thead><tbody>';inTable=true;}
-      else{html+='<tr>';cells.forEach(c=>{const p=parseInt(c);const isScore=/^\d+\s*%$/.test(c);if(isScore){const cls=p>=65?'#0A7A5A':p>=45?'#BA7517':'#C0392B';html+=`<td style="padding:6px 8px;border-bottom:1px solid var(--border);"><span style="background:${cls};color:white;font-size:11px;font-weight:700;padding:2px 7px;border-radius:20px;">${c}</span></td>`;}else{html+=`<td style="padding:6px 8px;border-bottom:1px solid var(--border);font-size:13px;">${c}</td>`;}});html+='</tr>';}
-      continue;
-    }
-    closeTable();
-    if(line===line.toUpperCase()&&line.length>3&&!line.startsWith('•')&&/^[A-ZÁČĎÉĚÍŇÓŘŠŤÚŮÝŽ\s\/\-–]+$/.test(line)){closeAll();html+=`<div style="font-size:12px;font-weight:700;color:var(--navy);text-transform:uppercase;letter-spacing:0.08em;border-bottom:2px solid var(--cyan);padding-bottom:4px;margin:14px 0 6px;">${line}</div>`;continue;}
-    if(line.endsWith(':')&&!line.startsWith('•')&&line.length<80){closeUl();html+=`<div style="font-size:12px;font-weight:700;color:var(--navy);text-transform:uppercase;letter-spacing:0.05em;margin:8px 0 3px;">${line.slice(0,-1)}</div>`;continue;}
-    if(line.startsWith('•')||line.startsWith('-')||line.startsWith('–')){const t=line.replace(/^[•\-–]\s*/,'');if(!inUl){html+='<ul style="list-style:none;padding:0;margin:0;">';inUl=true;}html+=`<li style="font-size:13px;line-height:1.7;padding:1px 0 1px 14px;position:relative;"><span style="position:absolute;left:0;color:var(--cyan);font-weight:700;">•</span>${t}</li>`;continue;}
-    if(/^\d+\.\s/.test(line)){const t=line.replace(/^\d+\.\s*/,'');if(!inUl){html+='<ul style="list-style:none;padding:0;margin:0;">';inUl=true;}html+=`<li style="font-size:13px;line-height:1.7;padding:1px 0 1px 14px;position:relative;"><span style="position:absolute;left:0;color:var(--cyan);font-weight:700;">›</span>${t}</li>`;continue;}
-    closeUl();html+=`<p style="font-size:13px;line-height:1.7;margin-bottom:4px;">${line}</p>`;
-  }
-  closeAll();
-  return html;
 }
 
 async function generovat() {
