@@ -1,114 +1,152 @@
 function formatZapis(text) {
   if (!text) return '';
 
-  const NAVY = '#173767';
-  const CYAN = '#00AFF0';
-  const MUTED = '#4A6080';
+  // === COMMAREC BRAND COLORS (guidelines 2026) ===
+  const NAVY   = '#173767';   // primary navy
+  const CYAN   = '#00AFF0';   // primary cyan
+  const MUTED  = '#4A6080';
+  const TEXT   = '#0E213E';
+  const BG_ROW = '#F6F9FC';
+
+  // Strip HTML artefacts AI sometimes generates
+  text = text.replace(/font-weight:[^;]+;color:#[0-9a-fA-F]+">/g, '');
+  text = text.replace(/<[^>]+>/g, '');
+  text = text.replace(/style="[^"]*"/g, '');
 
   function md(s) {
+    s = s.replace(/font-weight:[^;]*;?color:[^;]*/g, '').replace(/style="[^"]*"/g, '');
     return s
-      .replace(/\*\*([^*]+)\*\*/g, '<strong style="font-weight:700;color:' + NAVY + ';">$1</strong>')
-      .replace(/\*([^*]+)\*/g, '<em>$1</em>')
-      .replace(/"([^"]+)"/g, '<em style="color:' + MUTED + ';">"$1"</em>');
+      .replace(/\*\*([^*]+)\*\*/g, `<strong style="font-weight:700;color:${NAVY}">$1</strong>`)
+      .replace(/"([^"]{3,80})"/g, `<em style="color:${MUTED}">"$1"</em>`);
+  }
+
+  function scoreBadge(pct) {
+    // Brand palette from guidelines color book
+    let bg;
+    if      (pct >= 70) bg = '#34C759';   // green
+    else if (pct >= 55) bg = '#00AFF0';   // cyan (brand)
+    else if (pct >= 40) bg = '#FF8D00';   // orange
+    else                bg = '#FF383C';   // red (FF383C from guidelines)
+    return `<span style="background:${bg};color:#fff;font-size:11px;font-weight:700;`
+         + `padding:3px 11px;border-radius:20px;display:inline-block;letter-spacing:0.03em">${pct}%</span>`;
   }
 
   const lines = text.split('\n');
-  let html = '';
-  let inUl = false, inTable = false;
+  let html = '', inUl = false, inTable = false;
 
-  function closeUl() { if (inUl) { html += '</ul>'; inUl = false; } }
-  function closeTable() { if (inTable) { html += '</tbody></table></div>'; inTable = false; } }
-  function closeAll() { closeUl(); closeTable(); }
+  const closeUl    = () => { if (inUl)    { html += '</ul>'; inUl = false; } };
+  const closeTable = () => { if (inTable) { html += '</tbody></table></div>'; inTable = false; } };
+  const closeAll   = () => { closeUl(); closeTable(); };
 
   for (let i = 0; i < lines.length; i++) {
-    const raw = lines[i];
-    const line = raw.trim();
-    if (!line) { closeAll(); html += '<div style="height:5px"></div>'; continue; }
+    const line = lines[i].trim();
 
-    if (line.includes('|') && line.split('|').length >= 3) {
+    if (!line) { closeAll(); html += '<div style="height:8px"></div>'; continue; }
+
+    // Horizontal rule
+    if (/^-{3,}$/.test(line)) {
+      closeAll();
+      html += `<hr style="border:none;border-top:1px solid #dde4ed;margin:16px 0">`;
+      continue;
+    }
+
+    // === TABLE ===
+    if (line.includes('|') && line.split('|').filter(c => c.trim()).length >= 2) {
       const cells = line.split('|').map(c => c.trim()).filter(c => c);
-      if (cells.every(c => /^[-:]+$/.test(c))) continue;
+      if (cells.every(c => /^[-:]+$/.test(c))) continue; // skip separator
+
       if (!inTable) {
         closeUl();
-        html += '<div style="overflow-x:auto;margin:8px 0"><table style="width:100%;border-collapse:collapse;font-size:13px"><thead><tr>';
-        cells.forEach(c => { html += `<th style="text-align:left;font-size:10px;font-weight:700;color:${MUTED};text-transform:uppercase;letter-spacing:0.08em;padding:6px 10px;border-bottom:2px solid ${CYAN}">${md(c)}</th>`; });
-        html += '</tr></thead><tbody>';
-        inTable = true;
-      } else {
-        html += '<tr>';
+        html += `<div style="overflow-x:auto;margin:12px 0">`
+              + `<table style="width:100%;border-collapse:collapse;font-size:13px">`;
+        html += `<thead><tr>`;
         cells.forEach(c => {
-          const isScore = /^\d+\s*%$/.test(c.trim());
-          if (isScore) {
-            const pct = parseInt(c);
-            const col = pct >= 65 ? '#0A7A5A' : pct >= 45 ? '#BA7517' : '#C0392B';
-            html += `<td style="padding:6px 10px;border-bottom:1px solid #e4eaf2"><span style="background:${col};color:white;font-size:11px;font-weight:700;padding:2px 8px;border-radius:20px">${c.trim()}</span></td>`;
-          } else {
-            html += `<td style="padding:6px 10px;border-bottom:1px solid #e4eaf2;font-size:13px;vertical-align:top">${md(c)}</td>`;
-          }
+          html += `<th style="text-align:left;font-size:10px;font-weight:700;color:${MUTED};`
+                + `text-transform:uppercase;letter-spacing:0.08em;padding:9px 14px;`
+                + `border-bottom:2px solid ${CYAN};background:#f0f5fb">${md(c)}</th>`;
         });
-        html += '</tr>';
+        html += `</tr></thead><tbody>`;
+        inTable = true;
+        continue;
       }
+      html += `<tr>`;
+      cells.forEach(c => {
+        const m = c.trim().match(/^(\d+)\s*%$/);
+        if (m) {
+          html += `<td style="padding:9px 14px;border-bottom:1px solid #e8edf4;vertical-align:middle">${scoreBadge(parseInt(m[1]))}</td>`;
+        } else {
+          html += `<td style="padding:9px 14px;border-bottom:1px solid #e8edf4;font-size:13px;color:${TEXT};vertical-align:top">${md(c)}</td>`;
+        }
+      });
+      html += `</tr>`;
       continue;
     }
     closeTable();
 
-    const h1 = line.match(/^#\s+(.+)/);
-    const h2 = line.match(/^##\s+(.+)/);
-    const h3 = line.match(/^###\s+(.+)/);
-    if (h1) {
-      closeAll();
-      html += `<div style="font-family:'DrukCondensed','Impact',sans-serif;font-size:20px;font-weight:900;color:${NAVY};text-transform:uppercase;letter-spacing:0.05em;border-bottom:2px solid ${CYAN};padding-bottom:5px;margin:18px 0 8px">${h1[1]}</div>`;
-      continue;
-    }
-    if (h2) {
-      closeAll();
-      html += `<div style="font-family:'DrukCondensed','Impact',sans-serif;font-size:16px;font-weight:900;color:${NAVY};text-transform:uppercase;letter-spacing:0.06em;border-bottom:1.5px solid ${CYAN};padding-bottom:4px;margin:14px 0 6px">${h2[1]}</div>`;
-      continue;
-    }
-    if (h3) {
-      closeUl();
-      html += `<div style="font-family:'Montserrat',sans-serif;font-size:11px;font-weight:700;color:${MUTED};text-transform:uppercase;letter-spacing:0.1em;margin:10px 0 4px">${h3[1]}</div>`;
-      continue;
-    }
+    // === SECTION HEADING — ALL CAPS ===
+    const isAllCaps = line.length > 3
+      && line === line.toUpperCase()
+      && /[A-ZÁČĎÉĚÍŇÓŘŠŤÚŮÝŽ]/.test(line)
+      && !/^[•\-–*0-9]/.test(line)
+      && !line.includes('|');
 
-    const isAllCaps = line === line.toUpperCase() && line.length > 3
-      && !/[0-9*#\-•]/.test(line[0]) && /[A-ZÁČĎÉĚÍŇÓŘŠŤÚŮÝŽ]/.test(line);
     if (isAllCaps) {
       closeAll();
-      html += `<div style="font-family:'DrukCondensed','Impact',sans-serif;font-size:15px;font-weight:900;color:${NAVY};text-transform:uppercase;letter-spacing:0.08em;border-bottom:2px solid ${CYAN};padding-bottom:4px;margin:16px 0 7px">${line}</div>`;
+      // Large, readable, navy — Druk Condensed per guidelines
+      html += `<div style="`
+            + `font-family:'DrukCondensed','Impact',sans-serif;`
+            + `font-size:22px;`          // big enough to read
+            + `font-weight:900;`
+            + `color:${NAVY};`           // navy #173767
+            + `text-transform:uppercase;`
+            + `letter-spacing:0.04em;`
+            + `line-height:1.15;`
+            + `border-bottom:2.5px solid ${CYAN};`
+            + `padding-bottom:6px;`
+            + `margin:22px 0 10px`
+            + `">${line}</div>`;
       continue;
     }
 
-    if (/^\*\*[^*]+\*\*:?\s*$/.test(line)) {
-      const clean = line.replace(/\*\*/g, '').replace(/:$/, '');
-      closeUl();
-      html += `<div style="font-family:'Montserrat',sans-serif;font-size:12px;font-weight:700;color:${NAVY};text-transform:uppercase;letter-spacing:0.08em;margin:10px 0 4px">${clean}</div>`;
-      continue;
-    }
-
+    // === SUB-HEADING — ends with colon ===
     if (line.endsWith(':') && !/^[•\-–*]/.test(line) && line.length < 80 && !line.includes('|')) {
-      const clean = line.replace(/\*\*/g, '').slice(0, -1);
       closeUl();
-      html += `<div style="font-family:'Montserrat',sans-serif;font-size:12px;font-weight:700;color:${NAVY};text-transform:uppercase;letter-spacing:0.08em;margin:10px 0 4px">${clean}</div>`;
+      const clean = line.replace(/\*\*/g, '').slice(0, -1);
+      html += `<div style="`
+            + `font-family:'Montserrat',sans-serif;`
+            + `font-size:12px;`
+            + `font-weight:700;`
+            + `color:${NAVY};`
+            + `text-transform:uppercase;`
+            + `letter-spacing:0.09em;`
+            + `margin:14px 0 5px`
+            + `">${clean}</div>`;
       continue;
     }
 
+    // === BULLET ===
     if (/^[•\-–]\s/.test(line) || (line.startsWith('* ') && !line.startsWith('**'))) {
       const t = line.replace(/^[•\-–*]\s+/, '');
-      if (!inUl) { html += '<ul style="list-style:none;padding:0;margin:2px 0">'; inUl = true; }
-      html += `<li style="font-size:13px;line-height:1.7;padding:2px 0 2px 16px;position:relative;color:#1a2540"><span style="position:absolute;left:0;color:${CYAN};font-weight:700">•</span>${md(t)}</li>`;
+      if (!inUl) { html += `<ul style="list-style:none;padding:0;margin:4px 0">`; inUl = true; }
+      html += `<li style="font-size:13px;line-height:1.75;padding:3px 0 3px 20px;position:relative;color:${TEXT}">`
+            + `<span style="position:absolute;left:0;color:${CYAN};font-weight:900;font-size:15px;line-height:1.5">•</span>`
+            + `${md(t)}</li>`;
       continue;
     }
 
+    // === NUMBERED LIST ===
     if (/^\d+\.\s/.test(line)) {
-      const t = line.replace(/^\d+\.\s*/, '');
-      if (!inUl) { html += '<ul style="list-style:none;padding:0;margin:2px 0">'; inUl = true; }
-      html += `<li style="font-size:13px;line-height:1.7;padding:2px 0 2px 16px;position:relative;color:#1a2540"><span style="position:absolute;left:0;color:${CYAN};font-weight:700">›</span>${md(t)}</li>`;
+      const num = line.match(/^(\d+)\./)[1];
+      const t   = line.replace(/^\d+\.\s*/, '');
+      if (!inUl) { html += `<ul style="list-style:none;padding:0;margin:4px 0">`; inUl = true; }
+      html += `<li style="font-size:13px;line-height:1.75;padding:3px 0 3px 22px;position:relative;color:${TEXT}">`
+            + `<span style="position:absolute;left:0;color:${CYAN};font-weight:700;font-size:11px">${num}.</span>`
+            + `${md(t)}</li>`;
       continue;
     }
 
     closeUl();
-    html += `<p style="font-size:13px;line-height:1.7;margin:3px 0;color:#1a2540">${md(line)}</p>`;
+    html += `<p style="font-size:13px;line-height:1.75;margin:3px 0;color:${TEXT}">${md(line)}</p>`;
   }
   closeAll();
   return html;

@@ -421,6 +421,33 @@ def get_freelo_tasklists():
         app.logger.error(f"Freelo tasklists error: {e}")
         return jsonify({"tasklists": [], "error": str(e)}), 200
 
+
+@app.route("/api/freelo/create-tasklist", methods=["POST"])
+@login_required
+def create_freelo_tasklist():
+    name = (request.json or {}).get("name", "").strip()
+    if not name:
+        return jsonify({"error": "Chybí název"}), 400
+    if not FREELO_API_KEY:
+        return jsonify({"error": "FREELO_API_KEY není nastaven"}), 500
+    try:
+        resp = requests.post(
+            f"https://api.freelo.io/v1/project/{FREELO_PROJECT_ID}/tasklists",
+            auth=("apikey", FREELO_API_KEY),
+            headers={"Content-Type": "application/json"},
+            json={"name": name},
+            timeout=15
+        )
+        app.logger.info(f"Create tasklist status: {resp.status_code}, body: {resp.text[:200]}")
+        if resp.status_code in (200, 201):
+            data = resp.json()
+            tl = data.get("data", data)
+            if isinstance(tl, list): tl = tl[0]
+            return jsonify({"id": tl["id"], "name": tl["name"]})
+        return jsonify({"error": f"Freelo {resp.status_code}: {resp.text[:100]}"}), 400
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
 @app.route("/api/freelo/<int:zapis_id>", methods=["POST"])
 @login_required
 def odeslat_do_freela(zapis_id):
