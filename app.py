@@ -114,11 +114,14 @@ Střednědobé (1–3 měsíce):
 Dlouhodobé (3+ měsíců):
 • [krok 1]
 
-POVINNÝ BLOK NA KONCI ZÁPISU — přidej přesně takto (bez uvozovek, bez závorek):
+POVINNÝ BLOK NA KONCI ZÁPISU — přidej přesně takto:
 ---ÚKOLY PRO FREELO---
-ÚKOL: Název prvního úkolu | POPIS: Co konkrétně udělat | TERMÍN: do kdy
-ÚKOL: Název druhého úkolu | POPIS: Co konkrétně udělat | TERMÍN: do kdy
-(min. 3 úkoly, max. 8 úkolů — vždy z každé schůzky vznikají akční kroky)""",
+ÚKOL: Název úkolu | POPIS: Co konkrétně udělat | TERMÍN: do kdy
+
+PRAVIDLA PRO ÚKOLY:
+- Úkoly se týkají VÝHRADNĚ práce Commarec pro klienta: optimalizace skladu, logistiky, pickování, dopravy, WMS, ERP, datová analýza, procesní audit, implementace
+- NEZAHRNUJ interní obchodní záležitosti klienta (marketing, finance, HR) — jen to co Commarec pomáhá řešit
+- min. 3, max. 8 úkolů""",
         
         'prinosy': """
 OČEKÁVANÉ PŘÍNOSY
@@ -537,6 +540,30 @@ def freelo_debug():
             result[f"test_{ep}"] = {"error": str(e)}
     return jsonify(result)
 
+
+@app.route("/api/freelo/members/<int:project_id>", methods=["GET"])
+@login_required
+def get_freelo_members(project_id):
+    """Returns project members for assignee dropdown."""
+    if not FREELO_API_KEY or not FREELO_EMAIL:
+        return jsonify({"members": []})
+    try:
+        resp = freelo_get(f"/project/{project_id}/workers")
+        if resp.status_code != 200:
+            app.logger.warning(f"Members {project_id}: {resp.status_code} {resp.text[:100]}")
+            return jsonify({"members": []})
+        data = resp.json()
+        workers = data if isinstance(data, list) else data.get("data", [])
+        members = []
+        for w in workers:
+            if not isinstance(w, dict): continue
+            name = w.get("fullname") or w.get("name") or f"{w.get('firstname','')} {w.get('lastname','')}".strip()
+            members.append({"id": w.get("id"), "name": name, "email": w.get("email","")})
+        return jsonify({"members": members})
+    except Exception as e:
+        app.logger.error(f"Members error: {e}")
+        return jsonify({"members": []})
+
 @app.route("/api/freelo/create-tasklist", methods=["POST"])
 @login_required
 def create_freelo_tasklist():
@@ -546,9 +573,14 @@ def create_freelo_tasklist():
     if not FREELO_API_KEY or not FREELO_EMAIL:
         return jsonify({"error": "Chybí FREELO_API_KEY nebo FREELO_EMAIL"}), 500
     try:
-        project_id, err = freelo_find_project_id()
-        if err or not project_id:
-            return jsonify({"error": err or "Projekt nenalezen"}), 400
+        # Accept project_id from request body, fall back to config
+        req_project_id = (request.json or {}).get("project_id")
+        if req_project_id:
+            project_id = str(req_project_id)
+        else:
+            project_id, err = freelo_find_project_id()
+            if err or not project_id:
+                return jsonify({"error": err or "Projekt nenalezen"}), 400
         resp = freelo_post(f"/project/{project_id}/tasklists", {"name": name})
         app.logger.info(f"Create tasklist status={resp.status_code} body={resp.text[:200]}")
         if resp.status_code in (200, 201):
