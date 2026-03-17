@@ -71,8 +71,8 @@ function formatZapis(text) {
       }
       html += `<tr>`;
       cells.forEach(c => {
-        const m = c.trim().match(/^(\d+)\s*%$/);
-        if (m) {
+        const m = c.trim().match(/^(\d+)\s*%?$/);
+        if (m && parseInt(m[1]) >= 0 && parseInt(m[1]) <= 100 && c.trim().length <= 5) {
           html += `<td style="padding:9px 14px;border-bottom:1px solid #e8edf4;vertical-align:middle">${scoreBadge(parseInt(m[1]))}</td>`;
         } else {
           html += `<td style="padding:9px 14px;border-bottom:1px solid #e8edf4;font-size:13px;color:${TEXT};vertical-align:top">${md(c)}</td>`;

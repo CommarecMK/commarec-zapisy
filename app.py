@@ -370,21 +370,18 @@ def generovat():
 
     # Step 3: If still no tasks — extract directly from DOPORUČENÉ AKČNÍ KROKY section
     if not tasks:
-        # Find the action steps section in the zapis text
         akcni_match = re2.search(
             r'(DOPORUČENÉ AKČNÍ KROKY|AKČNÍ KROKY)(.*?)(?=\n[A-ZÁČĎÉĚÍŇÓŘŠŤÚŮÝŽ][A-ZÁČĎÉĚÍŇÓŘŠŤÚŮÝŽ\s]{3,}\n|$)',
             zapis_text, re2.DOTALL | re2.IGNORECASE
         )
         if akcni_match:
             akcni_block = akcni_match.group(2)
-            # Extract bullets — skip phase headers (Krátkodobé, Střednědobé, Dlouhodobé)
             phase_re = re2.compile(r'^(KRÁTKODOBÉ|STŘEDNĚDOBÉ|DLOUHODOBÉ|Krátkodobé|Střednědobé|Dlouhodobé)', re2.IGNORECASE)
             current_deadline = "dle dohody"
             for line in akcni_block.split('\n'):
                 line = line.strip()
                 if not line:
                     continue
-                # Detect phase header for deadline hint
                 if phase_re.match(line):
                     if '0' in line or '1 měs' in line.lower():
                         current_deadline = "do 1 měsíce"
@@ -393,12 +390,23 @@ def generovat():
                     else:
                         current_deadline = "dle dohody"
                     continue
-                # Extract bullet points
                 if re2.match(r'^[•\-–\*]\s+.{8,}', line):
-                    name = re2.sub(r'^[•\-–\*]\s+', '', line).strip()
-                    # Skip very long lines that are descriptions not tasks
-                    if name and len(name) < 200:
-                        tasks.append({"name": name[:200], "desc": "", "deadline": current_deadline})
+                    full = re2.sub(r'^[•\-–\*]\s+', '', line).strip()
+                    # Split into short name + description at dash, colon or bracket
+                    name_match = re2.match(r'^([^–\-:(]{10,60}?)[\s]*[–\-:(](.+)$', full)
+                    if name_match:
+                        task_name = name_match.group(1).strip().rstrip(' –-:')
+                        task_desc = name_match.group(2).strip().lstrip('–-: ')
+                    else:
+                        # Use first ~60 chars as name, rest as desc
+                        if len(full) > 70:
+                            task_name = full[:60].rsplit(' ', 1)[0]
+                            task_desc = full[len(task_name):].strip(' –-:')
+                        else:
+                            task_name = full
+                            task_desc = ""
+                    if task_name:
+                        tasks.append({"name": task_name[:200], "desc": task_desc[:500], "deadline": current_deadline})
                         if len(tasks) >= 8:
                             break
 
@@ -474,7 +482,7 @@ def freelo_post(path, payload):
 
 def freelo_find_project_id():
     """Find correct project ID - first try config ID, then list all projects."""
-    resp = freelo_get(f"/projects/{FREELO_PROJECT_ID}/tasklists")
+    resp = freelo_get(f"/project/{FREELO_PROJECT_ID}/tasklists")
     if resp.status_code == 200:
         return FREELO_PROJECT_ID, None
 
@@ -540,7 +548,7 @@ def get_freelo_tasklists():
 
         # If no tasklists in embedded data, call dedicated endpoint
         if not tasklists:
-            resp2 = freelo_get(f"/projects/{project['id']}/tasklists")
+            resp2 = freelo_get(f"/project/{project['id']}/tasklists")
             if resp2.status_code == 200:
                 data = resp2.json()
                 items = data.get("data", data) if isinstance(data, dict) else data
@@ -658,7 +666,7 @@ def create_freelo_tasklist():
             project_id, err = freelo_find_project_id()
             if err or not project_id:
                 return jsonify({"error": err or "Projekt nenalezen"}), 400
-        resp = freelo_post(f"/projects/{project_id}/tasklists", {"name": name})
+        resp = freelo_post(f"/project/{project_id}/tasklists", {"name": name})
         app.logger.info(f"Create tasklist status={resp.status_code} body={resp.text[:200]}")
         if resp.status_code in (200, 201):
             data = resp.json()
@@ -669,6 +677,20 @@ def create_freelo_tasklist():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+
+
+@app.route("/api/freelo/test-desc/<int:project_id>/<int:tasklist_id>", methods=["GET"])
+@login_required
+def test_desc(project_id, tasklist_id):
+    """Test which field name Freelo uses for task description"""
+    results = {}
+    # Try different field names
+    fields = ["description", "note", "content", "body", "text", "task_description"]
+    for field in fields:
+        payload = {"name": f"[TEST DESC] field={field}", field: f"Toto je testovací popis přes pole '{field}'"}
+        resp = freelo_post(f"/project/{project_id}/tasklist/{tasklist_id}/tasks", payload)
+        results[field] = {"status": resp.status_code, "body": resp.text[:150]}
+    return jsonify(results)
 
 @app.route("/api/freelo/test-create-task/<int:project_id>/<int:tasklist_id>", methods=["GET"])
 @login_required
