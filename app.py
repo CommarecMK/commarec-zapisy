@@ -481,29 +481,34 @@ def get_freelo_tasklists():
 @app.route("/api/freelo/debug", methods=["GET"])
 @login_required
 def freelo_debug():
-    """Debug endpoint - shows raw Freelo API response"""
+    """Debug endpoint - lists all projects to find correct project ID"""
     result = {
         "api_key_set": bool(FREELO_API_KEY),
         "api_key_prefix": FREELO_API_KEY[:8] + "..." if FREELO_API_KEY else None,
-        "project_id": FREELO_PROJECT_ID,
+        "project_id_in_config": FREELO_PROJECT_ID,
     }
     if not FREELO_API_KEY:
         return jsonify(result)
-    try:
-        resp = requests.get(
-            f"https://api.freelo.io/v1/project/{FREELO_PROJECT_ID}/tasklists",
-            auth=("apikey", FREELO_API_KEY),
-            headers={"Content-Type": "application/json"},
-            timeout=15
-        )
-        result["status_code"] = resp.status_code
-        result["raw_response"] = resp.text[:500]
+    # Try several known Freelo endpoints for listing projects
+    endpoints_to_try = [
+        "/v1/projects",
+        "/v1/all-projects",
+        "/v1/user/projects",
+    ]
+    for ep in endpoints_to_try:
         try:
-            result["parsed"] = resp.json()
-        except:
-            result["parsed"] = "not valid JSON"
-    except Exception as e:
-        result["exception"] = str(e)
+            resp = requests.get(
+                f"https://api.freelo.io{ep}",
+                auth=("apikey", FREELO_API_KEY),
+                headers={"Content-Type": "application/json"},
+                timeout=15
+            )
+            result[f"endpoint_{ep}"] = {
+                "status": resp.status_code,
+                "body": resp.text[:800]
+            }
+        except Exception as e:
+            result[f"endpoint_{ep}"] = {"error": str(e)}
     return jsonify(result)
 
 @app.route("/api/freelo/create-tasklist", methods=["POST"])
