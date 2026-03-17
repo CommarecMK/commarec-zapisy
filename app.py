@@ -54,14 +54,19 @@ class Zapis(db.Model):
 def build_system_prompt(template, client_info, blocks):
     """Builds dynamic system prompt based on selected blocks and client info."""
     
-    client_section = ""
-    if any([client_info.get('client_name'), client_info.get('meeting_date')]):
-        client_section = f"""
-Na začátku zápisu uveď hlavičku:
-Zápis ze schůzky: {client_info.get('meeting_date', 'neuvedeno')}
-Zastoupení Commarec: {client_info.get('commarec_rep', 'neuvedeno')}
-Zastoupení klienta: {client_info.get('client_contact', 'neuvedeno')} ({client_info.get('client_name', 'neuvedeno')})
-Místo: {client_info.get('meeting_place', 'neuvedeno')}
+    client_name = client_info.get('client_name', '').strip()
+    client_contact = client_info.get('client_contact', '').strip()
+    commarec_rep = client_info.get('commarec_rep', '').strip()
+    meeting_date = client_info.get('meeting_date', '').strip()
+    meeting_place = client_info.get('meeting_place', '').strip()
+
+    client_section = f"""
+ZAČNI ZÁPIS PŘESNĚ TÍMTO BLOKEM (nic před tím):
+ZÁPIS ZE SCHŮZKY: {meeting_date}
+Zastoupení Commarec: {commarec_rep}
+Zastoupení klienta: {client_contact} ({client_name})
+Místo: {meeting_place}
+---
 """
 
     block_map = {
@@ -100,16 +105,19 @@ KLÍČOVÉ PROBLÉMY A RIZIKA
         
         'kroky': """
 DOPORUČENÉ AKČNÍ KROKY
-Rozděl do tří fází:
-Krátkodobé (0–1 měsíc): konkrétní, okamžitě realizovatelné kroky
-Střednědobé (1–3 měsíce): systémové změny, implementace
-Dlouhodobé (3+ měsíců): strategické kroky, digitalizace, automatizace
+Krátkodobé (0–1 měsíc):
+• [konkrétní krok 1]
+• [konkrétní krok 2]
+Střednědobé (1–3 měsíce):
+• [krok 1]
+Dlouhodobé (3+ měsíců):
+• [krok 1]
 
-DŮLEŽITÉ: Za touto sekcí přidej oddělený blok:
+POVINNÝ BLOK NA KONCI ZÁPISU — přidej přesně takto (bez uvozovek, bez závorek):
 ---ÚKOLY PRO FREELO---
-(každý konkrétní úkol na nový řádek ve formátu:)
-ÚKOL: [název úkolu] | POPIS: [stručný popis co udělat] | TERMÍN: [termín nebo "dle dohody"]
-(vypiš pouze krátkodobé a střednědobé úkoly, max 8 úkolů)""",
+ÚKOL: Název prvního úkolu | POPIS: Co konkrétně udělat | TERMÍN: do kdy
+ÚKOL: Název druhého úkolu | POPIS: Co konkrétně udělat | TERMÍN: do kdy
+(min. 3 úkoly, max. 8 úkolů — vždy z každé schůzky vznikají akční kroky)""",
         
         'prinosy': """
 OČEKÁVANÉ PŘÍNOSY
@@ -313,9 +321,14 @@ def generovat():
     except Exception as e:
         return jsonify({"error": f"Chyba API: {str(e)}"}), 500
 
-    # Robust split — handle variations of the separator
     import re as re2
-    ukoly_markers = ["---ÚKOLY PRO FREELO---", "--- ÚKOLY PRO FREELO ---", "ÚKOLY PRO FREELO:", "ÚKOLY PRO FREELO"]
+
+    # Split off task section - try many marker variants
+    ukoly_markers = [
+        "---ÚKOLY PRO FREELO---", "--- ÚKOLY PRO FREELO ---",
+        "---UKOLY PRO FREELO---", "ÚKOLY PRO FREELO:", "ÚKOLY PRO FREELO",
+        "UKOLY PRO FREELO", "---ÚKOLY---", "ÚKOLY:"
+    ]
     parts = None
     for marker in ukoly_markers:
         if marker in full_text:
@@ -326,26 +339,47 @@ def generovat():
 
     zapis_text = parts[0].strip()
     tasks = []
+
     if len(parts) > 1:
-        for line in parts[1].strip().split("\n"):
+        task_block = parts[1].strip()
+        for line in task_block.split("\n"):
             line = line.strip()
-            if not line:
+            if not line or len(line) < 5:
                 continue
-            # Support both "ÚKOL: ... | POPIS: ... | TERMÍN: ..." and bullet/numbered lines
-            if "ÚKOL:" in line or "Úkol:" in line:
-                ukol_m = re2.search(r"[ÚU]kol:\s*([^|]+)", line, re2.IGNORECASE)
-                popis_m = re2.search(r"[Pp]opis:\s*([^|]+)", line)
-                termin_m = re2.search(r"[Tt]erm[ií]n:\s*(.+)", line)
-                name = ukol_m.group(1).strip() if ukol_m else line
+            # Skip section headers in task block
+            if line.upper() == line and len(line) < 40 and not any(c in line for c in [":", "|"]):
+                continue
+            if "ÚKOL:" in line or "Úkol:" in line or "ukol:" in line.lower():
+                ukol_m = re2.search(r"[ÚúUu]kol:\s*([^|\n]+)", line, re2.IGNORECASE)
+                popis_m = re2.search(r"[Pp]opis:\s*([^|\n]+)", line)
+                termin_m = re2.search(r"[Tt]erm[ií]n:\s*([^|\n]+)", line)
+                name = ukol_m.group(1).strip() if ukol_m else line[:100]
                 tasks.append({
                     "name": name[:200],
                     "desc": popis_m.group(1).strip() if popis_m else "",
                     "deadline": termin_m.group(1).strip() if termin_m else "dle dohody"
                 })
-            elif line.startswith(("- ", "• ", "– ")) and len(line) > 5:
-                # Fallback: treat plain bullet lines as tasks
-                name = line.lstrip("-•– ").strip()
+            elif re2.match(r"^[•\-–\*]\s+.{5,}", line):
+                name = re2.sub(r"^[•\-–\*]\s+", "", line).strip()
                 tasks.append({"name": name[:200], "desc": "", "deadline": "dle dohody"})
+            elif re2.match(r"^\d+\.\s+.{5,}", line):
+                name = re2.sub(r"^\d+\.\s+", "", line).strip()
+                tasks.append({"name": name[:200], "desc": "", "deadline": "dle dohody"})
+
+    # If still no tasks - extract from akční kroky section in the zapis
+    if not tasks:
+        akcni_match = re2.search(r"(DOPORUČENÉ AKČNÍ KROKY|AKČNÍ KROKY|KRÁTKODBÉ|KRÁTKODOBÉ)[^\n]*\n(.*?)(?=\n[A-ZÁČĎÉĚÍŇÓŘŠŤÚŮÝŽ]{4,}|$)", 
+                                  zapis_text, re2.DOTALL | re2.IGNORECASE)
+        if akcni_match:
+            akcni_block = akcni_match.group(2)
+            for line in akcni_block.split("\n"):
+                line = line.strip()
+                if re2.match(r"^[•\-–0-9]", line) and len(line) > 10:
+                    name = re2.sub(r"^[•\-–\*0-9\.]+\s*", "", line).strip()
+                    if name:
+                        tasks.append({"name": name[:200], "desc": "", "deadline": "dle dohody"})
+                        if len(tasks) >= 6:
+                            break
 
     first_line = zapis_text.split("\n")[0].replace("ZÁPIS ZE SCHŮZKY –", "").replace("ZÁPIS ZE SCHŮZKY -", "").strip()
     title = first_line[:100] if first_line else "Zápis ze schůzky"
@@ -366,18 +400,26 @@ def generovat():
 @app.route("/api/freelo/tasklists", methods=["GET"])
 @login_required
 def get_freelo_tasklists():
-    headers = {"Content-Type": "application/json"}
-    auth = ("apikey", FREELO_API_KEY)
+    if not FREELO_API_KEY:
+        return jsonify({"tasklists": [], "error": "FREELO_API_KEY není nastaven"}), 200
     try:
         resp = requests.get(
             f"https://api.freelo.io/v1/project/{FREELO_PROJECT_ID}/tasklists",
-            auth=auth, headers=headers, timeout=10
+            auth=("apikey", FREELO_API_KEY),
+            headers={"Content-Type": "application/json"},
+            timeout=15
         )
+        app.logger.info(f"Freelo tasklists status: {resp.status_code}, body: {resp.text[:200]}")
+        if resp.status_code != 200:
+            return jsonify({"tasklists": [], "error": f"Freelo API error {resp.status_code}: {resp.text[:100]}"}), 200
         data = resp.json()
-        tasklists = [{"id": tl["id"], "name": tl["name"]} for tl in data.get("data", [])]
+        # Freelo returns {"data": [...]} or just [...]
+        items = data.get("data", data) if isinstance(data, dict) else data
+        tasklists = [{"id": tl["id"], "name": tl["name"]} for tl in items if isinstance(tl, dict) and "id" in tl]
         return jsonify({"tasklists": tasklists})
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        app.logger.error(f"Freelo tasklists error: {e}")
+        return jsonify({"tasklists": [], "error": str(e)}), 200
 
 @app.route("/api/freelo/<int:zapis_id>", methods=["POST"])
 @login_required
