@@ -449,6 +449,35 @@ def freelo_find_project_id():
         return pid, None
     return None, "Žádné projekty nenalezeny"
 
+@app.route("/api/freelo/projects", methods=["GET"])
+@login_required
+def get_freelo_projects():
+    """Returns all Freelo projects with their embedded tasklists."""
+    if not FREELO_API_KEY or not FREELO_EMAIL:
+        return jsonify({"projects": [], "error": "Chybí FREELO_API_KEY nebo FREELO_EMAIL"})
+    try:
+        resp = freelo_get("/projects")
+        if resp.status_code != 200:
+            return jsonify({"projects": [], "error": f"Freelo {resp.status_code}: {resp.text[:100]}"})
+        raw = resp.json()
+        projects = raw if isinstance(raw, list) else raw.get("data", [])
+        result = [
+            {
+                "id": p["id"],
+                "name": p.get("name", f"Projekt {p['id']}"),
+                "tasklists": [
+                    {"id": tl["id"], "name": tl.get("name", f"List {tl['id']}")}
+                    for tl in p.get("tasklists", [])
+                ]
+            }
+            for p in projects if isinstance(p, dict) and "id" in p
+        ]
+        app.logger.info(f"Freelo projects: {len(result)}")
+        return jsonify({"projects": result})
+    except Exception as e:
+        app.logger.error(f"Freelo projects error: {e}")
+        return jsonify({"projects": [], "error": str(e)})
+
 @app.route("/api/freelo/tasklists", methods=["GET"])
 @login_required
 def get_freelo_tasklists():

@@ -55,16 +55,24 @@
       {% endif %}
     </div>
 
-    <div style="display:flex;align-items:flex-end;gap:12px;margin-bottom:1.25rem;flex-wrap:wrap;">
-      <div style="flex:1;min-width:200px;">
-        <label style="font-size:10px;font-weight:700;color:#4A6080;text-transform:uppercase;letter-spacing:0.1em;display:block;margin-bottom:5px;">To-Do list ve Freelo</label>
-        <select id="tasklist-select" style="width:100%;padding:9px 12px;border:1px solid var(--border);border-radius:5px;font-family:'Montserrat',sans-serif;font-size:13px;color:#173767;background:white;cursor:pointer;">
-          <option value="">⏳ Načítám listy...</option>
+    <div style="display:flex;align-items:flex-end;gap:10px;margin-bottom:1.25rem;flex-wrap:wrap;">
+      <div style="flex:1;min-width:160px;">
+        <label style="font-size:10px;font-weight:700;color:#4A6080;text-transform:uppercase;letter-spacing:0.1em;display:block;margin-bottom:5px;">Projekt</label>
+        <select id="project-select" onchange="onProjectChange()" style="width:100%;padding:9px 12px;border:1.5px solid var(--border);border-radius:5px;font-family:'Montserrat',sans-serif;font-size:13px;color:#173767;background:white;cursor:pointer;">
+          <option value="">⏳ Načítám...</option>
         </select>
       </div>
-      <div style="display:flex;gap:6px;">
-        <button onclick="selectAllTasks(true)" style="font-size:10px;font-weight:700;color:#00AFF0;background:none;border:1px solid #00AFF0;border-radius:4px;padding:6px 12px;cursor:pointer;text-transform:uppercase;letter-spacing:0.06em;">Vše</button>
-        <button onclick="selectAllTasks(false)" style="font-size:10px;font-weight:700;color:#4A6080;background:none;border:1px solid var(--border);border-radius:4px;padding:6px 12px;cursor:pointer;text-transform:uppercase;letter-spacing:0.06em;">Nic</button>
+      <div style="flex:1;min-width:160px;">
+        <label style="font-size:10px;font-weight:700;color:#4A6080;text-transform:uppercase;letter-spacing:0.1em;display:block;margin-bottom:5px;">To-Do list ve Freelo</label>
+        <select id="tasklist-select" style="width:100%;padding:9px 12px;border:1.5px solid var(--border);border-radius:5px;font-family:'Montserrat',sans-serif;font-size:13px;color:#173767;background:white;cursor:pointer;">
+          <option value="">— vyberte projekt —</option>
+        </select>
+      </div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;">
+        <button onclick="openNewListModal()" style="font-size:11px;font-weight:700;color:#173767;background:white;border:1.5px solid var(--border);border-radius:5px;padding:8px 14px;cursor:pointer;white-space:nowrap;">+ Nový list</button>
+        <button onclick="selectAllTasks(true)"  style="font-size:10px;font-weight:700;color:#00AFF0;background:none;border:1.5px solid #00AFF0;border-radius:4px;padding:7px 12px;cursor:pointer;text-transform:uppercase;letter-spacing:0.06em;">Vše</button>
+        <button onclick="selectAllTasks(false)" style="font-size:10px;font-weight:700;color:#4A6080;background:none;border:1.5px solid var(--border);border-radius:4px;padding:7px 12px;cursor:pointer;text-transform:uppercase;letter-spacing:0.06em;">Nic</button>
+        <button onclick="addTaskRow()" style="font-size:10px;font-weight:700;color:#0A7A5A;background:none;border:1.5px solid #0A7A5A;border-radius:4px;padding:7px 12px;cursor:pointer;text-transform:uppercase;letter-spacing:0.06em;">+ Přidat úkol</button>
       </div>
     </div>
 
@@ -109,7 +117,7 @@
 document.addEventListener('DOMContentLoaded', () => {
   const rawText = document.getElementById('zapis-formatted').textContent;
   document.getElementById('zapis-formatted').innerHTML = formatZapis(rawText);
-  loadTasklists();
+  loadProjects();
   updateTaskCount();
   document.querySelectorAll('.task-checkbox').forEach(cb => cb.addEventListener('change', updateTaskCount));
 });
@@ -134,19 +142,38 @@ function downloadPDF() {
     .catch(()=>{ btn.disabled=false; btn.textContent='⬇ Stáhnout PDF'; });
 }
 
-async function loadTasklists() {
+// ---- Freelo: projects + tasklists ----
+let freeloProjects = [];
+
+async function loadProjects() {
   try {
-    const resp = await fetch('/api/freelo/tasklists');
+    const resp = await fetch('/api/freelo/projects');
     const data = await resp.json();
-    const sel = document.getElementById('tasklist-select');
-    if (data.tasklists && data.tasklists.length > 0) {
-      sel.innerHTML = data.tasklists.map(tl => `<option value="${tl.id}">${tl.name}</option>`).join('');
+    freeloProjects = data.projects || [];
+    const sel = document.getElementById('project-select');
+    if (freeloProjects.length === 0) {
+      sel.innerHTML = '<option value="">Žádné projekty</option>';
     } else {
-      sel.innerHTML = '<option value="">Žádné listy nenalezeny</option>';
+      sel.innerHTML = freeloProjects.map(p =>
+        `<option value="${p.id}">${p.name}</option>`
+      ).join('');
+      onProjectChange(); // auto-load tasklists for first project
     }
   } catch(e) {
-    document.getElementById('tasklist-select').innerHTML = '<option value="">Chyba načítání</option>';
+    document.getElementById('project-select').innerHTML = '<option value="">Chyba načítání</option>';
   }
+  updateTaskCount();
+}
+
+function onProjectChange() {
+  const pid = document.getElementById('project-select').value;
+  const project = freeloProjects.find(p => String(p.id) === String(pid));
+  const sel = document.getElementById('tasklist-select');
+  if (!project) { sel.innerHTML = '<option value="">— vyberte projekt —</option>'; return; }
+  const tls = project.tasklists || [];
+  sel.innerHTML = tls.length
+    ? tls.map(tl => `<option value="${tl.id}">${tl.name}</option>`).join('')
+    : '<option value="">Žádné listy — vytvořte nový</option>';
 }
 
 function selectAllTasks(checked) {
