@@ -114,14 +114,17 @@ Střednědobé (1–3 měsíce):
 Dlouhodobé (3+ měsíců):
 • [krok 1]
 
-POVINNÝ BLOK NA KONCI ZÁPISU — přidej přesně takto:
+POVINNÉ: Na úplný konec zápisu přidej tento blok PŘESNĚ v tomto formátu (každý úkol na nový řádek):
 ---ÚKOLY PRO FREELO---
-ÚKOL: Název úkolu | POPIS: Co konkrétně udělat | TERMÍN: do kdy
+ÚKOL: [název] | POPIS: [co udělat] | TERMÍN: [termín]
+ÚKOL: [název] | POPIS: [co udělat] | TERMÍN: [termín]
+ÚKOL: [název] | POPIS: [co udělat] | TERMÍN: [termín]
 
 PRAVIDLA PRO ÚKOLY:
-- Úkoly se týkají VÝHRADNĚ práce Commarec pro klienta: optimalizace skladu, logistiky, pickování, dopravy, WMS, ERP, datová analýza, procesní audit, implementace
-- NEZAHRNUJ interní obchodní záležitosti klienta (marketing, finance, HR) — jen to co Commarec pomáhá řešit
-- min. 3, max. 8 úkolů""",
+- Vycházej z Krátkodobých a Střednědobých kroků výše
+- Týkají se VÝHRADNĚ práce Commarec: optimalizace skladu/logistiky/pickování/WMS/ERP/datová analýza/procesní audit
+- min. 3, max. 8 úkolů
+- NEZAPOMEŇ tento blok přidat — je povinný""",
         
         'prinosy': """
 OČEKÁVANÉ PŘÍNOSY
@@ -365,26 +368,60 @@ def generovat():
                 if name:
                     tasks.append({"name": name[:200], "desc": "", "deadline": "dle dohody"})
 
-    # Step 3: If still no tasks — dedicated AI extraction call
+    # Step 3: If still no tasks — extract directly from DOPORUČENÉ AKČNÍ KROKY section
+    if not tasks:
+        # Find the action steps section in the zapis text
+        akcni_match = re2.search(
+            r'(DOPORUČENÉ AKČNÍ KROKY|AKČNÍ KROKY)(.*?)(?=\n[A-ZÁČĎÉĚÍŇÓŘŠŤÚŮÝŽ][A-ZÁČĎÉĚÍŇÓŘŠŤÚŮÝŽ\s]{3,}\n|$)',
+            zapis_text, re2.DOTALL | re2.IGNORECASE
+        )
+        if akcni_match:
+            akcni_block = akcni_match.group(2)
+            # Extract bullets — skip phase headers (Krátkodobé, Střednědobé, Dlouhodobé)
+            phase_re = re2.compile(r'^(KRÁTKODOBÉ|STŘEDNĚDOBÉ|DLOUHODOBÉ|Krátkodobé|Střednědobé|Dlouhodobé)', re2.IGNORECASE)
+            current_deadline = "dle dohody"
+            for line in akcni_block.split('\n'):
+                line = line.strip()
+                if not line:
+                    continue
+                # Detect phase header for deadline hint
+                if phase_re.match(line):
+                    if '0' in line or '1 měs' in line.lower():
+                        current_deadline = "do 1 měsíce"
+                    elif '3' in line:
+                        current_deadline = "do 3 měsíců"
+                    else:
+                        current_deadline = "dle dohody"
+                    continue
+                # Extract bullet points
+                if re2.match(r'^[•\-–\*]\s+.{8,}', line):
+                    name = re2.sub(r'^[•\-–\*]\s+', '', line).strip()
+                    # Skip very long lines that are descriptions not tasks
+                    if name and len(name) < 200:
+                        tasks.append({"name": name[:200], "desc": "", "deadline": current_deadline})
+                        if len(tasks) >= 8:
+                            break
+
+    # Step 4: If still nothing — dedicated AI JSON extraction
     if not tasks:
         try:
-            task_prompt = f"""Z následujícího zápisu schůzky vytáhni VŠECHNY konkrétní akční kroky a úkoly.
-Odpověz POUZE ve formátu JSON pole, žádný jiný text:
+            task_prompt = f"""Z tohoto zápisu vytáhni konkrétní akční kroky pro tým Commarec.
+Zaměř se na: optimalizaci skladu, logistiku, WMS/ERP implementaci, procesní audit, datovou analýzu.
+Odpověz POUZE jako JSON pole, bez jakéhokoli dalšího textu:
 [
-  {{"name": "Název úkolu", "desc": "Stručný popis", "deadline": "termín nebo dle dohody"}},
+  {{"name": "Název úkolu", "desc": "Stručný popis", "deadline": "do 1 měsíce"}},
   ...
 ]
-Vrať min. 3 a max. 8 úkolů. Pokud nejsou explicitní, odvoď je z kontextu.
+Min. 3, max. 8 úkolů.
 
 ZÁPIS:
-{zapis_text[:6000]}"""
+{zapis_text[:5000]}"""
             task_msg = client.messages.create(
                 model="claude-sonnet-4-5",
-                max_tokens=1000,
+                max_tokens=800,
                 messages=[{"role": "user", "content": task_prompt}]
             )
             raw_json = task_msg.content[0].text.strip()
-            # Strip markdown code fences if present
             raw_json = re2.sub(r"^```[\w]*\n?", "", raw_json)
             raw_json = re2.sub(r"\n?```$", "", raw_json).strip()
             parsed = json.loads(raw_json)
@@ -437,7 +474,7 @@ def freelo_post(path, payload):
 
 def freelo_find_project_id():
     """Find correct project ID - first try config ID, then list all projects."""
-    resp = freelo_get(f"/project/{FREELO_PROJECT_ID}/tasklists")
+    resp = freelo_get(f"/projects/{FREELO_PROJECT_ID}/tasklists")
     if resp.status_code == 200:
         return FREELO_PROJECT_ID, None
 
@@ -503,7 +540,7 @@ def get_freelo_tasklists():
 
         # If no tasklists in embedded data, call dedicated endpoint
         if not tasklists:
-            resp2 = freelo_get(f"/project/{project['id']}/tasklists")
+            resp2 = freelo_get(f"/projects/{project['id']}/tasklists")
             if resp2.status_code == 200:
                 data = resp2.json()
                 items = data.get("data", data) if isinstance(data, dict) else data
@@ -535,7 +572,7 @@ def debug_tasklist(tasklist_id):
     return jsonify({
         "tasklist_id": tasklist_id,
         "project_id_found": project_id_found,
-        "correct_create_endpoint": f"POST /project/{project_id_found}/tasklist/{tasklist_id}/task",
+        "correct_create_endpoint": f"POST /projects/{project_id_found}/tasklists/{tasklist_id}/tasks",
         "GET_tasklist_status": resp2.status_code,
         "GET_tasklist_body": resp2.text[:300],
     })
@@ -571,42 +608,47 @@ def get_freelo_members(project_id):
     if not FREELO_API_KEY or not FREELO_EMAIL:
         return jsonify({"members": []})
     try:
-        # Try multiple endpoint variants
         members = []
-        for path in [f"/project/{project_id}/workers", f"/project/{project_id}/users"]:
+        # Correct plural endpoint per official PHP SDK
+        for path in [f"/projects/{project_id}/workers",
+                     f"/projects/{project_id}/users",
+                     f"/project/{project_id}/workers"]:
             resp = freelo_get(path)
-            app.logger.info(f"Members {path}: {resp.status_code} {resp.text[:200]}")
+            app.logger.info(f"Members {path}: {resp.status_code} {resp.text[:300]}")
             if resp.status_code == 200:
                 data = resp.json()
                 workers = data if isinstance(data, list) else data.get("data", [])
                 for w in workers:
                     if not isinstance(w, dict): continue
-                    # Freelo returns user object with various name fields
-                    fullname = (w.get("fullname") or
-                                w.get("name") or
+                    fullname = (w.get("fullname") or w.get("name") or
                                 f"{w.get('firstname','')} {w.get('lastname','')}".strip() or
                                 w.get("username",""))
                     if fullname:
                         members.append({"id": w.get("id"), "name": fullname, "email": w.get("email","")})
                 if members:
                     break
-        # Fallback: use projects data which has workers embedded
+
+        # Fallback: get current user from /users/me
         if not members:
-            resp2 = freelo_get("/projects")
-            if resp2.status_code == 200:
-                projects = resp2.json()
-                project = next((p for p in projects if p.get("id") == project_id), None)
-                if project:
-                    for w in project.get("workers", project.get("users", [])):
-                        if not isinstance(w, dict): continue
-                        fullname = w.get("fullname") or w.get("name") or f"{w.get('firstname','')} {w.get('lastname','')}".strip()
-                        if fullname:
-                            members.append({"id": w.get("id"), "name": fullname, "email": w.get("email","")})
+            me = freelo_get("/users/me")
+            app.logger.info(f"Users/me: {me.status_code} {me.text[:200]}")
+            if me.status_code == 200:
+                u = me.json()
+                if isinstance(u, dict):
+                    fullname = u.get("fullname") or u.get("name") or FREELO_EMAIL
+                    members.append({"id": u.get("id"), "name": fullname, "email": u.get("email", FREELO_EMAIL)})
+
+        # Always ensure current user is in the list
+        if FREELO_EMAIL and not any(m.get("email") == FREELO_EMAIL for m in members):
+            members.insert(0, {"id": None, "name": FREELO_EMAIL.split("@")[0].replace(".", " ").title(), "email": FREELO_EMAIL})
+
         app.logger.info(f"Members found: {len(members)}")
         return jsonify({"members": members})
     except Exception as e:
         app.logger.error(f"Members error: {e}")
-        return jsonify({"members": []})
+        # Return at least the current user
+        return jsonify({"members": [{"id": None, "name": FREELO_EMAIL.split("@")[0].replace(".", " ").title(), "email": FREELO_EMAIL}]})
+
 
 @app.route("/api/freelo/create-tasklist", methods=["POST"])
 @login_required
@@ -625,7 +667,7 @@ def create_freelo_tasklist():
             project_id, err = freelo_find_project_id()
             if err or not project_id:
                 return jsonify({"error": err or "Projekt nenalezen"}), 400
-        resp = freelo_post(f"/project/{project_id}/tasklists", {"name": name})
+        resp = freelo_post(f"/projects/{project_id}/tasklists", {"name": name})
         app.logger.info(f"Create tasklist status={resp.status_code} body={resp.text[:200]}")
         if resp.status_code in (200, 201):
             data = resp.json()
@@ -693,9 +735,10 @@ def odeslat_do_freela(zapis_id):
                 payload["due_date"] = f"{parts2[2]}-{parts2[1].zfill(2)}-{parts2[0].zfill(2)}"
 
         try:
-            # Correct Freelo endpoint: /projects/{pid}/tasklists/{tlid}/tasks
+            # Correct Freelo endpoint per official PHP SDK:
+            # POST /projects/{projectId}/tasklists/{tasklistId}/tasks
             resp = freelo_post(
-                f"/project/{project_id_for_tasks}/tasklist/{tasklist_id}/task",
+                f"/projects/{project_id_for_tasks}/tasklists/{tasklist_id}/tasks",
                 payload
             )
             app.logger.info(f"Task '{name}': status={resp.status_code} body={resp.text[:200]}")

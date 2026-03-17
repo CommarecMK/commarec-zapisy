@@ -294,9 +294,13 @@ function addTaskRow() {
   const row=document.createElement('div');
   row.className='task-row freelo-task-row'; row.dataset.idx=idx;
   row.innerHTML=`
-    <div style="padding-top:4px;"><input type="checkbox" class="task-checkbox" data-idx="${idx}" checked style="width:16px;height:16px;accent-color:#00AFF0;cursor:pointer;margin:0;"></div>
-    <input type="text" class="task-name-input fl-in" placeholder="Název úkolu…" style="font-size:13px;font-weight:600;margin-bottom:4px;">
-    <textarea class="task-desc-text fl-in" rows="2" placeholder="Popis úkolu…" style="font-size:11px;color:#4A6080;resize:vertical;margin-top:2px;padding:5px 8px;line-height:1.5;"></textarea>
+    <div style="padding-top:4px;">
+      <input type="checkbox" class="task-checkbox" data-idx="${idx}" checked style="width:16px;height:16px;accent-color:#00AFF0;cursor:pointer;margin:0;">
+    </div>
+    <div>
+      <input type="text" class="task-name-input fl-in" placeholder="Název úkolu…" style="font-size:13px;font-weight:600;margin-bottom:4px;">
+      <textarea class="task-desc-text fl-in" rows="2" placeholder="Popis úkolu…" style="font-size:11px;color:#4A6080;resize:vertical;margin-top:2px;padding:5px 8px;line-height:1.5;width:100%;"></textarea>
+    </div>
     <div class="asgn-wrap">
       <input type="text" class="task-assignee fl-in" placeholder="Vybrat…" autocomplete="off" onfocus="openAD(this)" oninput="filterAD(this)" style="cursor:pointer;">
       <div class="asgn-dd"></div>
