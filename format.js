@@ -55,8 +55,18 @@ function formatZapis(text) {
           const isScore = /^\d+\s*%$/.test(c.trim());
           if (isScore) {
             const pct = parseInt(c);
-            const col = pct >= 65 ? '#0A7A5A' : pct >= 45 ? '#BA7517' : '#C0392B';
-            html += `<td style="padding:8px 12px;border-bottom:1px solid #e4eaf2"><span style="background:${col};color:white;font-size:11px;font-weight:700;padding:2px 8px;border-radius:20px">${c.trim()}</span></td>`;
+            // Brand colors from guidelines color book
+            let col, textCol;
+            if (pct >= 70) {
+              col = '#34C759'; textCol = '#fff';      // green - good
+            } else if (pct >= 55) {
+              col = '#00AFF0'; textCol = '#fff';      // cyan - ok (brand primary)
+            } else if (pct >= 40) {
+              col = '#FF8D00'; textCol = '#fff';      // orange - warning (FF8D28 from guidelines)
+            } else {
+              col = '#FF383C'; textCol = '#fff';      // red - critical (FF383C from guidelines)
+            }
+            html += `<td style="padding:8px 12px;border-bottom:1px solid #e4eaf2"><span style="background:${col};color:${textCol};font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px;display:inline-block">${c.trim()}</span></td>`;
           } else {
             html += `<td style="padding:8px 12px;border-bottom:1px solid #e4eaf2;font-size:13px;vertical-align:top">${md(c)}</td>`;
           }

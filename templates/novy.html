@@ -29,6 +29,11 @@
 .block-dot::after { content: '✓'; font-size: 10px; color: white; display: none; font-weight: 700; }
 .block-check.checked .block-dot::after { display: block; }
 .block-label { font-size: 12px; font-weight: 600; color: var(--navy); }
+.block-icon { flex-shrink: 0; opacity: 0.4; filter: brightness(0) saturate(100%) invert(18%) sepia(50%) saturate(800%) hue-rotate(190deg); }
+.block-check.checked .block-icon { opacity: 0.7; }
+.required-field.error { border-color: #C0392B !important; background: #fff8f8; }
+.field-error-msg { color: #C0392B; font-size: 11px; font-weight: 600; margin-top: 4px; display: none; }
+.required-field.error + .field-error-msg { display: block; }
 @media (max-width: 600px) { .templates, .form-grid, .form-grid-3, .blocks-grid { grid-template-columns: 1fr; } }
 
 /* LOADING OVERLAY */
@@ -155,13 +160,28 @@
   <div class="card" style="margin-bottom: 1rem;">
     <div class="step-header"><span class="step-num">02</span><span class="step-label">Informace o schůzce</span></div>
     <div class="form-grid" style="margin-bottom: 12px;">
-      <div class="form-group" style="margin:0;"><label>Název firmy / klienta</label><input type="text" id="client-name" placeholder="např. Merlin Plus s.r.o."></div>
-      <div class="form-group" style="margin:0;"><label>Kontaktní osoba klienta</label><input type="text" id="client-contact" placeholder="např. Michal Mynarčík"></div>
+      <div class="form-group" style="margin:0;">
+        <label>Název firmy / klienta <span style="color:#C0392B;">*</span></label>
+        <input type="text" id="client-name" placeholder="např. Merlin Plus s.r.o." class="required-field">
+      </div>
+      <div class="form-group" style="margin:0;">
+        <label>Kontaktní osoba klienta <span style="color:#C0392B;">*</span></label>
+        <input type="text" id="client-contact" placeholder="např. Michal Mynarčík" class="required-field">
+      </div>
     </div>
     <div class="form-grid-3">
-      <div class="form-group" style="margin:0;"><label>Za Commarec</label><input type="text" id="commarec-rep" placeholder="např. Martin Komárek"></div>
-      <div class="form-group" style="margin:0;"><label>Datum schůzky</label><input type="text" id="meeting-date" placeholder="např. 9. 3. 2026"></div>
-      <div class="form-group" style="margin:0;"><label>Místo</label><input type="text" id="meeting-place" placeholder="např. Sídlo klienta, Brno"></div>
+      <div class="form-group" style="margin:0;">
+        <label>Za Commarec <span style="color:#C0392B;">*</span></label>
+        <input type="text" id="commarec-rep" placeholder="např. Martin Komárek" class="required-field">
+      </div>
+      <div class="form-group" style="margin:0;">
+        <label>Datum schůzky <span style="color:#C0392B;">*</span></label>
+        <input type="text" id="meeting-date" placeholder="např. 9. 3. 2026" class="required-field">
+      </div>
+      <div class="form-group" style="margin:0;">
+        <label>Místo</label>
+        <input type="text" id="meeting-place" placeholder="např. Sídlo klienta, Brno">
+      </div>
     </div>
   </div>
 
@@ -169,15 +189,15 @@
   <div class="card" style="margin-bottom: 1rem;">
     <div class="step-header"><span class="step-num">03</span><span class="step-label">Sekce zápisu</span></div>
     <div class="blocks-grid">
-      <div class="block-check checked" onclick="toggleBlock(this, 'uvod')"><div class="block-dot"></div><img src="/static/icons/info.svg" width="16" height="16" style="opacity:0.5;flex-shrink:0;"><span class="block-label">Úvod a účel</span></div>
-      <div class="block-check checked" onclick="toggleBlock(this, 'zjisteni')"><div class="block-dot"></div><img src="/static/icons/analysis.svg" width="16" height="16" style="opacity:0.5;flex-shrink:0;"><span class="block-label">Hlavní zjištění</span></div>
-      <div class="block-check checked" onclick="toggleBlock(this, 'hodnoceni')"><div class="block-dot"></div><img src="/static/icons/chart-kpi.svg" width="16" height="16" style="opacity:0.5;flex-shrink:0;"><span class="block-label">Hodnocení oblastí</span></div>
-      <div class="block-check checked" onclick="toggleBlock(this, 'procesy')"><div class="block-dot"></div><img src="/static/icons/process-setup.svg" width="16" height="16" style="opacity:0.5;flex-shrink:0;"><span class="block-label">Popis procesů</span></div>
-      <div class="block-check checked" onclick="toggleBlock(this, 'rizika')"><div class="block-dot"></div><img src="/static/icons/danger.svg" width="16" height="16" style="opacity:0.5;flex-shrink:0;"><span class="block-label">Rizika a problémy</span></div>
-      <div class="block-check checked" onclick="toggleBlock(this, 'kroky')"><div class="block-dot"></div><img src="/static/icons/checklist.svg" width="16" height="16" style="opacity:0.5;flex-shrink:0;"><span class="block-label">Akční kroky</span></div>
-      <div class="block-check checked" onclick="toggleBlock(this, 'prinosy')"><div class="block-dot"></div><img src="/static/icons/savings.svg" width="16" height="16" style="opacity:0.5;flex-shrink:0;"><span class="block-label">Očekávané přínosy</span></div>
-      <div class="block-check checked" onclick="toggleBlock(this, 'poznamky')"><div class="block-dot"></div><img src="/static/icons/documentation.svg" width="16" height="16" style="opacity:0.5;flex-shrink:0;"><span class="block-label">Poznámky z terénu</span></div>
-      <div class="block-check checked" onclick="toggleBlock(this, 'dalsi_krok')"><div class="block-dot"></div><img src="/static/icons/arrow-right.svg" width="16" height="16" style="opacity:0.5;flex-shrink:0;"><span class="block-label">Další krok spolupráce</span></div>
+      <div class="block-check checked" onclick="toggleBlock(this, 'uvod')"><div class="block-dot"></div><img src="/static/icons/info.svg" width="15" height="15" class="block-icon"><span class="block-label">Úvod a účel</span></div>
+      <div class="block-check checked" onclick="toggleBlock(this, 'zjisteni')"><div class="block-dot"></div><img src="/static/icons/analysis.svg" width="15" height="15" class="block-icon"><span class="block-label">Hlavní zjištění</span></div>
+      <div class="block-check checked" onclick="toggleBlock(this, 'hodnoceni')"><div class="block-dot"></div><img src="/static/icons/chart-kpi.svg" width="15" height="15" class="block-icon"><span class="block-label">Hodnocení oblastí</span></div>
+      <div class="block-check checked" onclick="toggleBlock(this, 'procesy')"><div class="block-dot"></div><img src="/static/icons/process-setup.svg" width="15" height="15" class="block-icon"><span class="block-label">Popis procesů</span></div>
+      <div class="block-check checked" onclick="toggleBlock(this, 'rizika')"><div class="block-dot"></div><img src="/static/icons/danger.svg" width="15" height="15" class="block-icon"><span class="block-label">Rizika a problémy</span></div>
+      <div class="block-check checked" onclick="toggleBlock(this, 'kroky')"><div class="block-dot"></div><img src="/static/icons/checklist.svg" width="15" height="15" class="block-icon"><span class="block-label">Akční kroky</span></div>
+      <div class="block-check checked" onclick="toggleBlock(this, 'prinosy')"><div class="block-dot"></div><img src="/static/icons/savings.svg" width="15" height="15" class="block-icon"><span class="block-label">Očekávané přínosy</span></div>
+      <div class="block-check checked" onclick="toggleBlock(this, 'poznamky')"><div class="block-dot"></div><img src="/static/icons/documentation.svg" width="15" height="15" class="block-icon"><span class="block-label">Poznámky z terénu</span></div>
+      <div class="block-check checked" onclick="toggleBlock(this, 'dalsi_krok')"><div class="block-dot"></div><img src="/static/icons/arrow-right.svg" width="15" height="15" class="block-icon"><span class="block-label">Další krok spolupráce</span></div>
     </div>
   </div>
 
@@ -240,6 +260,41 @@ function toggleBlock(el, key) {
 async function generovat() {
   const text = document.getElementById('input-text').value.trim();
   if (!text) { alert('Vložte prosím text schůzky.'); return; }
+
+  // Validate required fields
+  const required = ['client-name', 'client-contact', 'commarec-rep', 'meeting-date'];
+  const labels = {
+    'client-name': 'Název firmy / klienta',
+    'client-contact': 'Kontaktní osoba klienta',
+    'commarec-rep': 'Za Commarec',
+    'meeting-date': 'Datum schůzky'
+  };
+  let hasError = false;
+  required.forEach(id => {
+    const el = document.getElementById(id);
+    if (!el.value.trim()) {
+      el.classList.add('error');
+      el.style.borderColor = '#C0392B';
+      el.style.background = '#fff8f8';
+      hasError = true;
+      el.addEventListener('input', () => {
+        el.classList.remove('error');
+        el.style.borderColor = '';
+        el.style.background = '';
+      }, { once: true });
+    } else {
+      el.classList.remove('error');
+      el.style.borderColor = '';
+      el.style.background = '';
+    }
+  });
+  if (hasError) {
+    const firstError = required.find(id => !document.getElementById(id).value.trim());
+    document.getElementById(firstError).focus();
+    document.getElementById(firstError).scrollIntoView({ behavior: 'smooth', block: 'center' });
+    alert('Vyplňte prosím všechna povinná pole označená *');
+    return;
+  }
 
   const btn = document.getElementById('gen-btn');
   btn.disabled = true;

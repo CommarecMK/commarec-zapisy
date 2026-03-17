@@ -132,11 +132,18 @@ DALŠÍ KROK SPOLUPRÁCE
     
     selected_blocks = "\n".join([block_map[b] for b in ['uvod','zjisteni','hodnoceni','procesy','rizika','kroky','prinosy','poznamky','dalsi_krok'] if b in blocks])
     
-    if not selected_blocks and 'kroky' not in blocks:
-        # Always need to extract tasks even if block not shown
+    # ALWAYS append task extraction at the end - every record must have tasks
+    if 'kroky' not in blocks:
         selected_blocks += """
+
+DOPORUČENÉ AKČNÍ KROKY (zkrácená verze)
+• Uveď 3-5 nejdůležitějších kroků které vyplývají ze schůzky
+
+DŮLEŽITÉ: Na konci přidej tento blok (povinný vždy):
 ---ÚKOLY PRO FREELO---
-ÚKOL: [název] | POPIS: [detail] | TERMÍN: [termín]"""
+(každý konkrétní úkol na nový řádek ve formátu:)
+ÚKOL: [název úkolu] | POPIS: [stručný popis co udělat] | TERMÍN: [termín nebo "dle dohody"]
+(min. 3, max. 8 úkolů — vždy z každé schůzky vzniknou úkoly)"""
 
     base = f"""Jsi expertní asistent společnosti Commarec pro tvorbu profesionálních zápisů z diagnostických návštěv, obchodních schůzek a porad.
 
