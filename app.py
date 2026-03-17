@@ -26,7 +26,7 @@ db = SQLAlchemy(app)
 ANTHROPIC_API_KEY = os.environ.get("ANTHROPIC_API_KEY", "")
 FREELO_API_KEY = os.environ.get("FREELO_API_KEY", "")
 FREELO_EMAIL   = os.environ.get("FREELO_EMAIL", "")
-FREELO_PROJECT_ID = os.environ.get("FREELO_PROJECT_ID", "582553")
+FREELO_PROJECT_ID = os.environ.get("FREELO_PROJECT_ID", "501350")
 
 # --- Models ---
 
@@ -433,52 +433,54 @@ def freelo_post(path, payload):
     )
 
 def freelo_find_project_id():
-    """Find correct project ID by listing all projects and matching FREELO_PROJECT_ID."""
-    # Try direct ID first
+    """Find correct project ID - first try config ID, then list all projects."""
     resp = freelo_get(f"/project/{FREELO_PROJECT_ID}/tasklists")
     if resp.status_code == 200:
         return FREELO_PROJECT_ID, None
 
-    # If 404, list all projects and find one with matching id or url
+    # Config ID doesn't work - get real ID from projects list
     resp2 = freelo_get("/projects")
     if resp2.status_code != 200:
-        return None, f"Nelze načíst projekty: {resp2.status_code} {resp2.text[:100]}"
-    
-    data = resp2.json()
-    projects = data.get("data", data) if isinstance(data, dict) else data
-    app.logger.info(f"All projects: {[(p.get('id'), p.get('name')) for p in projects[:10] if isinstance(p, dict)]}")
-    
-    # Return first project id for now, log all
-    if projects and isinstance(projects[0], dict):
-        return projects[0]["id"], None
+        return None, f"Nelze načíst projekty: {resp2.status_code}"
+    projects = resp2.json()
+    if isinstance(projects, list) and projects:
+        pid = str(projects[0]["id"])
+        app.logger.info(f"Using project id={pid} name={projects[0].get('name')}")
+        return pid, None
     return None, "Žádné projekty nenalezeny"
 
 @app.route("/api/freelo/tasklists", methods=["GET"])
 @login_required
 def get_freelo_tasklists():
-    if not FREELO_API_KEY:
-        return jsonify({"tasklists": [], "error": "FREELO_API_KEY není nastaven v Railway Variables"})
+    if not FREELO_API_KEY or not FREELO_EMAIL:
+        return jsonify({"tasklists": [], "error": "Chybí FREELO_API_KEY nebo FREELO_EMAIL v Railway Variables"})
     try:
-        project_id, err = freelo_find_project_id()
-        if err:
-            return jsonify({"tasklists": [], "error": err})
-        
-        resp = freelo_get(f"/project/{project_id}/tasklists")
-        app.logger.info(f"Freelo tasklists project={project_id} status={resp.status_code} body={resp.text[:300]}")
-        
-        if resp.status_code == 401:
-            return jsonify({"tasklists": [], "error": "Nesprávný Freelo API klíč (401)"})
+        # Get projects — tasklists are embedded directly in response
+        resp = freelo_get("/projects")
         if resp.status_code != 200:
             return jsonify({"tasklists": [], "error": f"Freelo {resp.status_code}: {resp.text[:100]}"})
-        
-        data = resp.json()
-        items = data.get("data", data) if isinstance(data, dict) else data
+
+        projects = resp.json()
+        if not isinstance(projects, list) or not projects:
+            return jsonify({"tasklists": [], "error": "Žádné projekty v účtu"})
+
+        # Find matching project or use first one
+        project = next((p for p in projects if str(p.get("id")) == str(FREELO_PROJECT_ID)), projects[0])
         tasklists = [{"id": tl["id"], "name": tl["name"]}
-                     for tl in items if isinstance(tl, dict) and "id" in tl and "name" in tl]
-        app.logger.info(f"Freelo tasklists found: {len(tasklists)}")
-        return jsonify({"tasklists": tasklists, "project_id_used": project_id})
+                     for tl in project.get("tasklists", []) if "id" in tl]
+
+        # If no tasklists in embedded data, call dedicated endpoint
+        if not tasklists:
+            resp2 = freelo_get(f"/project/{project['id']}/tasklists")
+            if resp2.status_code == 200:
+                data = resp2.json()
+                items = data.get("data", data) if isinstance(data, dict) else data
+                tasklists = [{"id": tl["id"], "name": tl["name"]} for tl in items if "id" in tl]
+
+        app.logger.info(f"Freelo project={project['id']} name={project.get('name')} tasklists={len(tasklists)}")
+        return jsonify({"tasklists": tasklists})
     except Exception as e:
-        app.logger.error(f"Freelo tasklists exception: {e}")
+        app.logger.error(f"Freelo tasklists error: {e}")
         return jsonify({"tasklists": [], "error": str(e)})
 
 
@@ -512,8 +514,8 @@ def create_freelo_tasklist():
     name = (request.json or {}).get("name", "").strip()
     if not name:
         return jsonify({"error": "Chybí název"}), 400
-    if not FREELO_API_KEY:
-        return jsonify({"error": "FREELO_API_KEY není nastaven"}), 500
+    if not FREELO_API_KEY or not FREELO_EMAIL:
+        return jsonify({"error": "Chybí FREELO_API_KEY nebo FREELO_EMAIL"}), 500
     try:
         project_id, err = freelo_find_project_id()
         if err or not project_id:
