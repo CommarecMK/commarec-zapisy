@@ -522,12 +522,20 @@ def get_freelo_tasklists():
 @login_required  
 def debug_tasklist(tasklist_id):
     """Debug: test task creation endpoint"""
-    resp = freelo_get(f"/tasklist/{tasklist_id}/tasks")
+    # Find project_id for this tasklist
+    project_id_found = None
+    resp_p = freelo_get("/projects")
+    if resp_p.status_code == 200:
+        for proj in resp_p.json():
+            for tl in proj.get("tasklists", []):
+                if str(tl.get("id")) == str(tasklist_id):
+                    project_id_found = proj["id"]
+                    break
     resp2 = freelo_get(f"/tasklist/{tasklist_id}")
     return jsonify({
         "tasklist_id": tasklist_id,
-        "GET_tasks_status": resp.status_code,
-        "GET_tasks_body": resp.text[:300],
+        "project_id_found": project_id_found,
+        "correct_create_endpoint": f"POST /project/{project_id_found}/tasklist/{tasklist_id}/task",
         "GET_tasklist_status": resp2.status_code,
         "GET_tasklist_body": resp2.text[:300],
     })
@@ -642,43 +650,66 @@ def odeslat_do_freela(zapis_id):
     if not tasklist_id:
         return jsonify({"error": "Vyberte nebo vytvořte To-Do list ve Freelu"}), 400
 
+    import re as re3
+
+    # Get project_id for the tasklist — needed for correct endpoint
+    # First try to find project from our cached projects list
+    project_id_for_tasks = None
+    try:
+        resp_projects = freelo_get("/projects")
+        if resp_projects.status_code == 200:
+            for proj in resp_projects.json():
+                for tl in proj.get("tasklists", []):
+                    if str(tl.get("id")) == str(tasklist_id):
+                        project_id_for_tasks = proj["id"]
+                        break
+                if project_id_for_tasks:
+                    break
+    except Exception:
+        pass
+
+    if not project_id_for_tasks:
+        project_id_for_tasks = FREELO_PROJECT_ID
+
     created = []
     errors = []
     for task in selected_tasks:
         name = task.get("name", "")
-        parts = []
-        if task.get("desc"): parts.append(task["desc"])
-        if task.get("assignee"): parts.append(f"Zodpovedna osoba: {task['assignee']}")
-        if task.get("deadline"): parts.append(f"Termin: {task['deadline']}")
-        # Build Freelo task payload
+        if not name:
+            continue
         payload = {"name": name}
-        # Add description as task note
+
+        # Description as note
         if task.get("desc"):
             payload["note"] = task["desc"]
-        # Add deadline - Freelo expects YYYY-MM-DD
-        deadline = task.get("deadline", "")
-        if deadline:
-            # Convert various formats to YYYY-MM-DD
-            import re as re3
-            # Already YYYY-MM-DD
+
+        # Deadline: convert to YYYY-MM-DD
+        deadline = (task.get("deadline") or "").strip()
+        if deadline and deadline.lower() != "dle dohody":
             if re3.match(r"\d{4}-\d{2}-\d{2}", deadline):
-                payload["date_deadline"] = deadline
-            # DD.MM.YYYY
+                payload["due_date"] = deadline
             elif re3.match(r"\d{1,2}\.\d{1,2}\.\d{4}", deadline):
-                parts2 = deadline.replace(" ","").split(".")
-                payload["date_deadline"] = f"{parts2[2]}-{parts2[1].zfill(2)}-{parts2[0].zfill(2)}"
+                parts2 = deadline.replace(" ", "").split(".")
+                payload["due_date"] = f"{parts2[2]}-{parts2[1].zfill(2)}-{parts2[0].zfill(2)}"
+
         try:
-            resp = freelo_post(f"/tasklist/{tasklist_id}/tasks", payload)
+            # Correct Freelo endpoint: /projects/{pid}/tasklists/{tlid}/tasks
+            resp = freelo_post(
+                f"/project/{project_id_for_tasks}/tasklist/{tasklist_id}/task",
+                payload
+            )
             app.logger.info(f"Task '{name}': status={resp.status_code} body={resp.text[:200]}")
+
             if resp.status_code in (200, 201):
                 created.append(name)
-                # Add assignee as comment if provided
-                assignee = task.get("assignee","").strip()
+                # Add assignee as comment
+                assignee = (task.get("assignee") or "").strip()
                 if assignee:
                     task_data = resp.json()
-                    task_id = task_data.get("id") or (task_data.get("data",{}) or {}).get("id")
+                    task_id = (task_data.get("data") or task_data).get("id")
                     if task_id:
-                        freelo_post(f"/task/{task_id}/comments", {"comment": f"Zodpovědná osoba: {assignee}"})
+                        freelo_post(f"/task/{task_id}/comments",
+                                    {"comment": f"Zodpovědná osoba: {assignee}"})
             else:
                 errors.append(f"{name}: {resp.text[:100]}")
         except Exception as e:
