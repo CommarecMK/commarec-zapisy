@@ -620,45 +620,25 @@ def get_freelo_members(project_id):
         return jsonify({"members": []})
     try:
         members = []
-        # Correct plural endpoint per official PHP SDK
-        for path in [f"/projects/{project_id}/workers",
-                     f"/projects/{project_id}/users",
-                     f"/project/{project_id}/workers"]:
-            resp = freelo_get(path)
-            app.logger.info(f"Members {path}: {resp.status_code} {resp.text[:300]}")
-            if resp.status_code == 200:
-                data = resp.json()
-                workers = data if isinstance(data, list) else data.get("data", [])
-                for w in workers:
-                    if not isinstance(w, dict): continue
-                    fullname = (w.get("fullname") or w.get("name") or
-                                f"{w.get('firstname','')} {w.get('lastname','')}".strip() or
-                                w.get("username",""))
-                    if fullname:
-                        members.append({"id": w.get("id"), "name": fullname, "email": w.get("email","")})
-                if members:
-                    break
-
-        # Fallback: get current user from /users/me
-        if not members:
-            me = freelo_get("/users/me")
-            app.logger.info(f"Users/me: {me.status_code} {me.text[:200]}")
-            if me.status_code == 200:
-                u = me.json()
-                if isinstance(u, dict):
-                    fullname = u.get("fullname") or u.get("name") or FREELO_EMAIL
-                    members.append({"id": u.get("id"), "name": fullname, "email": u.get("email", FREELO_EMAIL)})
-
-        # Always ensure current user is in the list
-        if FREELO_EMAIL and not any(m.get("email") == FREELO_EMAIL for m in members):
-            members.insert(0, {"id": None, "name": FREELO_EMAIL.split("@")[0].replace(".", " ").title(), "email": FREELO_EMAIL})
+        resp = freelo_get(f"/project/{project_id}/workers")
+        app.logger.info(f"Workers: {resp.status_code} {resp.text[:300]}")
+        if resp.status_code == 200:
+            data = resp.json()
+            # Structure: {"data": {"workers": [{"id": 123, "fullname": "..."}]}}
+            workers = data.get("data", {}).get("workers", [])
+            if not workers:
+                workers = data if isinstance(data, list) else []
+            for w in workers:
+                if not isinstance(w, dict): continue
+                fullname = w.get("fullname") or w.get("name") or ""
+                if fullname:
+                    members.append({"id": w["id"], "name": fullname, "email": w.get("email", "")})
 
         app.logger.info(f"Members found: {len(members)}")
         return jsonify({"members": members})
     except Exception as e:
         app.logger.error(f"Members error: {e}")
-        # Return at least the current user
-        return jsonify({"members": [{"id": None, "name": FREELO_EMAIL.split("@")[0].replace(".", " ").title(), "email": FREELO_EMAIL}]})
+        return jsonify({"members": []})
 
 
 @app.route("/api/freelo/create-tasklist", methods=["POST"])
@@ -745,6 +725,18 @@ def odeslat_do_freela(zapis_id):
     if not project_id_for_tasks:
         project_id_for_tasks = FREELO_PROJECT_ID
 
+    # Load project members once for worker_id lookup
+    members_by_name = {}
+    try:
+        m_resp = freelo_get(f"/project/{project_id_for_tasks}/workers")
+        if m_resp.status_code == 200:
+            workers = m_resp.json().get("data", {}).get("workers", [])
+            for w in workers:
+                if w.get("fullname"):
+                    members_by_name[w["fullname"].lower()] = w["id"]
+    except Exception:
+        pass
+
     created = []
     errors = []
     for task in selected_tasks:
@@ -753,9 +745,16 @@ def odeslat_do_freela(zapis_id):
             continue
         payload = {"name": name}
 
-        # Description — Freelo uses 'description' field
+        # Description
         if task.get("desc"):
             payload["description"] = task["desc"]
+
+        # Worker ID from assignee name
+        assignee = (task.get("assignee") or "").strip()
+        if assignee:
+            worker_id = members_by_name.get(assignee.lower())
+            if worker_id:
+                payload["worker_id"] = worker_id
 
         # Deadline: convert to YYYY-MM-DD
         deadline = (task.get("deadline") or "").strip()
@@ -779,18 +778,10 @@ def odeslat_do_freela(zapis_id):
                 created.append(name)
                 task_data = resp.json()
                 task_id = (task_data.get("data") or task_data).get("id")
-                if task_id:
-                    # Post description as comment if not already in task body
-                    desc = (task.get("desc") or "").strip()
-                    assignee = (task.get("assignee") or "").strip()
-                    comment_parts = []
-                    if desc:
-                        comment_parts.append(desc)
-                    if assignee:
-                        comment_parts.append(f"Zodpovědná osoba: {assignee}")
-                    if comment_parts:
-                        freelo_post(f"/task/{task_id}/comments",
-                                    {"comment": "\n\n".join(comment_parts)})
+                # If assignee wasn't resolved to worker_id, add as comment
+                if task_id and assignee and not members_by_name.get(assignee.lower()):
+                    freelo_post(f"/task/{task_id}/comments",
+                                {"comment": f"Zodpovědná osoba: {assignee}"})
             else:
                 errors.append(f"{name}: {resp.text[:100]}")
         except Exception as e:
