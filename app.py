@@ -678,6 +678,27 @@ def create_freelo_tasklist():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+
+@app.route("/api/freelo/test-create-task/<int:project_id>/<int:tasklist_id>", methods=["GET"])
+@login_required
+def test_create_task(project_id, tasklist_id):
+    """Test all possible task creation endpoints"""
+    results = {}
+    endpoints = [
+        f"/projects/{project_id}/tasklists/{tasklist_id}/tasks",
+        f"/project/{project_id}/tasklist/{tasklist_id}/tasks",
+        f"/tasklist/{tasklist_id}/tasks",
+        f"/projects/{project_id}/tasklists/{tasklist_id}/task",
+        f"/tasklist/{tasklist_id}/task",
+    ]
+    for ep in endpoints:
+        try:
+            resp = freelo_post(ep, {"name": f"[TEST] {ep}"})
+            results[ep] = {"status": resp.status_code, "body": resp.text[:200]}
+        except Exception as e:
+            results[ep] = {"error": str(e)}
+    return jsonify(results)
+
 @app.route("/api/freelo/<int:zapis_id>", methods=["POST"])
 @login_required
 def odeslat_do_freela(zapis_id):
@@ -741,7 +762,7 @@ def odeslat_do_freela(zapis_id):
                 f"/projects/{project_id_for_tasks}/tasklists/{tasklist_id}/tasks",
                 payload
             )
-            app.logger.info(f"Task '{name}': status={resp.status_code} body={resp.text[:200]}")
+            app.logger.info(f"Task '{name}': status={resp.status_code} body={resp.text[:300]}")
 
             if resp.status_code in (200, 201):
                 created.append(name)
