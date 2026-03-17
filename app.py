@@ -517,6 +517,21 @@ def get_freelo_tasklists():
 
 
 
+
+@app.route("/api/freelo/debug-tasklist/<tasklist_id>", methods=["GET"])
+@login_required  
+def debug_tasklist(tasklist_id):
+    """Debug: test task creation endpoint"""
+    resp = freelo_get(f"/tasklist/{tasklist_id}/tasks")
+    resp2 = freelo_get(f"/tasklist/{tasklist_id}")
+    return jsonify({
+        "tasklist_id": tasklist_id,
+        "GET_tasks_status": resp.status_code,
+        "GET_tasks_body": resp.text[:300],
+        "GET_tasklist_status": resp2.status_code,
+        "GET_tasklist_body": resp2.text[:300],
+    })
+
 @app.route("/api/freelo/debug", methods=["GET"])
 @login_required
 def freelo_debug():
@@ -548,17 +563,38 @@ def get_freelo_members(project_id):
     if not FREELO_API_KEY or not FREELO_EMAIL:
         return jsonify({"members": []})
     try:
-        resp = freelo_get(f"/project/{project_id}/workers")
-        if resp.status_code != 200:
-            app.logger.warning(f"Members {project_id}: {resp.status_code} {resp.text[:100]}")
-            return jsonify({"members": []})
-        data = resp.json()
-        workers = data if isinstance(data, list) else data.get("data", [])
+        # Try multiple endpoint variants
         members = []
-        for w in workers:
-            if not isinstance(w, dict): continue
-            name = w.get("fullname") or w.get("name") or f"{w.get('firstname','')} {w.get('lastname','')}".strip()
-            members.append({"id": w.get("id"), "name": name, "email": w.get("email","")})
+        for path in [f"/project/{project_id}/workers", f"/project/{project_id}/users"]:
+            resp = freelo_get(path)
+            app.logger.info(f"Members {path}: {resp.status_code} {resp.text[:200]}")
+            if resp.status_code == 200:
+                data = resp.json()
+                workers = data if isinstance(data, list) else data.get("data", [])
+                for w in workers:
+                    if not isinstance(w, dict): continue
+                    # Freelo returns user object with various name fields
+                    fullname = (w.get("fullname") or
+                                w.get("name") or
+                                f"{w.get('firstname','')} {w.get('lastname','')}".strip() or
+                                w.get("username",""))
+                    if fullname:
+                        members.append({"id": w.get("id"), "name": fullname, "email": w.get("email","")})
+                if members:
+                    break
+        # Fallback: use projects data which has workers embedded
+        if not members:
+            resp2 = freelo_get("/projects")
+            if resp2.status_code == 200:
+                projects = resp2.json()
+                project = next((p for p in projects if p.get("id") == project_id), None)
+                if project:
+                    for w in project.get("workers", project.get("users", [])):
+                        if not isinstance(w, dict): continue
+                        fullname = w.get("fullname") or w.get("name") or f"{w.get('firstname','')} {w.get('lastname','')}".strip()
+                        if fullname:
+                            members.append({"id": w.get("id"), "name": fullname, "email": w.get("email","")})
+        app.logger.info(f"Members found: {len(members)}")
         return jsonify({"members": members})
     except Exception as e:
         app.logger.error(f"Members error: {e}")
@@ -614,13 +650,35 @@ def odeslat_do_freela(zapis_id):
         if task.get("desc"): parts.append(task["desc"])
         if task.get("assignee"): parts.append(f"Zodpovedna osoba: {task['assignee']}")
         if task.get("deadline"): parts.append(f"Termin: {task['deadline']}")
+        # Build Freelo task payload
         payload = {"name": name}
-        if parts: payload["comment"] = "\n".join(parts)
-        if task.get("due_date"): payload["date_due"] = task["due_date"]
+        # Add description as task note
+        if task.get("desc"):
+            payload["note"] = task["desc"]
+        # Add deadline - Freelo expects YYYY-MM-DD
+        deadline = task.get("deadline", "")
+        if deadline:
+            # Convert various formats to YYYY-MM-DD
+            import re as re3
+            # Already YYYY-MM-DD
+            if re3.match(r"\d{4}-\d{2}-\d{2}", deadline):
+                payload["date_deadline"] = deadline
+            # DD.MM.YYYY
+            elif re3.match(r"\d{1,2}\.\d{1,2}\.\d{4}", deadline):
+                parts2 = deadline.replace(" ","").split(".")
+                payload["date_deadline"] = f"{parts2[2]}-{parts2[1].zfill(2)}-{parts2[0].zfill(2)}"
         try:
             resp = freelo_post(f"/tasklist/{tasklist_id}/tasks", payload)
+            app.logger.info(f"Task '{name}': status={resp.status_code} body={resp.text[:200]}")
             if resp.status_code in (200, 201):
                 created.append(name)
+                # Add assignee as comment if provided
+                assignee = task.get("assignee","").strip()
+                if assignee:
+                    task_data = resp.json()
+                    task_id = task_data.get("id") or (task_data.get("data",{}) or {}).get("id")
+                    if task_id:
+                        freelo_post(f"/task/{task_id}/comments", {"comment": f"Zodpovědná osoba: {assignee}"})
             else:
                 errors.append(f"{name}: {resp.text[:100]}")
         except Exception as e:
