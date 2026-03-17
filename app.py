@@ -756,10 +756,10 @@ def odeslat_do_freela(zapis_id):
                 payload["due_date"] = f"{parts2[2]}-{parts2[1].zfill(2)}-{parts2[0].zfill(2)}"
 
         try:
-            # Correct Freelo endpoint per official PHP SDK:
-            # POST /projects/{projectId}/tasklists/{tasklistId}/tasks
+            # Correct Freelo endpoint (confirmed by testing):
+            # POST /project/{projectId}/tasklist/{tasklistId}/tasks
             resp = freelo_post(
-                f"/projects/{project_id_for_tasks}/tasklists/{tasklist_id}/tasks",
+                f"/project/{project_id_for_tasks}/tasklist/{tasklist_id}/tasks",
                 payload
             )
             app.logger.info(f"Task '{name}': status={resp.status_code} body={resp.text[:300]}")
