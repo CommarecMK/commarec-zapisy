@@ -323,63 +323,74 @@ def generovat():
 
     import re as re2
 
-    # Split off task section - try many marker variants
+    # Step 1: Try to split on task marker
     ukoly_markers = [
         "---ÚKOLY PRO FREELO---", "--- ÚKOLY PRO FREELO ---",
         "---UKOLY PRO FREELO---", "ÚKOLY PRO FREELO:", "ÚKOLY PRO FREELO",
-        "UKOLY PRO FREELO", "---ÚKOLY---", "ÚKOLY:"
+        "UKOLY PRO FREELO", "---ÚKOLY---",
     ]
     parts = None
     for marker in ukoly_markers:
         if marker in full_text:
             parts = full_text.split(marker, 1)
             break
-    if parts is None:
-        parts = [full_text]
 
-    zapis_text = parts[0].strip()
+    zapis_text = parts[0].strip() if parts else full_text.strip()
     tasks = []
 
-    if len(parts) > 1:
-        task_block = parts[1].strip()
-        for line in task_block.split("\n"):
+    # Step 2: Parse tasks from marker block if present
+    if parts and len(parts) > 1:
+        for line in parts[1].strip().split("\n"):
             line = line.strip()
-            if not line or len(line) < 5:
+            if not line or len(line) < 4:
                 continue
-            # Skip section headers in task block
-            if line.upper() == line and len(line) < 40 and not any(c in line for c in [":", "|"]):
+            if line.upper() == line and len(line) < 40 and "|" not in line:
                 continue
             if "ÚKOL:" in line or "Úkol:" in line or "ukol:" in line.lower():
-                ukol_m = re2.search(r"[ÚúUu]kol:\s*([^|\n]+)", line, re2.IGNORECASE)
-                popis_m = re2.search(r"[Pp]opis:\s*([^|\n]+)", line)
-                termin_m = re2.search(r"[Tt]erm[ií]n:\s*([^|\n]+)", line)
-                name = ukol_m.group(1).strip() if ukol_m else line[:100]
+                ukol_m  = re2.search(r"[ÚúUu]kol:\s*([^|\n]+)",      line, re2.IGNORECASE)
+                popis_m = re2.search(r"[Pp]opis:\s*([^|\n]+)",        line)
+                term_m  = re2.search(r"[Tt]erm[ií]n:\s*([^|\n]+)",   line)
+                name = ukol_m.group(1).strip() if ukol_m else line[:150]
                 tasks.append({
                     "name": name[:200],
                     "desc": popis_m.group(1).strip() if popis_m else "",
-                    "deadline": termin_m.group(1).strip() if termin_m else "dle dohody"
+                    "deadline": term_m.group(1).strip() if term_m else "dle dohody"
                 })
-            elif re2.match(r"^[•\-–\*]\s+.{5,}", line):
-                name = re2.sub(r"^[•\-–\*]\s+", "", line).strip()
-                tasks.append({"name": name[:200], "desc": "", "deadline": "dle dohody"})
-            elif re2.match(r"^\d+\.\s+.{5,}", line):
-                name = re2.sub(r"^\d+\.\s+", "", line).strip()
-                tasks.append({"name": name[:200], "desc": "", "deadline": "dle dohody"})
+            elif re2.match(r"^[•\-–\*\d]", line) and len(line) > 8:
+                name = re2.sub(r"^[•\-–\*0-9\.]+\s*", "", line).strip()
+                if name:
+                    tasks.append({"name": name[:200], "desc": "", "deadline": "dle dohody"})
 
-    # If still no tasks - extract from akční kroky section in the zapis
+    # Step 3: If still no tasks — dedicated AI extraction call
     if not tasks:
-        akcni_match = re2.search(r"(DOPORUČENÉ AKČNÍ KROKY|AKČNÍ KROKY|KRÁTKODBÉ|KRÁTKODOBÉ)[^\n]*\n(.*?)(?=\n[A-ZÁČĎÉĚÍŇÓŘŠŤÚŮÝŽ]{4,}|$)", 
-                                  zapis_text, re2.DOTALL | re2.IGNORECASE)
-        if akcni_match:
-            akcni_block = akcni_match.group(2)
-            for line in akcni_block.split("\n"):
-                line = line.strip()
-                if re2.match(r"^[•\-–0-9]", line) and len(line) > 10:
-                    name = re2.sub(r"^[•\-–\*0-9\.]+\s*", "", line).strip()
-                    if name:
-                        tasks.append({"name": name[:200], "desc": "", "deadline": "dle dohody"})
-                        if len(tasks) >= 6:
-                            break
+        try:
+            task_prompt = f"""Z následujícího zápisu schůzky vytáhni VŠECHNY konkrétní akční kroky a úkoly.
+Odpověz POUZE ve formátu JSON pole, žádný jiný text:
+[
+  {{"name": "Název úkolu", "desc": "Stručný popis", "deadline": "termín nebo dle dohody"}},
+  ...
+]
+Vrať min. 3 a max. 8 úkolů. Pokud nejsou explicitní, odvoď je z kontextu.
+
+ZÁPIS:
+{zapis_text[:6000]}"""
+            task_msg = client.messages.create(
+                model="claude-sonnet-4-5",
+                max_tokens=1000,
+                messages=[{"role": "user", "content": task_prompt}]
+            )
+            raw_json = task_msg.content[0].text.strip()
+            # Strip markdown code fences if present
+            raw_json = re2.sub(r"^```[\w]*\n?", "", raw_json)
+            raw_json = re2.sub(r"\n?```$", "", raw_json).strip()
+            parsed = json.loads(raw_json)
+            if isinstance(parsed, list):
+                tasks = [{"name": str(t.get("name",""))[:200],
+                          "desc": str(t.get("desc","")),
+                          "deadline": str(t.get("deadline","dle dohody"))} for t in parsed if t.get("name")]
+                app.logger.info(f"AI task extraction: {len(tasks)} tasks")
+        except Exception as te:
+            app.logger.error(f"Task extraction failed: {te}")
 
     first_line = zapis_text.split("\n")[0].replace("ZÁPIS ZE SCHŮZKY –", "").replace("ZÁPIS ZE SCHŮZKY -", "").strip()
     title = first_line[:100] if first_line else "Zápis ze schůzky"
@@ -397,11 +408,87 @@ def generovat():
 
     return jsonify({"zapis_id": zapis.id, "text": zapis_text, "tasks": tasks, "title": title})
 
+def freelo_get(path):
+    """Helper: GET from Freelo API"""
+    return requests.get(
+        f"https://api.freelo.io/v1{path}",
+        auth=("apikey", FREELO_API_KEY),
+        headers={"Content-Type": "application/json"},
+        timeout=15
+    )
+
+def freelo_post(path, payload):
+    """Helper: POST to Freelo API"""
+    return requests.post(
+        f"https://api.freelo.io/v1{path}",
+        auth=("apikey", FREELO_API_KEY),
+        headers={"Content-Type": "application/json"},
+        json=payload,
+        timeout=15
+    )
+
+def freelo_find_project_id():
+    """Find correct project ID by listing all projects and matching FREELO_PROJECT_ID."""
+    # Try direct ID first
+    resp = freelo_get(f"/project/{FREELO_PROJECT_ID}/tasklists")
+    if resp.status_code == 200:
+        return FREELO_PROJECT_ID, None
+
+    # If 404, list all projects and find one with matching id or url
+    resp2 = freelo_get("/projects")
+    if resp2.status_code != 200:
+        return None, f"Nelze načíst projekty: {resp2.status_code} {resp2.text[:100]}"
+    
+    data = resp2.json()
+    projects = data.get("data", data) if isinstance(data, dict) else data
+    app.logger.info(f"All projects: {[(p.get('id'), p.get('name')) for p in projects[:10] if isinstance(p, dict)]}")
+    
+    # Return first project id for now, log all
+    if projects and isinstance(projects[0], dict):
+        return projects[0]["id"], None
+    return None, "Žádné projekty nenalezeny"
+
 @app.route("/api/freelo/tasklists", methods=["GET"])
 @login_required
 def get_freelo_tasklists():
     if not FREELO_API_KEY:
-        return jsonify({"tasklists": [], "error": "FREELO_API_KEY není nastaven"}), 200
+        return jsonify({"tasklists": [], "error": "FREELO_API_KEY není nastaven v Railway Variables"})
+    try:
+        project_id, err = freelo_find_project_id()
+        if err:
+            return jsonify({"tasklists": [], "error": err})
+        
+        resp = freelo_get(f"/project/{project_id}/tasklists")
+        app.logger.info(f"Freelo tasklists project={project_id} status={resp.status_code} body={resp.text[:300]}")
+        
+        if resp.status_code == 401:
+            return jsonify({"tasklists": [], "error": "Nesprávný Freelo API klíč (401)"})
+        if resp.status_code != 200:
+            return jsonify({"tasklists": [], "error": f"Freelo {resp.status_code}: {resp.text[:100]}"})
+        
+        data = resp.json()
+        items = data.get("data", data) if isinstance(data, dict) else data
+        tasklists = [{"id": tl["id"], "name": tl["name"]}
+                     for tl in items if isinstance(tl, dict) and "id" in tl and "name" in tl]
+        app.logger.info(f"Freelo tasklists found: {len(tasklists)}")
+        return jsonify({"tasklists": tasklists, "project_id_used": project_id})
+    except Exception as e:
+        app.logger.error(f"Freelo tasklists exception: {e}")
+        return jsonify({"tasklists": [], "error": str(e)})
+
+
+
+@app.route("/api/freelo/debug", methods=["GET"])
+@login_required
+def freelo_debug():
+    """Debug endpoint - shows raw Freelo API response"""
+    result = {
+        "api_key_set": bool(FREELO_API_KEY),
+        "api_key_prefix": FREELO_API_KEY[:8] + "..." if FREELO_API_KEY else None,
+        "project_id": FREELO_PROJECT_ID,
+    }
+    if not FREELO_API_KEY:
+        return jsonify(result)
     try:
         resp = requests.get(
             f"https://api.freelo.io/v1/project/{FREELO_PROJECT_ID}/tasklists",
@@ -409,18 +496,15 @@ def get_freelo_tasklists():
             headers={"Content-Type": "application/json"},
             timeout=15
         )
-        app.logger.info(f"Freelo tasklists status: {resp.status_code}, body: {resp.text[:200]}")
-        if resp.status_code != 200:
-            return jsonify({"tasklists": [], "error": f"Freelo API error {resp.status_code}: {resp.text[:100]}"}), 200
-        data = resp.json()
-        # Freelo returns {"data": [...]} or just [...]
-        items = data.get("data", data) if isinstance(data, dict) else data
-        tasklists = [{"id": tl["id"], "name": tl["name"]} for tl in items if isinstance(tl, dict) and "id" in tl]
-        return jsonify({"tasklists": tasklists})
+        result["status_code"] = resp.status_code
+        result["raw_response"] = resp.text[:500]
+        try:
+            result["parsed"] = resp.json()
+        except:
+            result["parsed"] = "not valid JSON"
     except Exception as e:
-        app.logger.error(f"Freelo tasklists error: {e}")
-        return jsonify({"tasklists": [], "error": str(e)}), 200
-
+        result["exception"] = str(e)
+    return jsonify(result)
 
 @app.route("/api/freelo/create-tasklist", methods=["POST"])
 @login_required
@@ -431,14 +515,11 @@ def create_freelo_tasklist():
     if not FREELO_API_KEY:
         return jsonify({"error": "FREELO_API_KEY není nastaven"}), 500
     try:
-        resp = requests.post(
-            f"https://api.freelo.io/v1/project/{FREELO_PROJECT_ID}/tasklists",
-            auth=("apikey", FREELO_API_KEY),
-            headers={"Content-Type": "application/json"},
-            json={"name": name},
-            timeout=15
-        )
-        app.logger.info(f"Create tasklist status: {resp.status_code}, body: {resp.text[:200]}")
+        project_id, err = freelo_find_project_id()
+        if err or not project_id:
+            return jsonify({"error": err or "Projekt nenalezen"}), 400
+        resp = freelo_post(f"/project/{project_id}/tasklists", {"name": name})
+        app.logger.info(f"Create tasklist status={resp.status_code} body={resp.text[:200]}")
         if resp.status_code in (200, 201):
             data = resp.json()
             tl = data.get("data", data)
@@ -459,22 +540,8 @@ def odeslat_do_freela(zapis_id):
     if not selected_tasks:
         return jsonify({"error": "Zadne ukoly k odeslani"}), 400
 
-    headers = {"Content-Type": "application/json"}
-    auth = ("apikey", FREELO_API_KEY)
-
     if not tasklist_id:
-        try:
-            tl_resp = requests.get(
-                f"https://api.freelo.io/v1/project/{FREELO_PROJECT_ID}/tasklists",
-                auth=auth, headers=headers, timeout=10
-            )
-            tl_data = tl_resp.json()
-            tasklist_id = tl_data["data"][0]["id"] if tl_data.get("data") else None
-        except Exception as e:
-            return jsonify({"error": f"Chyba Freelo: {str(e)}"}), 500
-
-    if not tasklist_id:
-        return jsonify({"error": "Nenalezen tasklist"}), 400
+        return jsonify({"error": "Vyberte nebo vytvořte To-Do list ve Freelu"}), 400
 
     created = []
     errors = []
@@ -488,10 +555,7 @@ def odeslat_do_freela(zapis_id):
         if parts: payload["comment"] = "\n".join(parts)
         if task.get("due_date"): payload["date_due"] = task["due_date"]
         try:
-            resp = requests.post(
-                f"https://api.freelo.io/v1/tasklist/{tasklist_id}/tasks",
-                auth=auth, headers=headers, json=payload, timeout=10
-            )
+            resp = freelo_post(f"/tasklist/{tasklist_id}/tasks", payload)
             if resp.status_code in (200, 201):
                 created.append(name)
             else:
