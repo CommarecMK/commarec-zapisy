@@ -601,6 +601,17 @@ def freelo_debug():
     return jsonify(result)
 
 
+
+@app.route("/api/freelo/test-members/<int:project_id>", methods=["GET"])
+@login_required
+def test_members(project_id):
+    results = {}
+    for path in [f"/project/{project_id}/workers", f"/projects/{project_id}/workers",
+                 f"/project/{project_id}/users", "/users/me"]:
+        resp = freelo_get(path)
+        results[path] = {"status": resp.status_code, "body": resp.text[:400]}
+    return jsonify(results)
+
 @app.route("/api/freelo/members/<int:project_id>", methods=["GET"])
 @login_required
 def get_freelo_members(project_id):
@@ -742,9 +753,9 @@ def odeslat_do_freela(zapis_id):
             continue
         payload = {"name": name}
 
-        # Description as note
+        # Description — Freelo uses 'description' field
         if task.get("desc"):
-            payload["note"] = task["desc"]
+            payload["description"] = task["desc"]
 
         # Deadline: convert to YYYY-MM-DD
         deadline = (task.get("deadline") or "").strip()
@@ -766,14 +777,20 @@ def odeslat_do_freela(zapis_id):
 
             if resp.status_code in (200, 201):
                 created.append(name)
-                # Add assignee as comment
-                assignee = (task.get("assignee") or "").strip()
-                if assignee:
-                    task_data = resp.json()
-                    task_id = (task_data.get("data") or task_data).get("id")
-                    if task_id:
+                task_data = resp.json()
+                task_id = (task_data.get("data") or task_data).get("id")
+                if task_id:
+                    # Post description as comment if not already in task body
+                    desc = (task.get("desc") or "").strip()
+                    assignee = (task.get("assignee") or "").strip()
+                    comment_parts = []
+                    if desc:
+                        comment_parts.append(desc)
+                    if assignee:
+                        comment_parts.append(f"Zodpovědná osoba: {assignee}")
+                    if comment_parts:
                         freelo_post(f"/task/{task_id}/comments",
-                                    {"comment": f"Zodpovědná osoba: {assignee}"})
+                                    {"comment": "\n\n".join(comment_parts)})
             else:
                 errors.append(f"{name}: {resp.text[:100]}")
         except Exception as e:
