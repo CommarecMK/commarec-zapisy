@@ -25,6 +25,7 @@ db = SQLAlchemy(app)
 
 ANTHROPIC_API_KEY = os.environ.get("ANTHROPIC_API_KEY", "")
 FREELO_API_KEY = os.environ.get("FREELO_API_KEY", "")
+FREELO_EMAIL   = os.environ.get("FREELO_EMAIL", "")
 FREELO_PROJECT_ID = os.environ.get("FREELO_PROJECT_ID", "582553")
 
 # --- Models ---
@@ -408,11 +409,15 @@ ZÁPIS:
 
     return jsonify({"zapis_id": zapis.id, "text": zapis_text, "tasks": tasks, "title": title})
 
+def freelo_auth():
+    """Freelo Basic Auth: email as username, API key as password."""
+    return (FREELO_EMAIL, FREELO_API_KEY)
+
 def freelo_get(path):
     """Helper: GET from Freelo API"""
     return requests.get(
         f"https://api.freelo.io/v1{path}",
-        auth=("apikey", FREELO_API_KEY),
+        auth=freelo_auth(),
         headers={"Content-Type": "application/json"},
         timeout=15
     )
@@ -421,7 +426,7 @@ def freelo_post(path, payload):
     """Helper: POST to Freelo API"""
     return requests.post(
         f"https://api.freelo.io/v1{path}",
-        auth=("apikey", FREELO_API_KEY),
+        auth=freelo_auth(),
         headers={"Content-Type": "application/json"},
         json=payload,
         timeout=15
@@ -481,34 +486,24 @@ def get_freelo_tasklists():
 @app.route("/api/freelo/debug", methods=["GET"])
 @login_required
 def freelo_debug():
-    """Debug endpoint - lists all projects to find correct project ID"""
+    """Debug endpoint - tests Freelo API authentication"""
     result = {
         "api_key_set": bool(FREELO_API_KEY),
         "api_key_prefix": FREELO_API_KEY[:8] + "..." if FREELO_API_KEY else None,
+        "email_set": bool(FREELO_EMAIL),
+        "email": FREELO_EMAIL if FREELO_EMAIL else "CHYBÍ — přidej FREELO_EMAIL do Railway Variables",
         "project_id_in_config": FREELO_PROJECT_ID,
+        "auth_method": "email + api_key (Basic Auth)",
     }
-    if not FREELO_API_KEY:
+    if not FREELO_API_KEY or not FREELO_EMAIL:
+        result["problem"] = "Chybí FREELO_EMAIL nebo FREELO_API_KEY v Railway Variables"
         return jsonify(result)
-    # Try several known Freelo endpoints for listing projects
-    endpoints_to_try = [
-        "/v1/projects",
-        "/v1/all-projects",
-        "/v1/user/projects",
-    ]
-    for ep in endpoints_to_try:
+    for ep in ["/projects", f"/project/{FREELO_PROJECT_ID}/tasklists"]:
         try:
-            resp = requests.get(
-                f"https://api.freelo.io{ep}",
-                auth=("apikey", FREELO_API_KEY),
-                headers={"Content-Type": "application/json"},
-                timeout=15
-            )
-            result[f"endpoint_{ep}"] = {
-                "status": resp.status_code,
-                "body": resp.text[:800]
-            }
+            resp = freelo_get(ep)
+            result[f"test_{ep}"] = {"status": resp.status_code, "body": resp.text[:400]}
         except Exception as e:
-            result[f"endpoint_{ep}"] = {"error": str(e)}
+            result[f"test_{ep}"] = {"error": str(e)}
     return jsonify(result)
 
 @app.route("/api/freelo/create-tasklist", methods=["POST"])
