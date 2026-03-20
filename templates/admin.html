@@ -25,9 +25,13 @@
 {% block content %}
 <div class="container">
   {% if admin_flash %}
-  <div style="background:#173767;color:white;padding:14px 20px;border-radius:8px;margin-bottom:20px;display:flex;align-items:center;gap:12px;font-size:14px;">
-    <span style="font-size:20px;">&#9432;</span>
-    <span>{{ admin_flash }}</span>
+  <div style="background:#173767;color:white;padding:16px 24px;border-radius:8px;margin-bottom:24px;display:flex;align-items:center;gap:14px;">
+    <span style="font-size:24px;flex-shrink:0;">&#9432;</span>
+    <div>
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;opacity:0.6;margin-bottom:4px;">Nový uživatel vytvořen</div>
+      <div style="font-size:15px;font-weight:600;">{{ admin_flash }}</div>
+      <div style="font-size:11px;opacity:0.5;margin-top:4px;">Zkopírujte heslo a předejte uživateli — po zavření stránky ho znovu nezobrazíme.</div>
+    </div>
   </div>
   {% endif %}
   <div class="page-header">
@@ -74,11 +78,11 @@
         <div><label>Role</label><select name="role"><option value="konzultant">konzultant</option><option value="admin">admin</option><option value="superadmin">superadmin</option></select></div>
       </div>
       <div style="background:#f0f7ff;border:1px solid #c0d8f0;border-radius:6px;padding:10px 14px;margin-bottom:10px;font-size:13px;color:#173767;">
-        <strong>Heslo se vygeneruje automaticky.</strong> Zobrazí se po vytvoření a odešle se na email uživatele.
+        <strong>Heslo se vygeneruje automaticky.</strong> Zobrazí se po vytvoření — zkopírujte ho a předejte uživateli.
       </div>
       <div style="display:flex;gap:12px;align-items:center;">
         <label style="display:flex;align-items:center;gap:6px;font-size:13px;text-transform:none;letter-spacing:0;font-weight:500;cursor:pointer;">
-          <input type="checkbox" name="send_email" value="1" checked> Odeslat uvítací email s přihlašovacími údaji &nbsp;&nbsp; <input type="checkbox" name="is_admin" value="1"> Administrátor (plný přístup)
+          <input type="checkbox" name="is_admin" value="1"> Administrátor (plný přístup)
         </label>
         <button type="submit" class="btn btn-navy btn-sm" style="font-family:'DrukCondensed','Impact',sans-serif;font-weight:900;letter-spacing:0.06em;text-transform:uppercase;">Přidat</button>
       </div>

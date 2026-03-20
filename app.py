@@ -1581,8 +1581,6 @@ def pridat_uzivatele():
     name     = request.form.get("name","").strip()
     is_admin = bool(request.form.get("is_admin"))
     role     = request.form.get("role","konzultant")
-    send_email = bool(request.form.get("send_email", True))
-
     if not email or not name:
         return redirect(url_for("admin"))
     if User.query.filter_by(email=email).first():
@@ -1598,16 +1596,8 @@ def pridat_uzivatele():
     db.session.add(u)
     db.session.commit()
 
-    # Odešli uvítací email
-    email_sent = False
-    if send_email:
-        email_sent = send_welcome_email(email, name, password)
-
-    # Flash zpráva s heslem (vždy zobrazit, i když email selhal)
-    flash_msg = f"Uživatel {name} vytvořen. Heslo: {password}"
-    if send_email and not email_sent:
-        flash_msg += " (email se nepodařilo odeslat — zkopírujte heslo ručně)"
-    session["admin_flash"] = flash_msg
+    # Flash zpráva s heslem — zobraz vždy (email zatím neposíláme)
+    session["admin_flash"] = f"Uživatel {name} vytvořen. Heslo: {password}"
 
     return redirect(url_for("admin"))
 
