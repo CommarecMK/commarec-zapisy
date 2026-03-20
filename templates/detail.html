@@ -29,10 +29,10 @@
 /* SECTIONS */
 .zapis-section{margin-bottom:2.5rem;}
 .section-header{display:flex;align-items:center;justify-content:space-between;padding-bottom:8px;border-bottom:2.5px solid #00AFF0;margin-bottom:18px;}
-.section-title{font-family:"DrukCondensed","Impact",sans-serif;font-size:26px;font-weight:900;color:#173767;text-transform:uppercase;letter-spacing:0.06em;line-height:1;}
+.section-title{font-family:"DrukCondensed","Impact",sans-serif;font-size:36px;font-weight:900;color:#173767;text-transform:uppercase;letter-spacing:0.06em;line-height:1;}
 .edit-bar{display:flex;gap:6px;opacity:0;transition:opacity 0.15s;}
 .zapis-section:hover .edit-bar{opacity:1;}
-.btn-edit-sec,.btn-ai-sec{font-size:11px;font-weight:600;font-family:"Montserrat",sans-serif;border-radius:4px;padding:5px 13px;cursor:pointer;white-space:nowrap;transition:all 0.15s;}
+.btn-edit-sec,.btn-ai-sec{font-size:11px;font-weight:700;font-family:"Montserrat",sans-serif;border-radius:4px;padding:6px 14px;cursor:pointer;white-space:nowrap;transition:all 0.15s;}
 .btn-edit-sec{border:1.5px solid #c5d0de;background:white;color:#173767;}
 .btn-edit-sec:hover{border-color:#173767;}
 .btn-ai-sec{border:1.5px solid #00AFF0;background:white;color:#00AFF0;}
@@ -57,7 +57,7 @@
 .section-edit-wrap.active{display:block;margin-top:8px;}
 .section-editor{width:100%;min-height:140px;padding:12px 14px;border:2px solid #00AFF0;border-radius:6px;font-size:13px;font-family:"Montserrat",sans-serif;resize:vertical;line-height:1.6;background:#fafcff;}
 .edit-actions{display:flex;gap:8px;margin-top:8px;align-items:center;}
-.btn-save-sec{font-family:"DrukCondensed","Impact",sans-serif;font-size:13px;font-weight:900;letter-spacing:0.05em;text-transform:uppercase;background:#173767;color:white;border:none;padding:9px 22px;border-radius:5px;cursor:pointer;}
+.btn-save-sec{font-family:"Montserrat",sans-serif;font-size:13px;font-weight:700;background:#173767;color:white;border:none;padding:9px 22px;border-radius:5px;cursor:pointer;}
 .btn-save-sec:hover{background:#254f8a;}
 .btn-cancel-sec{font-size:12px;font-weight:600;font-family:"Montserrat",sans-serif;background:white;color:#4A6080;border:1.5px solid var(--border);padding:8px 18px;border-radius:5px;cursor:pointer;}
 .btn-cancel-sec:hover{border-color:#4A6080;color:#173767;}
@@ -176,11 +176,19 @@
             </div>
             <div class="section-content" id="content-{{ key }}">{{ s.get(key, "") | safe }}</div>
             <div class="section-edit-wrap" id="edit-wrap-{{ key }}">
-              <textarea class="section-editor" id="editor-{{ key }}"></textarea>
+              <div class="edit-toolbar" id="toolbar-{{ key }}">
+                <button class="tb-btn" onclick="fmt('{{ key }}','bold')" title="Tucne"><strong>B</strong></button>
+                <button class="tb-btn" onclick="fmt('{{ key }}','italic')" title="Kurziva"><em>I</em></button>
+                <button class="tb-btn" onclick="fmtBlock('{{ key }}','ul')" title="Seznam">&#x2022; Seznam</button>
+                <button class="tb-btn" onclick="insertTable('{{ key }}')" title="Tabulka">&#x22A1; Tabulka</button>
+                <button class="tb-btn" onclick="fmtTag('{{ key }}','strong')" title="Tucny text">Tucne</button>
+                <div style="margin-left:auto;font-size:11px;color:#8aa0b8;align-self:center;">Kliknete a upravte primo v textu</div>
+              </div>
+              <div class="section-editor" id="editor-{{ key }}" contenteditable="true"
+                onkeydown="if(event.key==='Escape')cancelEdit('{{ key }}')"></div>
               <div class="edit-actions">
                 <button class="btn-save-sec" onclick="saveSection('{{ key }}')">Ulozit zmeny</button>
                 <button class="btn-cancel-sec" onclick="cancelEdit('{{ key }}')">Zrusit</button>
-                <span class="edit-hint">HTML: &lt;ul&gt;&lt;li&gt;, &lt;strong&gt;, &lt;table&gt;</span>
               </div>
             </div>
             <div class="ai-bar" id="ai-bar-{{ key }}">
@@ -323,17 +331,36 @@ function downloadPDF(){
     jsPDF:{unit:"mm",format:"a4",orientation:"portrait"}})
   .from(el).save().finally(()=>{btn.disabled=false;btn.textContent="PDF";});
 }
+function fmt(key,cmd){document.execCommand(cmd,false,null);}
+function fmtBlock(key,tag){
+  const ed=document.getElementById("editor-"+key);ed.focus();
+  document.execCommand("insertUnorderedList",false,null);
+}
+function fmtTag(key,tag){
+  const sel=window.getSelection();if(!sel.rangeCount)return;
+  const range=sel.getRangeAt(0);const el=document.createElement(tag);
+  try{range.surroundContents(el);}catch(e){document.execCommand("bold",false,null);}
+}
+function insertTable(key){
+  const ed=document.getElementById("editor-"+key);ed.focus();
+  document.execCommand("insertHTML",false,
+    '<table><tr><th>Oblast</th><th>%</th><th>Komentar</th></tr><tr><td>Nazev</td><td>50</td><td>Popis</td></tr><tr><td>Dalsi oblast</td><td>70</td><td>Popis</td></tr></table>');
+}
 function startEdit(key){
   const content=document.getElementById("content-"+key);
-  const e=document.getElementById("editor-"+key);e.value=content.innerHTML;
+  const ed=document.getElementById("editor-"+key);
+  ed.innerHTML=content.innerHTML;
   content.style.display="none";
-  const w=document.getElementById("edit-wrap-"+key);w.classList.add("active");
-  e.focus();
+  document.getElementById("edit-wrap-"+key).classList.add("active");
   document.getElementById("ai-bar-"+key)?.classList.remove("active");
+  ed.focus();
+  // Place cursor at end
+  const range=document.createRange();const sel=window.getSelection();
+  range.selectNodeContents(ed);range.collapse(false);sel.removeAllRanges();sel.addRange(range);
 }
 function cancelEdit(key){document.getElementById("content-"+key).style.display="";document.getElementById("edit-wrap-"+key).classList.remove("active");}
 async function saveSection(key){
-  const html=document.getElementById("editor-"+key).value.trim();
+  const html=document.getElementById("editor-"+key).innerHTML.trim();
   try{
     const r=await fetch(`/api/zapis/${ZAPIS_ID}/sekce`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({key,html})});
     const d=await r.json();
