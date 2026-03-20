@@ -943,7 +943,11 @@ def odeslat_do_freela(zapis_id):
         payload  = {"name": name}
         assignee = (task.get("assignee") or "").strip()
         deadline = (task.get("deadline") or "").strip()
-        if task.get("desc"): payload["description"] = task["desc"]
+        # Posli popis primo pri vytvareni — zkus vsechna pole ktera Freelo muze prijimat
+        desc = (task.get("desc") or "").strip()
+        if desc:
+            payload["description"] = desc   # zkusi se pri vytvareni
+            payload["note"]        = desc   # nektera verze Freelo API pouziva "note"
         if assignee:
             wid = members_by_name.get(assignee.lower())
             if wid: payload["worker_id"] = wid
@@ -963,9 +967,16 @@ def odeslat_do_freela(zapis_id):
                 if task_id:
                     desc = (task.get("desc") or "").strip()
                     if desc:
-                        # Freelo description endpoint — try both field names
-                        dr = freelo_post(f"/task/{task_id}/description", {"description": desc, "note": desc})
-                        app.logger.info(f"  desc for {task_id}: {dr.status_code} {dr.text[:100]}")
+                        # Zkus i dedicated description endpoint jako fallback
+                        for payload_variant in [
+                            {"note": desc},
+                            {"description": desc},
+                            {"content": desc},
+                        ]:
+                            dr = freelo_post(f"/task/{task_id}/description", payload_variant)
+                            app.logger.info(f"  desc endpoint ({list(payload_variant.keys())[0]}): {dr.status_code} {dr.text[:80]}")
+                            if dr.status_code in (200, 201):
+                                break
                     if assignee and not members_by_name.get(assignee.lower()):
                         freelo_post(f"/task/{task_id}/comments", {"comment": f"Zodpovedna osoba: {assignee}"})
             else:
@@ -977,6 +988,127 @@ def odeslat_do_freela(zapis_id):
         zapis.freelo_sent = True
         db.session.commit()
     return jsonify({"created": created, "errors": errors})
+
+
+@app.route("/api/freelo/test-kompletni")
+@login_required
+def test_freelo_kompletni():
+    """Vytvori v projektu 582553 testovaci list, ukol s popisem a komentar.
+    Vrati co fungovalo a co ne."""
+    PROJECT_ID = 582553
+    log = []
+
+    # 1. Vytvor todo list
+    r = freelo_post(f"/project/{PROJECT_ID}/tasklists", {"name": "TEST API - SMAZAT"})
+    log.append({"krok": "1. Vytvor tasklist", "status": r.status_code, "odpoved": r.text[:300]})
+    if r.status_code not in (200, 201):
+        return jsonify({"chyba": "Nepodarilo se vytvorit tasklist", "log": log})
+    
+    tl_data = r.json()
+    tl = tl_data.get("data") or tl_data
+    if isinstance(tl, list): tl = tl[0]
+    tasklist_id = tl.get("id")
+    log.append({"krok": "1b. Tasklist ID", "id": tasklist_id})
+
+    # 2. Vytvor ukol — zkus ruzna pole pro popis
+    task_payload = {
+        "name": "Test ukol s popisem",
+        "note": "Popis pres pole NOTE pri vytvoreni",
+        "description": "Popis pres pole DESCRIPTION pri vytvoreni",
+    }
+    r2 = freelo_post(f"/project/{PROJECT_ID}/tasklist/{tasklist_id}/tasks", task_payload)
+    log.append({"krok": "2. Vytvor ukol", "status": r2.status_code, "odpoved": r2.text[:400]})
+    if r2.status_code not in (200, 201):
+        return jsonify({"chyba": "Nepodarilo se vytvorit ukol", "log": log})
+
+    t_data = r2.json()
+    task = t_data.get("data") or t_data
+    if isinstance(task, list): task = task[0]
+    task_id = task.get("id")
+    log.append({"krok": "2b. Task ID", "id": task_id})
+
+    # 3. Zkus POST /task/{id}/description s "note"
+    r3 = freelo_post(f"/task/{task_id}/description", {"note": "Popis pres /description endpoint s polem NOTE"})
+    log.append({"krok": "3. /description s note", "status": r3.status_code, "odpoved": r3.text[:300]})
+
+    # 4. Zkus POST /task/{id}/description s "description"
+    r4 = freelo_post(f"/task/{task_id}/description", {"description": "Popis pres /description endpoint s polem DESCRIPTION"})
+    log.append({"krok": "4. /description s description", "status": r4.status_code, "odpoved": r4.text[:300]})
+
+    # 5. Zkus PATCH /task/{id} s "note"
+    r5 = requests.patch(f"https://api.freelo.io/v1/task/{task_id}",
+        auth=freelo_auth(), headers={"Content-Type": "application/json"},
+        json={"note": "Popis pres PATCH s polem NOTE"}, timeout=15)
+    log.append({"krok": "5. PATCH s note", "status": r5.status_code, "odpoved": r5.text[:300]})
+
+    # 6. Pridej komentar
+    r6 = freelo_post(f"/task/{task_id}/comments", {"comment": "Toto je testovaci KOMENTAR z API"})
+    log.append({"krok": "6. Komentar", "status": r6.status_code, "odpoved": r6.text[:300]})
+
+    # 7. Precti vysledny ukol — co se skutecne ulozilo
+    r7 = requests.get(f"https://api.freelo.io/v1/task/{task_id}",
+        auth=freelo_auth(), headers={"Content-Type": "application/json"}, timeout=15)
+    log.append({"krok": "7. GET task - finalni stav", "status": r7.status_code, "odpoved": r7.text[:600]})
+
+    return jsonify({
+        "vysledek": "Hotovo! Zkontroluj projekt 582553 v Freelu.",
+        "tasklist_id": tasklist_id,
+        "task_id": task_id,
+        "log": log
+    })
+
+@app.route("/api/freelo/test-description", methods=["GET"])
+@login_required
+def test_freelo_description():
+    """Vytvori testovaci ukol a zkusi vsechny zpusoby nastaveni popisu."""
+    results = {}
+    try:
+        r = freelo_get("/projects")
+        data = r.json()
+        projects = data if isinstance(data, list) else data.get("data", [])
+        project = next((p for p in projects if p.get("tasklists")), None)
+        if not project:
+            return jsonify({"error": "Zadny projekt s tasklists", "raw": str(data)[:300]})
+        tasklist_id = project["tasklists"][0]["id"]
+        project_id  = project["id"]
+        results["using"] = f"projekt={project['name']}, tasklist={project['tasklists'][0]['name']}"
+    except Exception as e:
+        return jsonify({"error": f"Nemohu nacist projekty: {e}"})
+
+    try:
+        r = freelo_post(f"/project/{project_id}/tasklist/{tasklist_id}/tasks", {"name": "[TEST POPISU - SMAZAT]"})
+        task_data = r.json()
+        task = task_data.get("data") or task_data
+        if isinstance(task, list): task = task[0]
+        task_id = task.get("id")
+        if not task_id:
+            return jsonify({"error": f"Nepodarilo se vytvorit ukol: {r.text[:200]}"})
+        results["task_id"] = task_id
+    except Exception as e:
+        return jsonify({"error": f"Chyba vytvareni: {e}"})
+
+    import requests as req
+    tests = [
+        ("POST_description", lambda: freelo_post(f"/task/{task_id}/description", {"description": "POPIS 1"})),
+        ("POST_note",        lambda: freelo_post(f"/task/{task_id}/description", {"note": "POPIS 2"})),
+        ("PATCH_note",       lambda: req.patch(f"https://api.freelo.io/v1/task/{task_id}", auth=freelo_auth(), headers={"Content-Type":"application/json"}, json={"note": "POPIS 3"}, timeout=10)),
+        ("PATCH_description",lambda: req.patch(f"https://api.freelo.io/v1/task/{task_id}", auth=freelo_auth(), headers={"Content-Type":"application/json"}, json={"description": "POPIS 4"}, timeout=10)),
+    ]
+    for name, fn in tests:
+        try:
+            r = fn()
+            results[name] = {"status": r.status_code, "body": r.text[:200]}
+        except Exception as e:
+            results[name] = {"error": str(e)}
+
+    try:
+        r = req.get(f"https://api.freelo.io/v1/task/{task_id}", auth=freelo_auth(), headers={"Content-Type":"application/json"}, timeout=10)
+        results["final_task"] = r.text[:600]
+    except Exception as e:
+        results["final_task"] = str(e)
+
+    return jsonify(results)
+
 
 # ─────────────────────────────────────────────
 # ROUTES — ADMIN (users)
