@@ -38,7 +38,7 @@
         <td style="font-weight:600;">{{ u.name }}</td>
         <td style="font-size:12px;color:#4A6080;">{{ u.email }}</td>
         <td><span class="badge {% if u.role=='superadmin' %}badge-blue{% elif u.is_admin %}badge-cyan{% else %}badge-gray{% endif %}">{{ u.role }}</span></td>
-        <td>{% if u.is_active %}<span class="badge badge-green">Aktivni</span>{% else %}<span class="badge badge-gray">Neaktivni</span>{% endif %}</td>
+        <td>{% if u.is_active %}<span class="badge badge-green">Aktivní</span>{% else %}<span class="badge badge-gray">Neaktivní</span>{% endif %}</td>
         <td style="font-size:12px;color:#4A6080;">{{ u.zapisy|length }}</td>
         <td>
           <button onclick="editUser({{ u.id }},'{{ u.name }}','{{ u.email }}','{{ u.role }}',{{ 'true' if u.is_admin else 'false' }},{{ 'true' if u.is_active else 'false' }})" class="btn btn-secondary btn-sm">Upravit</button>
@@ -56,7 +56,7 @@
 
   <!-- Add user -->
   <div class="card" style="margin-bottom:1rem;">
-    <div class="card-header"><h2>Pridat uzivatele</h2></div>
+    <div class="card-header"><h2>Přidat uživatele</h2></div>
     <form method="POST" action="{{ url_for('pridat_uzivatele') }}">
       <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:10px;margin-bottom:10px;">
         <div><label>Jmeno</label><input type="text" name="name" required placeholder="Jan Novak"></div>
@@ -68,7 +68,7 @@
         <label style="display:flex;align-items:center;gap:6px;font-size:13px;text-transform:none;letter-spacing:0;font-weight:500;cursor:pointer;">
           <input type="checkbox" name="is_admin" value="1"> Administrator (plny pristup)
         </label>
-        <button type="submit" class="btn btn-navy btn-sm" style="font-family:'DrukCondensed','Impact',sans-serif;font-weight:900;letter-spacing:0.06em;text-transform:uppercase;">Pridat</button>
+        <button type="submit" class="btn btn-navy btn-sm" style="font-family:'DrukCondensed','Impact',sans-serif;font-weight:900;letter-spacing:0.06em;text-transform:uppercase;">Přidat</button>
       </div>
     </form>
   </div>
@@ -102,13 +102,13 @@
         <td style="font-size:12px;color:#4A6080;">{{ k.kontakt }}</td>
         <td style="font-size:12px;color:#4A6080;">{{ k.projekty|length }}</td>
         <td style="font-size:12px;color:#4A6080;">{{ k.zapisy|length }}</td>
-        <td>{% if k.is_active %}<span class="badge badge-green">Aktivni</span>{% else %}<span class="badge badge-gray">Neaktivni</span>{% endif %}</td>
+        <td>{% if k.is_active %}<span class="badge badge-green">Aktivní</span>{% else %}<span class="badge badge-gray">Neaktivní</span>{% endif %}</td>
       </tr>
       {% endfor %}
       </tbody>
     </table>
     {% else %}
-    <div style="padding:1rem;color:#4A6080;font-size:13px;">Zadni klienti.</div>
+    <div style="padding:1rem;color:#4A6080;font-size:13px;">Žádní klienti.</div>
     {% endif %}
   </div>
 </div>
@@ -116,20 +116,20 @@
 <!-- Edit user modal -->
 <div id="edit-modal" style="display:none;position:fixed;inset:0;background:rgba(14,33,62,0.65);z-index:2000;align-items:center;justify-content:center;">
   <div style="background:white;border-radius:8px;padding:28px 32px;width:480px;max-width:calc(100vw - 32px);box-shadow:0 20px 60px rgba(0,0,0,0.3);">
-    <div style="font-family:'DrukCondensed','Impact',sans-serif;font-size:20px;font-weight:900;color:#173767;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:18px;">Upravit uzivatele</div>
+    <div style="font-family:'DrukCondensed','Impact',sans-serif;font-size:20px;font-weight:900;color:#173767;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:18px;">Upravit uživatele</div>
     <form id="edit-form" method="POST">
       <div style="display:grid;gap:12px;">
         <div><label>Jmeno</label><input type="text" name="name" id="edit-name" required></div>
         <div><label>Role</label><select name="role" id="edit-role"><option value="konzultant">konzultant</option><option value="admin">admin</option><option value="superadmin">superadmin</option></select></div>
         <div style="display:flex;gap:16px;">
           <label style="display:flex;align-items:center;gap:6px;font-size:13px;text-transform:none;letter-spacing:0;font-weight:500;cursor:pointer;"><input type="checkbox" name="is_admin" value="1" id="edit-admin"> Administrator</label>
-          <label style="display:flex;align-items:center;gap:6px;font-size:13px;text-transform:none;letter-spacing:0;font-weight:500;cursor:pointer;"><input type="checkbox" name="is_active" value="1" id="edit-active"> Aktivni</label>
+          <label style="display:flex;align-items:center;gap:6px;font-size:13px;text-transform:none;letter-spacing:0;font-weight:500;cursor:pointer;"><input type="checkbox" name="is_active" value="1" id="edit-active"> Aktivní</label>
         </div>
         <div><label>Nove heslo <span style="color:#4A6080;font-weight:400;">(prazdne = nezmeneno)</span></label><input type="password" name="password" placeholder=""></div>
       </div>
       <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:20px;">
         <button type="button" onclick="document.getElementById('edit-modal').style.display='none'" class="btn btn-secondary">Zrušit</button>
-        <button type="submit" class="btn btn-navy" style="font-family:'DrukCondensed','Impact',sans-serif;font-size:14px;font-weight:900;letter-spacing:0.05em;text-transform:uppercase;">Ulozit</button>
+        <button type="submit" class="btn btn-navy" style="font-family:'DrukCondensed','Impact',sans-serif;font-size:14px;font-weight:900;letter-spacing:0.05em;text-transform:uppercase;">Uložit</button>
       </div>
     </form>
   </div>

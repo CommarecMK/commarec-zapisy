@@ -91,7 +91,11 @@
       <div id="{{ key }}-custom" class="tab-content {% if current_prompt %}active{% endif %}">
         <label class="prompt-label">Vlastní system prompt pro AI</label>
         <textarea class="prompt-area" id="prompt-{{ key }}" placeholder="Nechte prázdné pro použití výchozího promptu...">{{ current_prompt }}</textarea>
-        <div class="prompt-hint">Používejte ===SEKCE=== markery pro strukturu výstupu. Prázdné = výchozí prompt je aktivní.</div>
+        <div class="prompt-hint">
+  Povinné: výstup musí obsahovat <strong>===SEKCE===</strong> markery (např. ===PARTICIPANTS_COMMAREC===, ===FINDINGS===...).
+  Vlastní obsah sekcí pište jako HTML. Prázdné pole = aktivní výchozí prompt.
+  <br><strong style="color:#C0392B;">Bez markerů se zápis zobrazí špatně.</strong>
+</div>
         <div class="tmpl-actions">
           <button class="btn-save-tmpl" onclick="savePrompt('{{ key }}')">Uložit</button>
           <button class="btn-reset-tmpl" onclick="resetPrompt('{{ key }}')">Resetovat na výchozí</button>
@@ -122,6 +126,18 @@ function showTab(key, tab) {
 async function savePrompt(key) {
   const prompt = document.getElementById('prompt-' + key).value;
   const status = document.getElementById('status-' + key);
+
+  // Varování pokud prompt neobsahuje ===SEKCE=== markery
+  if (prompt.trim() && !prompt.includes('===PARTICIPANTS_COMMAREC===')) {
+    const ok = confirm(
+      'Vlastní prompt neobsahuje ===SEKCE=== markery.\n\n' +
+      'Bez markerů AI nevrátí správně strukturovaný zápis.\n\n' +
+      'Doporučujeme přidat markery jako:\n===PARTICIPANTS_COMMAREC===\n===FINDINGS===\natd.\n\n' +
+      'Uložit i tak?'
+    );
+    if (!ok) return;
+  }
+
   status.style.color = '#4A6080';
   status.textContent = 'Ukládám...';
   status.classList.add('show');

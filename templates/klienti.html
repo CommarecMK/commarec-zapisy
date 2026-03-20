@@ -7,7 +7,7 @@
       <h1>Klienti</h1>
       <p style="font-size:13px;color:#4A6080;margin-top:4px;">Správa klientu a jejich projektu</p>
     </div>
-    <a href="{{ url_for('klient_novy') }}" class="btn btn-navy" style="font-family:'DrukCondensed','Impact',sans-serif;font-size:14px;font-weight:900;letter-spacing:0.06em;text-transform:uppercase;">+ Novy klient</a>
+    <a href="{{ url_for('klient_novy') }}" class="btn btn-navy" style="font-family:'DrukCondensed','Impact',sans-serif;font-size:14px;font-weight:900;letter-spacing:0.06em;text-transform:uppercase;">+ Nový klient</a>
   </div>
 
   <div class="card" style="padding:0;overflow:hidden;">
@@ -30,7 +30,7 @@
           <td style="font-size:12px;color:#4A6080;">{{ k.kontakt }}</td>
           <td style="font-size:12px;color:#4A6080;">{{ k.projekty|length }}</td>
           <td style="font-size:12px;color:#4A6080;">{{ k.zapisy|length }}</td>
-          <td>{% if k.is_active %}<span class="badge badge-green">Aktivni</span>{% else %}<span class="badge badge-gray">Neaktivni</span>{% endif %}</td>
+          <td>{% if k.is_active %}<span class="badge badge-green">Aktivní</span>{% else %}<span class="badge badge-gray">Neaktivní</span>{% endif %}</td>
           <td><a href="{{ url_for('klient_detail', klient_id=k.id) }}" class="btn btn-secondary btn-sm">Detail &rarr;</a></td>
         </tr>
         {% endfor %}
@@ -38,9 +38,9 @@
     </table>
     {% else %}
     <div style="text-align:center;padding:3rem;">
-      <div style="font-family:'DrukCondensed','Impact',sans-serif;font-size:22px;font-weight:900;color:#173767;text-transform:uppercase;margin-bottom:8px;">Zadni klienti</div>
-      <div style="color:#4A6080;font-size:13px;margin-bottom:1.5rem;">Pridejte prvniho klienta a zacnte sledovat historii schuzek.</div>
-      <a href="{{ url_for('klient_novy') }}" class="btn btn-navy" style="font-family:'DrukCondensed','Impact',sans-serif;font-size:14px;font-weight:900;letter-spacing:0.06em;text-transform:uppercase;">+ Novy klient</a>
+      <div style="font-family:'DrukCondensed','Impact',sans-serif;font-size:22px;font-weight:900;color:#173767;text-transform:uppercase;margin-bottom:8px;">Žádní klienti</div>
+      <div style="color:#4A6080;font-size:13px;margin-bottom:1.5rem;">Přidejte prvního klienta a začněte sledovat historii schuzek.</div>
+      <a href="{{ url_for('klient_novy') }}" class="btn btn-navy" style="font-family:'DrukCondensed','Impact',sans-serif;font-size:14px;font-weight:900;letter-spacing:0.06em;text-transform:uppercase;">+ Nový klient</a>
     </div>
     {% endif %}
   </div>

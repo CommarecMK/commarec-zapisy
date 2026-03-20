@@ -40,7 +40,7 @@
       <div class="stat-sub">ukoly synchronizovany</div>
     </div>
     <div class="stat stat-dark">
-      <div class="stat-label">Aktivni klienti</div>
+      <div class="stat-label">Aktivní klienti</div>
       <div class="stat-value">{{ stats.klienti }}</div>
       <div class="stat-sub"><a href="{{ url_for('klienti_list') }}" style="color:#00AFF0;font-size:11px;">zobrazit vsechny &rarr;</a></div>
     </div>
@@ -67,7 +67,7 @@
     <table>
       <thead>
         <tr>
-          <th>Nazev zapisu</th>
+          <th>Název zapisu</th>
           <th>Klient / Projekt</th>
           <th>Šablona</th>
           <th>Autor</th>
@@ -96,8 +96,8 @@
     {% else %}
     <div class="empty">
       <div class="empty-title">Zatim zadne zapisy</div>
-      <div class="empty-sub">Vytvorte prvni zapis ze schuzky — AI ho vygeneruje za vas.</div>
-      <a href="{{ url_for('novy_zapis') }}" class="btn btn-navy" style="font-family:'DrukCondensed','Impact',sans-serif;font-size:14px;font-weight:900;letter-spacing:0.06em;text-transform:uppercase;">Vytvořit prvni zapis</a>
+      <div class="empty-sub">Vytvořte první zápis ze schůzky — AI ho vygeneruje za vas.</div>
+      <a href="{{ url_for('novy_zapis') }}" class="btn btn-navy" style="font-family:'DrukCondensed','Impact',sans-serif;font-size:14px;font-weight:900;letter-spacing:0.06em;text-transform:uppercase;">Vytvořit první zápis</a>
     </div>
     {% endif %}
   </div>

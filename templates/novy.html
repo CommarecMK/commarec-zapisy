@@ -46,26 +46,28 @@
   align-items: center;
   justify-content: center;
   flex-direction: column;
-  gap: 24px;
+  gap: 32px;
 }
 #loading-overlay.active { display: flex; }
-.loading-logo { height: 28px; width: auto; opacity: 0.7; }
+.loading-logo { height: 36px; width: auto; opacity: 0.85; }
 .loading-title {
   font-family: 'DrukCondensed', 'Impact', sans-serif;
-  font-size: 24px;
+  font-size: 60px;
   font-weight: 900;
   color: white;
   text-transform: uppercase;
-  letter-spacing: 0.12em;
+  letter-spacing: 0.06em;
+  line-height: 1.0;
   text-align: center;
 }
 .loading-sub {
-  font-size: 11px;
-  color: rgba(255,255,255,0.35);
+  font-size: 13px;
+  color: rgba(255,255,255,0.5);
   text-transform: uppercase;
-  letter-spacing: 0.1em;
-  font-weight: 600;
+  letter-spacing: 0.15em;
+  font-weight: 700;
   text-align: center;
+  margin-top: 4px;
 }
 .loading-bar-wrap {
   width: 280px;
@@ -114,7 +116,7 @@ function addNote() {
   div.id = 'note-' + idx;
   div.style.cssText = 'display:grid;grid-template-columns:180px 1fr auto;gap:8px;margin-bottom:8px;align-items:start;';
   div.innerHTML = `
-    <input type="text" placeholder="Titulek (napr. Sklad)" class="note-title" style="padding:8px 10px;border:1.5px solid var(--border);border-radius:5px;font-size:13px;font-family:'Montserrat',sans-serif;">
+    <input type="text" placeholder="Titulek (Např. Sklad)" class="note-title" style="padding:8px 10px;border:1.5px solid var(--border);border-radius:5px;font-size:13px;font-family:'Montserrat',sans-serif;">
     <textarea placeholder="Text poznamky..." class="note-text" rows="2" style="resize:vertical;padding:8px 10px;border:1.5px solid var(--border);border-radius:5px;font-size:13px;font-family:'Montserrat',sans-serif;"></textarea>
     <button onclick="document.getElementById('note-${idx}').remove()" style="padding:6px 10px;border:1.5px solid #f0bcbc;border-radius:5px;background:white;color:#C0392B;cursor:pointer;font-size:16px;margin-top:2px;">&times;</button>`;
   c.appendChild(div);
@@ -122,7 +124,7 @@ function addNote() {
 function getNotes() {
   const notes = [];
   document.querySelectorAll('#notes-container > div').forEach(div => {
-    const title = div.querySelector('.note-title')?.value.trim() || 'Poznamka';
+    const title = div.querySelector('.note-title')?.value.trim() || 'Poznámka';
     const text  = div.querySelector('.note-text')?.value.trim() || '';
     if (text) notes.push({ title, text });
   });
@@ -209,7 +211,7 @@ document.addEventListener('DOMContentLoaded', () => {
 <div class="container">
   <div class="page-header">
     <div>
-      <h1 style="font-family:'DrukCondensed','Impact',sans-serif; font-size:36px; font-weight:900; text-transform:uppercase; letter-spacing:0.05em; color:#173767; line-height:1;">Nový zápis</h1>
+      <h1>Nový zápis</h1>
       <p style="font-size:13px; font-weight:500; color:#4A6080; margin-top:6px;">Vyplňte informace o schůzce a vložte přepis — AI vygeneruje profesionální zápis.</p>
     </div>
     <a href="{{ url_for('dashboard') }}" class="btn btn-secondary">← Zpět</a>
@@ -322,17 +324,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
   <!-- STEP 3b: Poznámky z terénu -->
   <div class="card" style="margin-bottom: 1rem;">
-    <div class="step-header"><span class="step-num" style="color:#4A6080;">03b</span><span class="step-label">Strukturovane poznamky z terénu</span></div>
-    <div style="font-size:12px;color:#4A6080;margin-bottom:12px;">Pridejte strukturovane poznamky z navstevy — oddelenou od prepisu. Maji stejnou vahu jako prepis.</div>
+    <div class="step-header"><span class="step-num" style="color:#4A6080;">03b</span><span class="step-label">Strukturované poznámky z terénu</span></div>
+    <div style="font-size:12px;color:#4A6080;margin-bottom:12px;">Přidejte strukturované poznámky z návštěvy — oddelenou od prepisu. Mají stejnou váhu jako přepis.</div>
     <div id="notes-container"></div>
-    <button onclick="addNote()" class="btn btn-secondary btn-sm" style="margin-top:8px;">+ Pridat poznamku</button>
+    <button onclick="addNote()" class="btn btn-secondary btn-sm" style="margin-top:8px;">+ Přidat poznámku</button>
   </div>
 
   <!-- STEP 3c: Interni prompt -->
   <div class="card" style="margin-bottom: 1rem; border-left: 3px solid #00AFF0;">
     <div class="step-header"><span class="step-num" style="color:#00AFF0;">!</span><span class="step-label">Interní instrukce pro AI</span></div>
-    <div style="font-size:12px;color:#4A6080;margin-bottom:10px;">Specialni instrukce ktere AI musi splnit na 100%. Napr: "Zduraznit problemy s pickovanim B2B", "Pridat doporuceni pro WMS", "Zapis pis strucne".</div>
-    <textarea id="interni-prompt" rows="3" placeholder="napr. Zduraznit urgentni kroky v prvnich 2 tydnech. Pridat kontext o sezonnich spickach..." style="resize:vertical;min-height:80px;"></textarea>
+    <div style="font-size:12px;color:#4A6080;margin-bottom:10px;">Speciální instrukce které AI musí splnit na 100 %. Např.: "Zdůraznit problémy s pickováním B2B", "Přidat doporučení pro WMS", "Zápis piš stručně".</div>
+    <textarea id="interni-prompt" rows="3" placeholder="Např. Zdůraznit urgentní kroky v prvních 2 týdnech. Přidat kontext o sezónních špičkách..." style="resize:vertical;min-height:80px;"></textarea>
   </div>
 
   <!-- STEP 4: Transcript -->
@@ -499,7 +501,7 @@ function addNote() {
   div.id = 'note-' + idx;
   div.style.cssText = 'display:grid;grid-template-columns:180px 1fr auto;gap:8px;margin-bottom:8px;align-items:start;';
   div.innerHTML = `
-    <input type="text" placeholder="Titulek (napr. Sklad)" class="note-title" style="padding:8px 10px;border:1.5px solid var(--border);border-radius:5px;font-size:13px;font-family:'Montserrat',sans-serif;">
+    <input type="text" placeholder="Titulek (Např. Sklad)" class="note-title" style="padding:8px 10px;border:1.5px solid var(--border);border-radius:5px;font-size:13px;font-family:'Montserrat',sans-serif;">
     <textarea placeholder="Text poznamky..." class="note-text" rows="2" style="resize:vertical;padding:8px 10px;border:1.5px solid var(--border);border-radius:5px;font-size:13px;font-family:'Montserrat',sans-serif;"></textarea>
     <button onclick="document.getElementById('note-${idx}').remove()" style="padding:6px 10px;border:1.5px solid #f0bcbc;border-radius:5px;background:white;color:#C0392B;cursor:pointer;font-size:16px;margin-top:2px;">&times;</button>`;
   c.appendChild(div);
@@ -507,7 +509,7 @@ function addNote() {
 function getNotes() {
   const notes = [];
   document.querySelectorAll('#notes-container > div').forEach(div => {
-    const title = div.querySelector('.note-title')?.value.trim() || 'Poznamka';
+    const title = div.querySelector('.note-title')?.value.trim() || 'Poznámka';
     const text  = div.querySelector('.note-text')?.value.trim() || '';
     if (text) notes.push({ title, text });
   });

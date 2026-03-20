@@ -349,6 +349,46 @@ def get_template_prompt(template_key):
     return TEMPLATE_PROMPTS.get(template_key, TEMPLATE_PROMPTS["audit"])
 
 
+# Fixní instrukce formátu — VŽDY přidána na konec, nelze přepsat vlastním promptem
+FORMAT_INSTRUCTIONS = """
+
+=== POVINNÝ FORMÁT VÝSTUPU ===
+Výstup MUSÍ používat přesně tyto markery pro sekce (nic jiného!):
+===PARTICIPANTS_COMMAREC===
+obsah sekce jako HTML (<p>, <ul><li>, <strong>)
+===PARTICIPANTS_COMPANY===
+obsah...
+===INTRODUCTION===
+obsah...
+===MEETING_GOAL===
+obsah...
+===FINDINGS===
+obsah...
+===RATINGS===
+<table>...</table>
+===PROCESSES_DESCRIPTION===
+obsah...
+===DANGERS===
+obsah...
+===SUGGESTED_ACTIONS===
+obsah...
+===EXPECTED_BENEFITS===
+obsah...
+===ADDITIONAL_NOTES===
+obsah...
+===SUMMARY===
+obsah...
+===TASKS===
+UKOL: název
+POPIS: popis
+TERMIN: termín
+---
+
+KRITICKÉ: Výstup nesmí začínat žádným úvodem, JSON, nebo markdown. Pouze ===SEKCE=== markery.
+Nepoužívej emotikony. Obsah sekcí je HTML (ne markdown). Piš česky s diakritikou.
+"""
+
+
 def build_system_prompt(interni_prompt="", klient_profil=None, template="audit"):
     prompt = get_template_prompt(template)
     if klient_profil:
@@ -357,6 +397,8 @@ def build_system_prompt(interni_prompt="", klient_profil=None, template="audit")
             prompt += f"\n\n### PROFIL KLIENTA: {profil_str}"
     if interni_prompt and interni_prompt.strip():
         prompt += f"\n\n### INTERNÍ INSTRUKCE (splnit na 100 %): {interni_prompt.strip()}"
+    # Vždy přidej fixní instrukce formátu — i při vlastním promptu ze správy šablon
+    prompt += FORMAT_INSTRUCTIONS
     return prompt
 
 def build_header_html(client_info):
@@ -735,6 +777,56 @@ def get_projekty_for_klient(klient_id):
     projekty = Projekt.query.filter_by(klient_id=klient_id, is_active=True).all()
     return jsonify([{"id": p.id, "nazev": p.nazev} for p in projekty])
 
+def sanitize_summary(summary):
+    """Oprav časté problémy v AI výstupu uloženém v DB."""
+    if not isinstance(summary, dict):
+        return {}
+    cleaned = {}
+    for key, val in summary.items():
+        if not val:
+            cleaned[key] = val
+            continue
+        val = str(val).strip()
+        # JSON array ["x","y"] → <p>x, y</p>
+        if val.startswith('[') and val.endswith(']'):
+            try:
+                items = json.loads(val)
+                if isinstance(items, list):
+                    val = "<p>" + ", ".join(str(i).strip('"') for i in items) + "</p>"
+            except Exception:
+                pass
+        # Markdown bold **text** → <strong>text</strong>
+        import re
+        val = re.sub(r'[*][*](.+?)[*][*]', r'<strong></strong>', val)
+        # Markdown bullet • nebo - na začátku řádku → <li>
+        if '\n' in val and not val.strip().startswith('<'):
+            lines = val.split('\n')
+            html_lines = []
+            in_ul = False
+            for line in lines:
+                line = line.strip()
+                if not line:
+                    if in_ul:
+                        html_lines.append('</ul>')
+                        in_ul = False
+                    continue
+                if line.startswith(('• ', '- ', '* ')):
+                    if not in_ul:
+                        html_lines.append('<ul>')
+                        in_ul = True
+                    html_lines.append(f'<li>{line[2:]}</li>')
+                else:
+                    if in_ul:
+                        html_lines.append('</ul>')
+                        in_ul = False
+                    html_lines.append(f'<p>{line}</p>')
+            if in_ul:
+                html_lines.append('</ul>')
+            val = '\n'.join(html_lines)
+        cleaned[key] = val
+    return cleaned
+
+
 @app.route("/zapis/<int:zapis_id>")
 @login_required
 def detail_zapisu(zapis_id):
@@ -745,6 +837,8 @@ def detail_zapisu(zapis_id):
         summary = json.loads(zapis.output_json or "{}")
     except Exception:
         summary = {}
+    # Sanitizuj hodnoty — oprav JSON arrays (["x","y"]) → HTML text
+    summary = sanitize_summary(summary)
     return render_template("detail.html", zapis=zapis, tasks=tasks, notes=notes,
                            summary=summary, section_titles=SECTION_TITLES,
                            template_names=TEMPLATE_NAMES)
@@ -756,6 +850,7 @@ def zapis_verejny(token):
         summary = json.loads(zapis.output_json or "{}")
     except Exception:
         summary = {}
+    summary = sanitize_summary(summary)
     return render_template("verejny.html", zapis=zapis, summary=summary,
                            section_titles=SECTION_TITLES, template_names=TEMPLATE_NAMES)
 
@@ -866,35 +961,67 @@ Typ schuzky: {TEMPLATE_NAMES.get(template, template)}
     ]
 
     def parse_sections(text):
-        """Rozdeli odpoved AI na sekce. Zvlada oba formaty:
-           ===NAZEV_SEKCE=== i ===SEKCE: NAZEV_SEKCE===
+        """Parsuje sekce z AI odpovědi. Zvládá různé formáty markerů.
+        Také opravuje časté chyby: JSON pole místo HTML, raw text bez markerů.
         """
         result = {}
         current_key = None
         current_lines = []
 
+        # Normalizuj alternativní markery na standard ===KEY===
+        import re as _re
+        # Zvládne: ## PARTICIPANTS_COMMAREC, # PARTICIPANTS_COMMAREC:, **PARTICIPANTS_COMMAREC**
+        alt_marker = _re.compile(
+            r'^(?:#+\s*|[*]{2})?([A-Z_]{3,30})(?:[:\s*]*)?$'
+        )
+
         for line in text.split("\n"):
             stripped = line.strip()
+
+            # Hlavní formát: ===KEY===
             if stripped.startswith("===") and stripped.endswith("==="):
-                # Save previous section
                 if current_key:
                     result[current_key] = "\n".join(current_lines).strip()
-                # Parse marker — handle both ===KEY=== and ===SEKCE: KEY===
                 inner = stripped.strip("=").strip()
                 if inner.upper().startswith("SEKCE:"):
                     inner = inner[6:].strip()
-                marker = inner.lower().replace(" ", "_")
+                marker = inner.lower().replace(" ", "_").replace("-", "_")
                 if marker in SECTION_KEYS:
                     current_key = marker
                     current_lines = []
                 else:
                     current_key = None
                     current_lines = []
-            elif current_key:
+
+            # Fallback: alternativní markery (## PARTICIPANTS_COMMAREC)
+            elif not current_key or not current_lines:
+                m = alt_marker.match(stripped)
+                if m:
+                    candidate = m.group(1).lower()
+                    if candidate in SECTION_KEYS:
+                        if current_key:
+                            result[current_key] = "\n".join(current_lines).strip()
+                        current_key = candidate
+                        current_lines = []
+                        continue
+                if current_key:
+                    current_lines.append(line)
+            else:
                 current_lines.append(line)
 
         if current_key:
             result[current_key] = "\n".join(current_lines).strip()
+
+        # Oprav hodnoty: JSON array ["x","y"] → <p>x, y</p>
+        for k, v in result.items():
+            if v and v.strip().startswith('[') and v.strip().endswith(']'):
+                try:
+                    import json as _json
+                    items = _json.loads(v.strip())
+                    if isinstance(items, list):
+                        result[k] = "<p>" + ", ".join(str(i) for i in items) + "</p>"
+                except Exception:
+                    pass
 
         return result
 
