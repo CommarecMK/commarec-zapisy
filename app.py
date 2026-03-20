@@ -122,54 +122,55 @@ SECTION_TITLES = {
 # ─────────────────────────────────────────────
 
 SYSTEM_PROMPT_BASE = """
-Pomahes odbornemu konzultantovi firmy Commarec sepsat profesionalni zapisy ze schuzky s klientem.
-Jsi specialista na diagnostiku logistiky, skladoveho hospodarstvi, optimalizaci procesu, WMS/ERP a Supply Chain.
+Jsi expertni konzultant Commarec. Pises profesionalni zapisy z diagnostickych navstev a obchodnich schuzek.
+Specializace: logistika, sklady, picking, WMS/ERP, Supply Chain.
 
-Tvym ukolem je prevest vstupni prepis a poznamky na strukturovany JSON report.
+STYL: Vecny, konkretni, zadne korporatni fraze. Pouzivej cisla a fakta z prepisu.
 
-### COMMAREC METODIKA
-Commarec je logisticka poradenska firma. Navstevujeme sklady klientu, identifikujeme problemy v procesech
-a navrhujeme konkretni zlepseni. Vystupem je profesionalni zapis s hodnocenim a akcnimi kroky.
+VYSTUP: Vrat zapis jako jednotlive sekce oddelene znackami ===SEKCE===.
+Kazda sekce obsahuje HTML obsah (bez nadpisu — ten pridame sami).
+HTML: <ul><li>, <strong>, <table> — zadne inline styly.
 
-### PRAVIDLA
-- Vse pises v cestine, vecne, bez korporatnich frazi.
-- Konkretni fakta, cisla, citace klienta — vse co zaznelo, zahrni.
-- Kde chybi data, dopln realisticke odhady na zaklade kontextu logistiky.
-- Kazda sekce = ciste HTML bez hlavniho nadpisu sekce.
-- Odrazky vzdy jako <ul><li></li></ul>, tabulky jako <table>, dulezite veci <strong>.
-- NIKDY nepouzi inline styly, zadne style=, font-weight:, color: atributy.
+Pouzij PRESNE tuto strukturu (kazda sekce na novem radku za svou znackou):
 
-### JSON VYSTUP — vrat POUZE tento JSON, nic jineho:
-{
-  "participants_commarec": "HTML",
-  "participants_company":  "HTML",
-  "introduction":          "HTML",
-  "meeting_goal":          "HTML",
-  "findings":              "HTML",
-  "ratings":               "HTML — tabulka hodnoceni oblasti 0-100%",
-  "processes_description": "HTML",
-  "dangers":               "HTML",
-  "suggested_actions":     "HTML — akcni kroky kratko/stredne/dlouhodobe",
-  "expected_benefits":     "HTML — kvantifikovane prinosy v %",
-  "additional_notes":      "HTML",
-  "summary":               "HTML — stucne zavrecne shrnuti",
-  "tasks": [
-    {"name": "Nazev ukolu max 100 znaku", "desc": "Co konkretne udelat", "deadline": "YYYY-MM-DD nebo textovy termin"}
-  ]
-}
+===PARTICIPANTS_COMMAREC===
+<p>Kdo byl za Commarec</p>
+===PARTICIPANTS_COMPANY===
+<p>Kdo byl za klienta</p>
+===INTRODUCTION===
+<p>Uvod a kontext navstevy</p>
+===MEETING_GOAL===
+<p>Cil a ucel schuzky</p>
+===FINDINGS===
+<ul><li>Hlavni zjisteni — pozitiva i rizika</li></ul>
+===RATINGS===
+<table><tr><th>Oblast</th><th>%</th><th>Komentar</th></tr>...</table>
+===PROCESSES_DESCRIPTION===
+<p>Popis procesu jak skutecne fungují</p>
+===DANGERS===
+<ul><li>Problem → dopad/riziko</li></ul>
+===SUGGESTED_ACTIONS===
+<p>Kratkodobe (0-1 mes.):</p><ul><li>...</li></ul><p>Strednedobe (1-3 mes.):</p><ul><li>...</li></ul>
+===EXPECTED_BENEFITS===
+<ul><li><strong>X %</strong> — popis prinosu</li></ul>
+===ADDITIONAL_NOTES===
+<p>Osobni postřehy, atmosfera, prekvapeni</p>
+===SUMMARY===
+<p>Strucne zavrecne shrnuti s top prioritami</p>
+===TASKS===
+UKOL: Nazev ukolu (max 80 znaku)
+POPIS: Co konkretne udelat
+TERMIN: do 1 mesice
+---
+UKOL: Dalsi ukol
+POPIS: Popis
+TERMIN: do 3 mesicu
 
-### PRAVIDLA PRO TASKS
-- Min. 3, max. 8 ukolu.
-- Ukoly se tykaji VYHRADNE prace Commarec: optimalizace skladu, logistika, picking, WMS/ERP, datova analyza, procesni audit.
-- Vycházej z suggested_actions — kratkodobe a stredodobe kroky.
-- deadline: pokud zaznelo konkretni datum, pouzij YYYY-MM-DD, jinak textovy termin.
-
-### RATINGS TABULKA — format:
-<table>
-  <tr><th>Oblast</th><th>Hodnoceni (%)</th><th>Komentar</th></tr>
-  <tr><td>Procesni dokumentace</td><td>45</td><td>Chybi standardy...</td></tr>
-  <tr><td colspan="3"><strong>Celkove skore: 55%</strong> | Nejlepsi: X | Nejkriticketjsi: Y</td></tr>
-</table>
+PRAVIDLA:
+- Sekce RATINGS: hodnoceni 0-100%, na konci radek s celkovym skore
+- Sekce TASKS: 3-8 ukolu, pouze prace Commarec (audit, WMS, optimalizace, analyza)
+- Pis v cestine
+- Kde chybi info, doplň rozumny odhad
 """
 
 def build_system_prompt(interni_prompt="", klient_profil=None):
@@ -586,13 +587,16 @@ def generovat():
             except Exception:
                 pass
 
-    # Condense long transcripts
+    # Zkondenzuj dlouhe prepisy — aby vystup AI nepresahl limit tokenu
+    # Limit: 6000 znaku ~ 1700 tokenu vstupu, vystup pak snadno vejde do 8000 tokenu
     transcript = input_text
-    if len(input_text) > 12000:
+    if len(input_text) > 6000:
         try:
+            app.logger.info(f"Condensing transcript: {len(input_text)} chars")
             transcript = condensed_transcript(ai, input_text)
+            app.logger.info(f"Condensed to: {len(transcript)} chars")
         except Exception as e:
-            app.logger.warning(f"Condensation failed: {e}")
+            app.logger.warning(f"Condensation failed, using original: {e}")
 
     # Combine notes with transcript
     notes_text = ""
@@ -628,100 +632,83 @@ Typ schuzky: {TEMPLATE_NAMES.get(template, template)}
         message = ai.messages.create(
             model="claude-sonnet-4-5", max_tokens=8000,
             system=system,
-            messages=[
-                {"role": "user",      "content": user_message},
-                {"role": "assistant", "content": "{"},  # prefill forces JSON output
-            ]
+            messages=[{"role": "user", "content": user_message}]
         )
-        # Prepend the prefill character we started with
-        raw = "{" + message.content[0].text.strip()
-        app.logger.info(f"AI response length: {len(raw)} chars, stop_reason: {message.stop_reason}")
+        raw = message.content[0].text.strip()
+        app.logger.info(f"AI response: {len(raw)} chars, stop={message.stop_reason}")
     except Exception as e:
         return jsonify({"error": f"Chyba API: {str(e)}"}), 500
 
-    # Robust JSON extraction — handles markdown fences, preamble text, partial responses
-    app.logger.info(f"Raw AI response (first 300): {raw[:300]}")
+    # Parse section markers ===SEKCE===
+    SECTION_KEYS = [
+        "participants_commarec", "participants_company", "introduction", "meeting_goal",
+        "findings", "ratings", "processes_description", "dangers", "suggested_actions",
+        "expected_benefits", "additional_notes", "summary", "tasks",
+    ]
 
-    def repair_truncated_json(text):
-        """Pokusi se uzavrit oriznuty JSON pridanim chybejicich zaviracich znaku."""
-        # Spocitej nezavrene { a "
-        depth = 0
-        in_string = False
-        escape_next = False
-        for ch in text:
-            if escape_next:
-                escape_next = False
-                continue
-            if ch == '\\':
-                escape_next = True
-                continue
-            if ch == '"' and not escape_next:
-                in_string = not in_string
-            if not in_string:
-                if ch == '{': depth += 1
-                elif ch == '}': depth -= 1
-        # Uzavri nezavrene retezce a objekty
-        if in_string:
-            text += '"'
-        # Uzavri vsechny otevrene objekty
-        text += '}' * max(0, depth)
-        return text
+    def parse_sections(text):
+        """Rozdeli odpoved AI na sekce. Zvlada oba formaty:
+           ===NAZEV_SEKCE=== i ===SEKCE: NAZEV_SEKCE===
+        """
+        result = {}
+        current_key = None
+        current_lines = []
 
-    def extract_json(text):
-        """Try multiple strategies to extract valid JSON from AI response."""
-        # Strategy 1: strip markdown fences and parse directly
-        cleaned = re.sub(r'^```[\w]*\n?', '', text.strip())
-        cleaned = re.sub(r'\n?```$', '', cleaned).strip()
-        try:
-            return json.loads(cleaned)
-        except Exception:
-            pass
+        for line in text.split("\n"):
+            stripped = line.strip()
+            if stripped.startswith("===") and stripped.endswith("==="):
+                # Save previous section
+                if current_key:
+                    result[current_key] = "\n".join(current_lines).strip()
+                # Parse marker — handle both ===KEY=== and ===SEKCE: KEY===
+                inner = stripped.strip("=").strip()
+                if inner.upper().startswith("SEKCE:"):
+                    inner = inner[6:].strip()
+                marker = inner.lower().replace(" ", "_")
+                if marker in SECTION_KEYS:
+                    current_key = marker
+                    current_lines = []
+                else:
+                    current_key = None
+                    current_lines = []
+            elif current_key:
+                current_lines.append(line)
 
-        # Strategy 2: find the outermost { } block
-        start = text.find('{')
-        if start != -1:
-            # Walk forward counting braces to find matching close
-            depth = 0
-            for i, ch in enumerate(text[start:], start):
-                if ch == '{': depth += 1
-                elif ch == '}':
-                    depth -= 1
-                    if depth == 0:
-                        try:
-                            return json.loads(text[start:i+1])
-                        except Exception:
-                            break
+        if current_key:
+            result[current_key] = "\n".join(current_lines).strip()
 
-        # Strategy 3: regex fallback
-        m = re.search(r'\{.*\}', text, re.DOTALL)
-        if m:
-            try:
-                return json.loads(m.group())
-            except Exception:
-                pass
+        return result
 
-        return None
+    def parse_tasks(tasks_text):
+        """Parsuje UKOL/POPIS/TERMIN bloky ze sekce TASKS."""
+        tasks = []
+        if not tasks_text:
+            return tasks
+        current = {}
+        for line in tasks_text.split("\n"):
+            line = line.strip()
+            if line.startswith("UKOL:"):
+                if current.get("name"):
+                    tasks.append(current)
+                current = {"name": line[5:].strip()[:200], "desc": "", "deadline": "dle dohody"}
+            elif line.startswith("POPIS:") and current:
+                current["desc"] = line[6:].strip()
+            elif line.startswith("TERMIN:") and current:
+                current["deadline"] = line[7:].strip()
+            elif line == "---" and current.get("name"):
+                tasks.append(current)
+                current = {}
+        if current.get("name"):
+            tasks.append(current)
+        return tasks[:8]
 
-    # Pokud byl JSON oriznut (max_tokens), zkus ho uzavrit
-    if message.stop_reason == "max_tokens":
-        app.logger.warning("Response hit max_tokens — attempting JSON repair")
-        raw = repair_truncated_json(raw)
+    summary_json = parse_sections(raw)
 
-    summary_json = extract_json(raw)
-    if summary_json is None:
-        app.logger.error(f"JSON parse failed. Raw response: {raw[:500]}")
-        return jsonify({"error": f"AI vratilo nevalidni JSON. Zkus znovu. (zacatek odpovedi: {raw[:200]})"}), 500
+    if not summary_json:
+        app.logger.error(f"Section parsing failed. Raw: {raw[:400]}")
+        return jsonify({"error": "AI nevrátilo ocekávany format. Zkus znovu."}), 500
 
-    tasks = []
-    raw_tasks = summary_json.pop("tasks", [])
-    if isinstance(raw_tasks, list):
-        for t in raw_tasks:
-            if isinstance(t, dict) and t.get("name"):
-                tasks.append({
-                    "name":     str(t.get("name",""))[:200],
-                    "desc":     str(t.get("desc","")),
-                    "deadline": str(t.get("deadline","dle dohody")),
-                })
+    tasks = parse_tasks(summary_json.pop("tasks", ""))
 
     output_text = assemble_output_text(client_info, summary_json, blocks)
 
@@ -1017,7 +1004,12 @@ def smazat_uzivatele(user_id):
 
 def seed_test_data():
     """Vytvor testovaci data pokud jeste neexistuji."""
-    # Jen pokud je prazdna DB (zadny klient)
+    # Jen pokud je prazdna DB (zadny klient) — race-condition safe
+    if Klient.query.first():
+        return
+    # Dvojita ochrana pro multi-worker startup
+    import time, random
+    time.sleep(random.uniform(0, 0.5))
     if Klient.query.first():
         return
 
@@ -1026,13 +1018,17 @@ def seed_test_data():
     # Test users
     martin = User.query.filter_by(email="martin@commarec.cz").first()
     if not martin:
-        martin = User(
-            email="martin@commarec.cz", name="Martin Komarek",
-            role="konzultant", is_admin=False, is_active=True,
-            password_hash=generate_password_hash("test123")
-        )
-        db.session.add(martin)
-        db.session.flush()
+        try:
+            martin = User(
+                email="martin@commarec.cz", name="Martin Komarek",
+                role="konzultant", is_admin=False, is_active=True,
+                password_hash=generate_password_hash("test123")
+            )
+            db.session.add(martin)
+            db.session.flush()
+        except Exception:
+            db.session.rollback()
+            martin = User.query.filter_by(email="martin@commarec.cz").first()
 
     # Klient 1
     k1 = Klient(
