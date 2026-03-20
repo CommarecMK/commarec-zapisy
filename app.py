@@ -703,10 +703,36 @@ Typ schuzky: {TEMPLATE_NAMES.get(template, template)}
         return tasks[:8]
 
     summary_json = parse_sections(raw)
+    app.logger.info(f"Parsed sections: {list(summary_json.keys())}")
+
+    # Pokud parser nic nenasel — AI ignorovalo format, zkus znovu s pripomentim
+    if not summary_json:
+        app.logger.warning(f"No sections found, retrying. Raw start: {raw[:200]}")
+        retry_msg = user_message + """
+
+DULEZITE: Tvuj vystup MUSI zacinat presne takto (bez jakehokoliv uvodni textu):
+===PARTICIPANTS_COMMAREC===
+...obsah...
+===PARTICIPANTS_COMPANY===
+...obsah...
+atd.
+
+Pouzij PRESNE tyto markery, jinak aplikace zapis nezobrazi."""
+        try:
+            retry = ai.messages.create(
+                model="claude-sonnet-4-5", max_tokens=8000,
+                system=system,
+                messages=[{"role": "user", "content": retry_msg}]
+            )
+            raw = retry.content[0].text.strip()
+            summary_json = parse_sections(raw)
+            app.logger.info(f"Retry parsed sections: {list(summary_json.keys())}")
+        except Exception as e:
+            app.logger.error(f"Retry failed: {e}")
 
     if not summary_json:
-        app.logger.error(f"Section parsing failed. Raw: {raw[:400]}")
-        return jsonify({"error": "AI nevrátilo ocekávany format. Zkus znovu."}), 500
+        app.logger.error(f"Both attempts failed. Raw: {raw[:400]}")
+        return jsonify({"error": f"AI nevrátilo ocekávany format ani po opakování. Začátek odpovědi: {raw[:150]}"}), 500
 
     tasks = parse_tasks(summary_json.pop("tasks", ""))
 
