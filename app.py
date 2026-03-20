@@ -945,6 +945,7 @@ def odeslat_do_freela(zapis_id):
         deadline = (task.get("deadline") or "").strip()
         # Posli popis primo pri vytvareni — zkus vsechna pole ktera Freelo muze prijimat
         desc = (task.get("desc") or "").strip()
+        # Pozn: "content" pri vytvoreni ukolu Freelo ignoruje — popis se posilá zvlášt přes /description
         if assignee:
             wid = members_by_name.get(assignee.lower())
             if wid: payload["worker_id"] = wid
@@ -963,6 +964,7 @@ def odeslat_do_freela(zapis_id):
                 task_id   = (task_data.get("data") or task_data).get("id")
                 if task_id:
                     desc = (task.get("desc") or "").strip()
+        # Pozn: "content" pri vytvoreni ukolu Freelo ignoruje — popis se posilá zvlášt přes /description
                     if desc:
                         # Freelo vyzaduje pole "content" pro popis ukolu
                         dr = freelo_post(f"/task/{task_id}/description", {"content": desc})
