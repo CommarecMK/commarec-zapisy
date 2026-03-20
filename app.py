@@ -945,9 +945,6 @@ def odeslat_do_freela(zapis_id):
         deadline = (task.get("deadline") or "").strip()
         # Posli popis primo pri vytvareni — zkus vsechna pole ktera Freelo muze prijimat
         desc = (task.get("desc") or "").strip()
-        if desc:
-            payload["description"] = desc   # zkusi se pri vytvareni
-            payload["note"]        = desc   # nektera verze Freelo API pouziva "note"
         if assignee:
             wid = members_by_name.get(assignee.lower())
             if wid: payload["worker_id"] = wid
@@ -967,18 +964,11 @@ def odeslat_do_freela(zapis_id):
                 if task_id:
                     desc = (task.get("desc") or "").strip()
                     if desc:
-                        # Zkus i dedicated description endpoint jako fallback
-                        for payload_variant in [
-                            {"note": desc},
-                            {"description": desc},
-                            {"content": desc},
-                        ]:
-                            dr = freelo_post(f"/task/{task_id}/description", payload_variant)
-                            app.logger.info(f"  desc endpoint ({list(payload_variant.keys())[0]}): {dr.status_code} {dr.text[:80]}")
-                            if dr.status_code in (200, 201):
-                                break
+                        # Freelo vyzaduje pole "content" pro popis ukolu
+                        dr = freelo_post(f"/task/{task_id}/description", {"content": desc})
+                        app.logger.info(f"  description: {dr.status_code} {dr.text[:100]}")
                     if assignee and not members_by_name.get(assignee.lower()):
-                        freelo_post(f"/task/{task_id}/comments", {"comment": f"Zodpovedna osoba: {assignee}"})
+                        freelo_post(f"/task/{task_id}/comments", {"content": f"Zodpovedna osoba: {assignee}"})
             else:
                 errors.append(f"{name}: {resp.text[:100]}")
         except Exception as e:
@@ -1010,14 +1000,13 @@ def test_freelo_kompletni():
     tasklist_id = tl.get("id")
     log.append({"krok": "1b. Tasklist ID", "id": tasklist_id})
 
-    # 2. Vytvor ukol — zkus ruzna pole pro popis
+    # 2. Vytvor ukol — zkus "content" primo pri vytvoreni
     task_payload = {
         "name": "Test ukol s popisem",
-        "note": "Popis pres pole NOTE pri vytvoreni",
-        "description": "Popis pres pole DESCRIPTION pri vytvoreni",
+        "content": "Popis pres pole CONTENT pri vytvoreni ukolu",
     }
     r2 = freelo_post(f"/project/{PROJECT_ID}/tasklist/{tasklist_id}/tasks", task_payload)
-    log.append({"krok": "2. Vytvor ukol", "status": r2.status_code, "odpoved": r2.text[:400]})
+    log.append({"krok": "2. Vytvor ukol s content", "status": r2.status_code, "odpoved": r2.text[:400]})
     if r2.status_code not in (200, 201):
         return jsonify({"chyba": "Nepodarilo se vytvorit ukol", "log": log})
 
@@ -1027,23 +1016,23 @@ def test_freelo_kompletni():
     task_id = task.get("id")
     log.append({"krok": "2b. Task ID", "id": task_id})
 
-    # 3. Zkus POST /task/{id}/description s "note"
-    r3 = freelo_post(f"/task/{task_id}/description", {"note": "Popis pres /description endpoint s polem NOTE"})
-    log.append({"krok": "3. /description s note", "status": r3.status_code, "odpoved": r3.text[:300]})
+    # 3. GET description - co je aktualne ulozeno
+    r3 = requests.get(f"https://api.freelo.io/v1/task/{task_id}/description",
+        auth=freelo_auth(), headers={"Content-Type": "application/json"}, timeout=15)
+    log.append({"krok": "3. GET /description", "status": r3.status_code, "odpoved": r3.text[:300]})
 
-    # 4. Zkus POST /task/{id}/description s "description"
-    r4 = freelo_post(f"/task/{task_id}/description", {"description": "Popis pres /description endpoint s polem DESCRIPTION"})
-    log.append({"krok": "4. /description s description", "status": r4.status_code, "odpoved": r4.text[:300]})
+    # 4. POST /description s "content"
+    r4 = freelo_post(f"/task/{task_id}/description", {"content": "TEST CONTENT POLE"})
+    log.append({"krok": "4. POST /description content", "status": r4.status_code, "odpoved": r4.text[:300]})
 
-    # 5. Zkus PATCH /task/{id} s "note"
-    r5 = requests.patch(f"https://api.freelo.io/v1/task/{task_id}",
-        auth=freelo_auth(), headers={"Content-Type": "application/json"},
-        json={"note": "Popis pres PATCH s polem NOTE"}, timeout=15)
-    log.append({"krok": "5. PATCH s note", "status": r5.status_code, "odpoved": r5.text[:300]})
+    # 5. GET description znovu - zmenilo se neco?
+    r5 = requests.get(f"https://api.freelo.io/v1/task/{task_id}/description",
+        auth=freelo_auth(), headers={"Content-Type": "application/json"}, timeout=15)
+    log.append({"krok": "5. GET /description po POST", "status": r5.status_code, "odpoved": r5.text[:300]})
 
-    # 6. Pridej komentar
-    r6 = freelo_post(f"/task/{task_id}/comments", {"comment": "Toto je testovaci KOMENTAR z API"})
-    log.append({"krok": "6. Komentar", "status": r6.status_code, "odpoved": r6.text[:300]})
+    # 6. Komentar s "content"
+    r6 = freelo_post(f"/task/{task_id}/comments", {"content": "Testovaci KOMENTAR s polem content"})
+    log.append({"krok": "6. Komentar content", "status": r6.status_code, "odpoved": r6.text[:300]})
 
     # 7. Precti vysledny ukol — co se skutecne ulozilo
     r7 = requests.get(f"https://api.freelo.io/v1/task/{task_id}",
