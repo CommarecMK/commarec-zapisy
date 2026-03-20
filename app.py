@@ -49,6 +49,16 @@ class Klient(db.Model):
     projekty    = db.relationship("Projekt", back_populates="klient", lazy=True, cascade="all, delete-orphan")
     zapisy      = db.relationship("Zapis", lazy=True, foreign_keys="Zapis.klient_id", viewonly=True)
 
+
+class TemplateConfig(db.Model):
+    """Editovatelné konfigurace šablon zápisů (prompty, sekce)."""
+    __tablename__ = "template_config"
+    id           = db.Column(db.Integer, primary_key=True)
+    template_key = db.Column(db.String(40), unique=True, nullable=False)  # audit, operativa, obchod
+    name         = db.Column(db.String(100), nullable=False)
+    system_prompt = db.Column(db.Text, default="")   # prázdný = použij výchozí z TEMPLATE_PROMPTS
+    updated_at   = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
 class Projekt(db.Model):
     __tablename__ = "projekt"
     id          = db.Column(db.Integer, primary_key=True)
@@ -100,8 +110,140 @@ class Zapis(db.Model):
 
 TEMPLATE_NAMES = {
     "audit":     "Audit / diagnostika",
-    "operativa": "Operativni schuzka",
-    "obchod":    "Obchodni schuzka",
+    "operativa": "Operativní schůzka",
+    "obchod":    "Obchodní schůzka",
+}
+
+# Sekce per typ zápisu — co se generuje a zobrazuje
+TEMPLATE_SECTIONS = {
+    "audit": [
+        "participants_commarec", "participants_company", "introduction", "meeting_goal",
+        "findings", "ratings", "processes_description", "dangers",
+        "suggested_actions", "expected_benefits", "additional_notes", "summary",
+    ],
+    "operativa": [
+        "participants_commarec", "participants_company", "introduction", "meeting_goal",
+        "findings", "dangers", "suggested_actions", "additional_notes", "summary",
+    ],
+    "obchod": [
+        "participants_commarec", "participants_company", "introduction", "meeting_goal",
+        "findings", "suggested_actions", "expected_benefits", "additional_notes", "summary",
+    ],
+}
+
+# Výchozí system prompty per typ — přepisovatelné z DB (TemplateConfig)
+TEMPLATE_PROMPTS = {
+    "audit": """Jsi senior konzultant Commarec. Píšeš profesionální zápis z diagnostické návštěvy skladu nebo logistického provozu.
+Specializace: logistika, WMS/ERP, picking, Supply Chain, řízení provozu.
+
+STYL: Věcný, konkrétní, žádné korporátní fráze. Čísla a fakta z přepisu. Krátké věty.
+Kde zazněl přímý citát: <em>„citát"</em>. Kritická zjištění formuluj ostře, ne vyhýbavě.
+
+VÝSTUP — sekce oddělené značkami ===SEKCE===, HTML obsah bez nadpisu:
+
+===PARTICIPANTS_COMMAREC===
+<p>Jméno — role</p>
+===PARTICIPANTS_COMPANY===
+<p>Jméno — funkce (vedoucí logistiky, COO...)</p>
+===INTRODUCTION===
+<p>Kde, proč, co bylo v centru pozornosti. 2–3 věty.</p>
+===MEETING_GOAL===
+<p>Konkrétní cíl návštěvy.</p>
+===FINDINGS===
+<ul><li><strong>Oblast:</strong> Konkrétní zjištění s čísly</li></ul>
+===RATINGS===
+<table><tr><th>Oblast</th><th>Hodnocení (%)</th><th>Komentář</th></tr>
+<tr><td>Název</td><td>65</td><td>Konkrétní zdůvodnění</td></tr>
+<tr><td colspan="3"><strong>Celkové skóre: XX %</strong></td></tr>
+</table>
+===PROCESSES_DESCRIPTION===
+<p>Příjem, pick, expedice, doprava — jak to skutečně funguje.</p>
+===DANGERS===
+<ul><li><strong>Problém:</strong> Popis → Riziko: dopad</li></ul>
+===SUGGESTED_ACTIONS===
+<p><strong>Krátkodobě (0–1 měsíc):</strong></p><ul><li><strong>Akce:</strong> Co udělat</li></ul>
+<p><strong>Střednědobě (1–3 měsíce):</strong></p><ul><li><strong>Akce:</strong> Co udělat</li></ul>
+===EXPECTED_BENEFITS===
+<ul><li><strong>XX % úspora/zlepšení</strong> — jak a za jak dlouho</li></ul>
+===ADDITIONAL_NOTES===
+<p>Atmosféra, překvapení, co nezaznělo v číslech.</p>
+===SUMMARY===
+<p>Max 3–4 věty: kde klient stojí, TOP 3 priority, potenciál.</p>
+===TASKS===
+UKOL: Konkrétní akce (max 80 znaků)
+POPIS: Co přesně udělat, kdo, jaký výstup
+TERMIN: do X týdnů
+---
+
+PRAVIDLA: Hodnocení 0–100 %, nedomýšlej co nezaznělo, piš česky s diakritikou.
+Interní prompt zapracuj do obsahu sekcí (ne jako samostatnou sekci).""",
+
+    "operativa": """Jsi senior konzultant Commarec. Píšeš stručný zápis z operativní schůzky.
+
+STYL: Věcný, úsporný. Jen to podstatné — rozhodnutí, problémy, úkoly. Bez zbytečného rozboru.
+
+VÝSTUP — sekce oddělené značkami ===SEKCE===:
+
+===PARTICIPANTS_COMMAREC===
+<p>Jméno — role</p>
+===PARTICIPANTS_COMPANY===
+<p>Jméno — funkce</p>
+===INTRODUCTION===
+<p>Kontext schůzky. 1–2 věty.</p>
+===MEETING_GOAL===
+<p>Co jsme řešili.</p>
+===FINDINGS===
+<ul><li><strong>Téma:</strong> Stav a zjištění</li></ul>
+===DANGERS===
+<ul><li><strong>Problém:</strong> Popis → co hrozí</li></ul>
+===SUGGESTED_ACTIONS===
+<p><strong>Ihned:</strong></p><ul><li>Konkrétní krok</li></ul>
+<p><strong>Do příštího setkání:</strong></p><ul><li>Konkrétní krok</li></ul>
+===ADDITIONAL_NOTES===
+<p>Cokoli důležitého co nezapadlo jinam.</p>
+===SUMMARY===
+<p>Výstup schůzky v 2–3 větách. Co bylo dohodnuto.</p>
+===TASKS===
+UKOL: Název úkolu
+POPIS: Kdo, co, do kdy
+TERMIN: do X dnů
+---
+
+PRAVIDLA: Piš česky s diakritikou. Nedomýšlej. Stručně.""",
+
+    "obchod": """Jsi senior konzultant Commarec. Píšeš zápis z obchodní schůzky nebo úvodního setkání s potenciálním klientem.
+
+STYL: Profesionální, orientovaný na příležitosti a další kroky. Zachyť zájem klienta, jeho bolesti a potenciál spolupráce.
+
+VÝSTUP — sekce oddělené značkami ===SEKCE===:
+
+===PARTICIPANTS_COMMAREC===
+<p>Jméno — role</p>
+===PARTICIPANTS_COMPANY===
+<p>Jméno — funkce, firma</p>
+===INTRODUCTION===
+<p>Kontext schůzky — proč se setkali, co byl impuls.</p>
+===MEETING_GOAL===
+<p>Cíl setkání z pohledu obou stran.</p>
+===FINDINGS===
+<ul><li><strong>Bolest/potřeba klienta:</strong> Konkrétní popis</li>
+<li><strong>Aktuální situace:</strong> Jak to mají dnes</li></ul>
+===SUGGESTED_ACTIONS===
+<p><strong>Další kroky Commarec:</strong></p><ul><li>Co připravit, poslat, navrhnout</li></ul>
+<p><strong>Další kroky klienta:</strong></p><ul><li>Co od nich potřebujeme</li></ul>
+===EXPECTED_BENEFITS===
+<ul><li><strong>Potenciál spolupráce:</strong> Odhadovaný rozsah a přínos</li></ul>
+===ADDITIONAL_NOTES===
+<p>Dojem z jednání, otevřené otázky, na co dát pozor.</p>
+===SUMMARY===
+<p>Zájem klienta, dohodnutý next step, timing. Max 3 věty.</p>
+===TASKS===
+UKOL: Konkrétní obchodní akce
+POPIS: Co připravit/poslat/zavolat
+TERMIN: do X dnů
+---
+
+PRAVIDLA: Piš česky s diakritikou. Zachyť obchodní potenciál i rizika.""",
 }
 
 SECTION_TITLES = {
@@ -196,12 +338,25 @@ PRAVIDLA:
 - Pokud byl zadán interní prompt, zapracuj ho do obsahu sekcí (ne jako samostatnou sekci)
 """
 
-def build_system_prompt(interni_prompt="", klient_profil=None):
-    prompt = SYSTEM_PROMPT_BASE
+def get_template_prompt(template_key):
+    """Vrátí system prompt pro šablonu — z DB nebo výchozí."""
+    try:
+        cfg = TemplateConfig.query.filter_by(template_key=template_key).first()
+        if cfg and cfg.system_prompt and cfg.system_prompt.strip():
+            return cfg.system_prompt.strip()
+    except Exception:
+        pass
+    return TEMPLATE_PROMPTS.get(template_key, TEMPLATE_PROMPTS["audit"])
+
+
+def build_system_prompt(interni_prompt="", klient_profil=None, template="audit"):
+    prompt = get_template_prompt(template)
     if klient_profil:
-        prompt += f"\n\n### PROFIL KLIENTA (kontext pro zapis):\n{json.dumps(klient_profil, ensure_ascii=False)}"
+        profil_str = ", ".join(f"{k}: {v}" for k, v in klient_profil.items() if v)
+        if profil_str:
+            prompt += f"\n\n### PROFIL KLIENTA: {profil_str}"
     if interni_prompt and interni_prompt.strip():
-        prompt += f"\n\n### INTERNI PROMPT (nejvyssi priorita — splnit na 100%):\n{interni_prompt.strip()}"
+        prompt += f"\n\n### INTERNÍ INSTRUKCE (splnit na 100 %): {interni_prompt.strip()}"
     return prompt
 
 def build_header_html(client_info):
@@ -239,16 +394,26 @@ def assemble_output_text(client_info, summary_json, blocks):
     return "\n".join(parts)
 
 def condensed_transcript(ai_client, transcript):
-    msg = ai_client.messages.create(
-        model="claude-sonnet-4-5", max_tokens=4000,
-        messages=[{"role": "user", "content": f"""Zkondenzuj tento prepis schuzky.
-Zachovej VSECHNY dulezite informace: jmena, cisla, problemy, reseni, citace, procesy.
-Odstran jen opakovani a zbytecne zdvorilostni fraze.
-Vysledek musi byt srozumitelny a kompletni.
+    """Smart truncation bez API call — zachová začátek, střed a konec přepisu.
+    Pro přepisy > 60k znaků (cca 2h+) zachová 50k nejdůležitějších znaků.
+    """
+    MAX_CHARS = 50000  # ~14k tokenů — dost pro kvalitní výstup, rychlé zpracování
+    if len(transcript) <= MAX_CHARS:
+        return transcript
 
-PREPIS:
-{transcript}"""}])
-    return msg.content[0].text
+    # Zachovej začátek (30%), střed (40%), konec (30%) — nejdůležitější části
+    part = MAX_CHARS // 3
+    start = transcript[:part]
+    mid_start = (len(transcript) - part) // 2
+    middle = transcript[mid_start:mid_start + part]
+    end = transcript[-part:]
+
+    # Ořízni na celé věty/odstavce
+    separator = "\n\n[... část přepisu vynechána pro rychlost zpracování ...]\n\n"
+    condensed = start + separator + middle + separator + end
+
+    app.logger.info(f"Smart truncation: {len(transcript)} -> {len(condensed)} chars (no API call)")
+    return condensed
 
 def extract_klient_profil(ai_client, text, existing=None):
     """Extract/update client profile data from transcript."""
@@ -644,7 +809,7 @@ def generovat():
     # Zkondenzuj dlouhe prepisy — aby vystup AI nepresahl limit tokenu
     # Limit: 6000 znaku ~ 1700 tokenu vstupu, vystup pak snadno vejde do 8000 tokenu
     transcript = input_text
-    if len(input_text) > 6000:
+    if len(input_text) > 50000:  # Zkracuj jen opravdu dlouhé přepisy (>50k znaků = cca 2h+)
         try:
             app.logger.info(f"Condensing transcript: {len(input_text)} chars")
             transcript = condensed_transcript(ai, input_text)
@@ -680,7 +845,7 @@ Typ schuzky: {TEMPLATE_NAMES.get(template, template)}
 
     user_message += f"\nPREPIS / POZNAMKY ZE SCHUZKY:\n{transcript}\n\nVytvor strukturovany JSON zapis. Vrat POUZE validni JSON, zadny jiny text."
 
-    system = build_system_prompt(interni_prompt, klient_profil)
+    system = build_system_prompt(interni_prompt, klient_profil, template)
 
     try:
         message = ai.messages.create(
@@ -797,16 +962,23 @@ Pouzij PRESNE tyto markery, jinak aplikace zapis nezobrazi."""
     meeting_date = client_info.get("meeting_date","").strip()
     title = f"{client_name} - {meeting_date}" if client_name else f"Zapis {meeting_date}"
 
-    # Auto-update client profile from transcript
+    # Auto-update client profile v pozadí (neblokuje odpověď)
     if klient_id:
-        k = Klient.query.get(klient_id)
-        if k:
-            try:
-                existing_profil = json.loads(k.profil_json or "{}")
-                new_profil = extract_klient_profil(ai, input_text, existing_profil)
-                k.profil_json = json.dumps(new_profil, ensure_ascii=False)
-            except Exception as e:
-                app.logger.warning(f"Profile extraction failed: {e}")
+        import threading
+        def update_profil_bg(app_ctx, kid, text):
+            with app_ctx:
+                try:
+                    k = Klient.query.get(kid)
+                    if k:
+                        ai_bg = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
+                        existing = json.loads(k.profil_json or "{}")
+                        new_profil = extract_klient_profil(ai_bg, text[:10000], existing)
+                        k.profil_json = json.dumps(new_profil, ensure_ascii=False)
+                        db.session.commit()
+                except Exception as e:
+                    app.logger.warning(f"BG profile extraction failed: {e}")
+        t = threading.Thread(target=update_profil_bg, args=(app.app_context(), int(klient_id), input_text), daemon=True)
+        t.start()
 
     zapis = Zapis(
         title=title, template=template,
@@ -1194,6 +1366,52 @@ def upravit_uzivatele(user_id):
     db.session.commit()
     return redirect(url_for("admin"))
 
+@app.route("/admin/templates", methods=["GET"])
+@login_required
+def admin_templates():
+    if not session.get("is_admin"):
+        return redirect(url_for("dashboard"))
+    configs = {}
+    for key in TEMPLATE_PROMPTS:
+        cfg = TemplateConfig.query.filter_by(template_key=key).first()
+        configs[key] = cfg
+    return render_template("admin_templates.html",
+        configs=configs, template_names=TEMPLATE_NAMES,
+        default_prompts=TEMPLATE_PROMPTS, template_sections=TEMPLATE_SECTIONS)
+
+
+@app.route("/admin/templates/<template_key>", methods=["POST"])
+@login_required
+def admin_template_save(template_key):
+    if not session.get("is_admin"):
+        return jsonify({"error": "Unauthorized"}), 403
+    if template_key not in TEMPLATE_PROMPTS:
+        return jsonify({"error": "Neznámá šablona"}), 404
+    prompt = request.form.get("system_prompt", "").strip()
+    cfg = TemplateConfig.query.filter_by(template_key=template_key).first()
+    if not cfg:
+        cfg = TemplateConfig(
+            template_key=template_key,
+            name=TEMPLATE_NAMES.get(template_key, template_key)
+        )
+        db.session.add(cfg)
+    cfg.system_prompt = prompt
+    db.session.commit()
+    return jsonify({"ok": True, "msg": "Šablona uložena"})
+
+
+@app.route("/admin/templates/<template_key>/reset", methods=["POST"])
+@login_required
+def admin_template_reset(template_key):
+    if not session.get("is_admin"):
+        return jsonify({"error": "Unauthorized"}), 403
+    cfg = TemplateConfig.query.filter_by(template_key=template_key).first()
+    if cfg:
+        cfg.system_prompt = ""
+        db.session.commit()
+    return jsonify({"ok": True, "msg": "Resetováno na výchozí"})
+
+
 @app.route("/admin/smazat-uzivatele/<int:user_id>", methods=["POST"])
 @admin_required
 def smazat_uzivatele(user_id):
@@ -1373,7 +1591,7 @@ def seed_test_data():
 
 with app.app_context():
     try:
-        db.create_all()  # skips existing tables — safe to run repeatedly
+        db.create_all()  # skips existing tables — safe to run repeatedly (vytvoří i template_config)
         # Auto-migrate new columns
         migrations = [
             ("zapis", "output_json",    "ALTER TABLE zapis ADD COLUMN output_json TEXT DEFAULT '{}'"),

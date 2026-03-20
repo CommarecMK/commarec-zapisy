@@ -352,7 +352,13 @@ document.addEventListener('DOMContentLoaded', () => {
 <script>
 let selectedTemplate = 'audit';
 const tmplNames = {"audit": "Audit", "operativa": "Operativní schůzka", "obchod": "Obchodní schůzka"};
-const activeBlocks = new Set(['uvod','zjisteni','hodnoceni','procesy','rizika','kroky','prinosy','poznamky','dalsi_krok']);
+// Sekce per typ šablony — odpovídají TEMPLATE_SECTIONS v app.py
+const TEMPLATE_SECTIONS = {
+  'audit':     ['uvod','zjisteni','hodnoceni','procesy','rizika','kroky','prinosy','poznamky'],
+  'operativa': ['uvod','zjisteni','rizika','kroky','poznamky'],
+  'obchod':    ['uvod','zjisteni','kroky','prinosy','poznamky'],
+};
+const activeBlocks = new Set(TEMPLATE_SECTIONS[selectedTemplate] || TEMPLATE_SECTIONS['audit']);
 
 const LOADING_MSGS = [
   'Analyzuji přepis schůzky...',

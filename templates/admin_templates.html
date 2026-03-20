@@ -1,0 +1,163 @@
+{% extends "base.html" %}
+{% block title %}Správa šablon zápisů{% endblock %}
+{% block extra_head %}
+<style>
+.tmpl-card{background:white;border:1px solid var(--border);border-radius:8px;margin-bottom:1.5rem;overflow:hidden;}
+.tmpl-header{background:#f7f9fb;padding:14px 20px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border);}
+.tmpl-name{font-family:"DrukCondensed","Impact",sans-serif;font-size:18px;font-weight:900;color:#173767;text-transform:uppercase;letter-spacing:0.04em;}
+.tmpl-badge{font-size:10px;font-weight:700;padding:3px 10px;border-radius:3px;text-transform:uppercase;letter-spacing:0.06em;background:#E0F5FD;color:#006E8A;}
+.tmpl-body{padding:20px;}
+.tmpl-sections{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:16px;}
+.sec-tag{font-size:10px;font-weight:700;padding:3px 8px;border-radius:3px;background:#f0f3f7;color:#4A6080;border:1px solid var(--border);text-transform:uppercase;letter-spacing:0.04em;}
+.prompt-area{width:100%;min-height:300px;padding:12px 14px;border:1.5px solid var(--border);border-radius:6px;font-size:12px;font-family:'Courier New',monospace;line-height:1.6;resize:vertical;background:#fafcff;color:#1a2533;}
+.prompt-area:focus{outline:none;border-color:#00AFF0;}
+.prompt-label{font-size:11px;font-weight:700;color:#4A6080;text-transform:uppercase;letter-spacing:0.08em;display:block;margin-bottom:6px;}
+.prompt-hint{font-size:11px;color:#8aa0b8;margin-top:6px;}
+.tmpl-actions{display:flex;gap:8px;margin-top:12px;align-items:center;}
+.btn-save-tmpl{font-family:"Montserrat",sans-serif;font-size:12px;font-weight:700;background:#173767;color:white;border:none;padding:8px 20px;border-radius:5px;cursor:pointer;text-transform:uppercase;letter-spacing:0.04em;}
+.btn-save-tmpl:hover{background:#254f8a;}
+.btn-reset-tmpl{font-size:12px;font-weight:600;font-family:"Montserrat",sans-serif;background:white;color:#4A6080;border:1.5px solid var(--border);padding:7px 16px;border-radius:5px;cursor:pointer;}
+.btn-reset-tmpl:hover{border-color:#C0392B;color:#C0392B;}
+.save-status{font-size:12px;font-weight:600;opacity:0;transition:opacity 0.3s;}
+.save-status.show{opacity:1;}
+.tab-bar{display:flex;gap:2px;border-bottom:2px solid var(--border);margin-bottom:1.5rem;}
+.tab-btn{padding:8px 16px;font-size:12px;font-weight:700;color:#4A6080;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-2px;text-transform:uppercase;letter-spacing:0.06em;background:none;border-left:none;border-right:none;border-top:none;font-family:"Montserrat",sans-serif;}
+.tab-btn.active{color:#173767;border-bottom-color:#00AFF0;}
+.tab-content{display:none;}
+.tab-content.active{display:block;}
+</style>
+{% endblock %}
+{% block content %}
+<div class="container">
+  <div class="page-header">
+    <div>
+      <h1>Správa šablon zápisů</h1>
+      <p style="color:#4A6080;font-size:13px;margin-top:4px;">Každý typ zápisu má vlastní AI instrukce a sadu sekcí. Prázdné pole = použije se výchozí prompt.</p>
+    </div>
+    <a href="{{ url_for('admin') }}" class="btn btn-secondary">&larr; Zpět na správu</a>
+  </div>
+
+  {% for key, name in template_names.items() %}
+  {% set cfg = configs.get(key) %}
+  {% set sections = template_sections.get(key, []) %}
+  {% set default_prompt = default_prompts.get(key, '') %}
+  {% set current_prompt = cfg.system_prompt if cfg and cfg.system_prompt else '' %}
+
+  <div class="tmpl-card" id="card-{{ key }}">
+    <div class="tmpl-header">
+      <div style="display:flex;align-items:center;gap:12px;">
+        <span class="tmpl-name">{{ name }}</span>
+        <span class="tmpl-badge">{{ key }}</span>
+        {% if current_prompt %}
+          <span style="font-size:10px;font-weight:600;color:#0A7A5A;background:#E2F5EE;padding:2px 8px;border-radius:3px;">Vlastní prompt</span>
+        {% else %}
+          <span style="font-size:10px;font-weight:600;color:#4A6080;background:#f0f3f7;padding:2px 8px;border-radius:3px;">Výchozí prompt</span>
+        {% endif %}
+      </div>
+      <span style="font-size:11px;color:#8aa0b8;">{{ sections|length }} sekcí</span>
+    </div>
+    <div class="tmpl-body">
+
+      <!-- Sekce -->
+      <div style="margin-bottom:14px;">
+        <span class="prompt-label">Sekce tohoto typu zápisu</span>
+        <div class="tmpl-sections">
+          {% set sec_labels = {
+            'participants_commarec': 'Zastoupení Commarec',
+            'participants_company': 'Zastoupení klienta',
+            'introduction': 'Úvod',
+            'meeting_goal': 'Účel návštěvy',
+            'findings': 'Hlavní zjištění',
+            'ratings': 'Hodnocení oblastí',
+            'processes_description': 'Popis procesu',
+            'dangers': 'Problémy a rizika',
+            'suggested_actions': 'Akční kroky',
+            'expected_benefits': 'Očekávané přínosy',
+            'additional_notes': 'Poznámky z terénu',
+            'summary': 'Shrnutí',
+          } %}
+          {% for sec in sections %}
+          <span class="sec-tag">{{ sec_labels.get(sec, sec) }}</span>
+          {% endfor %}
+        </div>
+      </div>
+
+      <!-- Tabs: Vlastní vs Výchozí -->
+      <div class="tab-bar">
+        <button class="tab-btn {% if current_prompt %}active{% endif %}" onclick="showTab('{{ key }}', 'custom')">✎ Vlastní prompt</button>
+        <button class="tab-btn {% if not current_prompt %}active{% endif %}" onclick="showTab('{{ key }}', 'default')">Výchozí prompt (jen pro čtení)</button>
+      </div>
+
+      <div id="{{ key }}-custom" class="tab-content {% if current_prompt %}active{% endif %}">
+        <label class="prompt-label">Vlastní system prompt pro AI</label>
+        <textarea class="prompt-area" id="prompt-{{ key }}" placeholder="Nechte prázdné pro použití výchozího promptu...">{{ current_prompt }}</textarea>
+        <div class="prompt-hint">Používejte ===SEKCE=== markery pro strukturu výstupu. Prázdné = výchozí prompt je aktivní.</div>
+        <div class="tmpl-actions">
+          <button class="btn-save-tmpl" onclick="savePrompt('{{ key }}')">Uložit</button>
+          <button class="btn-reset-tmpl" onclick="resetPrompt('{{ key }}')">Resetovat na výchozí</button>
+          <span class="save-status" id="status-{{ key }}"></span>
+        </div>
+      </div>
+
+      <div id="{{ key }}-default" class="tab-content {% if not current_prompt %}active{% endif %}">
+        <label class="prompt-label">Výchozí prompt (jen pro čtení — upravte ve vlastním promptu)</label>
+        <textarea class="prompt-area" readonly style="background:#f7f9fb;color:#4A6080;">{{ default_prompt }}</textarea>
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+
+<script>
+function showTab(key, tab) {
+  document.getElementById(key + '-custom').classList.remove('active');
+  document.getElementById(key + '-default').classList.remove('active');
+  document.getElementById(key + '-' + tab).classList.add('active');
+  const card = document.getElementById('card-' + key);
+  card.querySelectorAll('.tab-btn').forEach((btn, i) => {
+    btn.classList.toggle('active', (i === 0 && tab === 'custom') || (i === 1 && tab === 'default'));
+  });
+}
+
+async function savePrompt(key) {
+  const prompt = document.getElementById('prompt-' + key).value;
+  const status = document.getElementById('status-' + key);
+  status.style.color = '#4A6080';
+  status.textContent = 'Ukládám...';
+  status.classList.add('show');
+
+  const form = new FormData();
+  form.append('system_prompt', prompt);
+
+  try {
+    const r = await fetch(`/admin/templates/${key}`, {method: 'POST', body: form});
+    const d = await r.json();
+    if (d.ok) {
+      status.style.color = '#0A7A5A';
+      status.textContent = '✓ Uloženo';
+      setTimeout(() => status.classList.remove('show'), 2500);
+    } else {
+      status.style.color = '#C0392B';
+      status.textContent = '✗ Chyba';
+    }
+  } catch(e) {
+    status.style.color = '#C0392B';
+    status.textContent = '✗ Chyba sítě';
+  }
+}
+
+async function resetPrompt(key) {
+  if (!confirm('Resetovat na výchozí prompt? Vlastní prompt bude smazán.')) return;
+  const r = await fetch(`/admin/templates/${key}/reset`, {method: 'POST'});
+  const d = await r.json();
+  if (d.ok) {
+    document.getElementById('prompt-' + key).value = '';
+    const status = document.getElementById('status-' + key);
+    status.style.color = '#4A6080';
+    status.textContent = 'Resetováno na výchozí';
+    status.classList.add('show');
+    setTimeout(() => status.classList.remove('show'), 2500);
+  }
+}
+</script>
+{% endblock %}
