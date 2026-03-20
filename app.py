@@ -1275,31 +1275,31 @@ def seed_test_data():
     db.session.add(p2)
     db.session.flush()
 
-    # Zápis 1 — audit Testovací Logistika
+    # Zápis 1  -  audit Testovací Logistika
     summary1 = {
-        "participants_commarec": "<p>Martin Komárek — vedoucí konzultant</p>",
+        "participants_commarec": "<p>Martin Komárek  -  vedoucí konzultant</p>",
         "participants_company": "<p>Petr Novotný (ředitel logistiky), Pavel Beneš (vedoucí skladu)</p>",
         "introduction": "<p>Diagnostická návštěva zaměřená na identifikaci příčin rostoucího backlogu a chybovosti při expedici B2B objednávek.</p>",
         "meeting_goal": "<p>Zmapovat aktuální stav pickování, změřit výkonnost a navrhnout konkrétní opatření.</p>",
         "findings": "<ul><li><strong>Pozitivní:</strong> Motivovaný tým, dobrá znalost sortimentu, zavedené ranní porady</li><li><strong>Rizika:</strong> Chybovost pickování 4,2 % (standard je pod 0,5 %), backlog 3 dny, WMS bez wave-planningu</li></ul>",
         "ratings": "<table><tr><th>Oblast</th><th>Hodnocení (%)</th><th>Komentář</th></tr><tr><td>Procesní dokumentace</td><td>35</td><td>Chybí standardy pro B2B picking</td></tr><tr><td>WMS utilizace</td><td>45</td><td>Nevyužívají wave planning ani ABC analýzu</td></tr><tr><td>Layout skladu</td><td>60</td><td>Základní zónování, reserve locations OK</td></tr><tr><td>Produktivita pickování</td><td>40</td><td>58 řádků/hod, potenciál 90+</td></tr><tr><td colspan='3'><strong>Celkové skóre: 45 %</strong> | Nejlepší: Layout | Nejkritičtější: Chybovost</td></tr></table>",
-        "processes_description": "<p>Picking probíhá single-order metodou bez batch zpracování. Pracovníci chodí pro každou objednávku zvlášť, průměrná vzdálenost 340 m/objednávka. <em>„Máme pocit, že chodíme pořád dokola"</em> (Pavel Beneš). ABC analýza nebyla nikdy provedena — fast-movers jsou rozmísteny náhodně po celém skladu.</p>",
+        "processes_description": "<p>Picking probíhá single-order metodou bez batch zpracování. Pracovníci chodí pro každou objednávku zvlášť, průměrná vzdálenost 340 m/objednávka. ABC analýza nebyla nikdy provedena - fast-movers jsou rozmísteny náhodně po celém skladu.</p>",
         "dangers": "<ul><li><strong>Chybovost 4,2 %</strong> → reklamace, ztráta zákazníků, přepracování</li><li><strong>Backlog 3 dny</strong> → nesplněné SLA, pokuty od odběratelů</li><li><strong>Odchod klíčových lidí</strong> → frustrace z chaosu, 2 výpovědi za Q4 2024</li></ul>",
-        "suggested_actions": "<p><strong>Krátkodobé (0–1 měsíc):</strong></p><ul><li>ABC analýza sortimentu — přesunout top 200 SKU do pick zóny A</li><li>Zavedení batch pickingu pro B2C objednávky (skupiny po 8–12 obj.)</li></ul><p><strong>Střednědobé (1–3 měsíce):</strong></p><ul><li>Konfigurace wave planningu v Helios Orange</li><li>Tvorba standardů a SOP pro picking B2B</li></ul>",
-        "expected_benefits": "<ul><li><strong>Snížení chybovosti</strong> z 4,2 % na pod 0,8 % — úspora 280 tis. Kč/rok na reklamacích</li><li><strong>Zvýšení produktivity</strong> o 35–45 % po zavedení batch pickingu</li><li><strong>Odbourání backlogu</strong> do 2 týdnů od implementace ABC zónování</li></ul>",
-        "additional_notes": "<p>Velmi pozitivní přístup vedení — okamžitě souhlasili s navrhovanými změnami. Pavel Beneš je silný interní champion. Sklad je čistý a dobře organizovaný co se týče fyzického uspořádání — problém je v procesech, ne v prostoru.</p>",
-        "summary": "<p>Sklad Testovací Logistika má solidní základy, ale trpí procesními neduhy typickými pro organicky rostoucí e-commerce/B2B operaci. Priorita č. 1: ABC analýza a přesun fast-movers. Priorita č. 2: batch picking. Očekáváme rychlé výsledky — tým je motivovaný a vedení plně podporuje změny.</p>",
+        "suggested_actions": "<p><strong>Krátkodobé (0 - 1 měsíc):</strong></p><ul><li>ABC analýza sortimentu  -  přesunout top 200 SKU do pick zóny A</li><li>Zavedení batch pickingu pro B2C objednávky (skupiny po 8 - 12 obj.)</li></ul><p><strong>Střednědobé (1 - 3 měsíce):</strong></p><ul><li>Konfigurace wave planningu v Helios Orange</li><li>Tvorba standardů a SOP pro picking B2B</li></ul>",
+        "expected_benefits": "<ul><li><strong>Snížení chybovosti</strong> z 4,2 % na pod 0,8 %  -  úspora 280 tis. Kč/rok na reklamacích</li><li><strong>Zvýšení produktivity</strong> o 35 - 45 % po zavedení batch pickingu</li><li><strong>Odbourání backlogu</strong> do 2 týdnů od implementace ABC zónování</li></ul>",
+        "additional_notes": "<p>Velmi pozitivní přístup vedení  -  okamžitě souhlasili s navrhovanými změnami. Pavel Beneš je silný interní champion. Sklad je čistý a dobře organizovaný co se týče fyzického uspořádání  -  problém je v procesech, ne v prostoru.</p>",
+        "summary": "<p>Sklad Testovací Logistika má solidní základy, ale trpí procesními neduhy typickými pro organicky rostoucí e-commerce/B2B operaci. Priorita č. 1: ABC analýza a přesun fast-movers. Priorita č. 2: batch picking. Očekáváme rychlé výsledky  -  tým je motivovaný a vedení plně podporuje změny.</p>",
     }
 
     z1 = Zapis(
-        title="Testovací Logistika s.r.o. – Audit skladu",
+        title="Testovací Logistika s.r.o.  -  Audit skladu",
         template="audit",
-        input_text="[Testovací zápis — vygenerováno jako seed data]",
+        input_text="[Testovací zápis  -  vygenerováno jako seed data]",
         output_json=json.dumps(summary1, ensure_ascii=False),
         output_text="",
         tasks_json=json.dumps([
             {"name": "ABC analýza sortimentu", "desc": "Provést analýzu pohyblivosti SKU a navrhnout rozmístění fast-movers do zóny A", "deadline": "do 1 měsíce"},
-            {"name": "Návrh batch picking procesu", "desc": "Zpracovat návrh wave plánu pro B2C objednávky, skupiny 8–12 obj.", "deadline": "do 3 týdnů"},
+            {"name": "Návrh batch picking procesu", "desc": "Zpracovat návrh wave plánu pro B2C objednávky, skupiny 8 - 12 obj.", "deadline": "do 3 týdnů"},
             {"name": "Konfigurace wave planningu v Helios", "desc": "Spolupráce s IT na nastavení wave planning modulu v Helios Orange", "deadline": "do 2 měsíců"},
         ], ensure_ascii=False),
         interni_prompt="",
@@ -1315,20 +1315,20 @@ def seed_test_data():
     z1.output_text = assemble_output_text(client_info, summary1, all_blocks)
     db.session.add(z1)
 
-    # Zápis 2 — kick-off Demo Expres
+    # Zápis 2  -  kick-off Demo Expres
     summary2 = {
         "participants_commarec": "<p>Martin Komárek</p>",
         "participants_company": "<p>Jana Horáčková (COO), Tomáš Král (IT ředitel)</p>",
         "introduction": "<p>Kick-off meeting k výběru WMS systému. Diskuse požadavků a harmonogramu implementace.</p>",
         "meeting_goal": "<p>Definovat klíčové požadavky na WMS, odsouhlasit shortlist dodavatelů a nastavit harmonogram výběrového řízení.</p>",
-        "findings": "<ul><li>Aktuálně používají Excel + papírové průvodky — žádný WMS</li><li>Denní expedice 1 200 ks, 3 směny, 45 zaměstnanců</li><li>Požadavek na go-live do září 2025</li></ul>",
-        "suggested_actions": "<p><strong>Krátkodobé:</strong></p><ul><li>Commarec připraví RFP dokument do 28. 2.</li><li>Demo Expres dodá kompletní seznam SKU a procesní mapu do 7. 3.</li></ul><p><strong>Střednědobé:</strong></p><ul><li>Demo prezentace 3 dodavatelů — duben 2025</li><li>Výběr dodavatele — květen 2025</li></ul>",
+        "findings": "<ul><li>Aktuálně používají Excel + papírové průvodky  -  žádný WMS</li><li>Denní expedice 1 200 ks, 3 směny, 45 zaměstnanců</li><li>Požadavek na go-live do září 2025</li></ul>",
+        "suggested_actions": "<p><strong>Krátkodobé:</strong></p><ul><li>Commarec připraví RFP dokument do 28. 2.</li><li>Demo Expres dodá kompletní seznam SKU a procesní mapu do 7. 3.</li></ul><p><strong>Střednědobé:</strong></p><ul><li>Demo prezentace 3 dodavatelů  -  duben 2025</li><li>Výběr dodavatele  -  květen 2025</li></ul>",
         "summary": "<p>Kick-off proběhl konstruktivně. Obě strany shodnuty na harmonogramu. Hlavní riziko: krátký timeline na go-live (6 měsíců). Commarec doporučuje zvážit fázovaný rollout.</p>",
     }
     z2 = Zapis(
-        title="Demo Expres a.s. – WMS Kick-off",
+        title="Demo Expres a.s.  -  WMS Kick-off",
         template="operativa",
-        input_text="[Testovací zápis — vygenerováno jako seed data]",
+        input_text="[Testovací zápis  -  vygenerováno jako seed data]",
         output_json=json.dumps(summary2, ensure_ascii=False),
         output_text="",
         tasks_json=json.dumps([
