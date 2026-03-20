@@ -44,8 +44,8 @@ class Klient(db.Model):
     created_at  = db.Column(db.DateTime, default=datetime.utcnow)
     # profil skladu (JSON) — automaticky extrahovan z prepisu
     profil_json = db.Column(db.Text, default="{}")
-    projekty    = db.relationship("Projekt", backref="klient_ref", lazy=True, cascade="all, delete-orphan")
-    zapisy      = db.relationship("Zapis", lazy=True, foreign_keys="Zapis.klient_id")
+    projekty    = db.relationship("Projekt", back_populates="klient", lazy=True, cascade="all, delete-orphan")
+    zapisy      = db.relationship("Zapis", lazy=True, foreign_keys="Zapis.klient_id", viewonly=True)
 
 class Projekt(db.Model):
     __tablename__ = "projekt"
@@ -58,9 +58,9 @@ class Projekt(db.Model):
     datum_do    = db.Column(db.Date, nullable=True)
     is_active   = db.Column(db.Boolean, default=True)
     created_at  = db.Column(db.DateTime, default=datetime.utcnow)
-    zapisy      = db.relationship("Zapis", lazy=True, foreign_keys="Zapis.projekt_id")
     konzultant  = db.relationship("User", backref="user_projekty", foreign_keys=[user_id])
-    klient      = db.relationship("Klient", foreign_keys=[klient_id], lazy="joined")
+    klient      = db.relationship("Klient", foreign_keys=[klient_id], back_populates="projekty", lazy="joined")
+    zapisy      = db.relationship("Zapis", lazy=True, foreign_keys="Zapis.projekt_id", viewonly=True)
 
 class User(db.Model):
     id            = db.Column(db.Integer, primary_key=True)
@@ -93,8 +93,8 @@ class Zapis(db.Model):
     user_id         = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False)
     klient_id       = db.Column(db.Integer, db.ForeignKey("klient.id"), nullable=True)
     projekt_id      = db.Column(db.Integer, db.ForeignKey("projekt.id"), nullable=True)
-    klient          = db.relationship("Klient", foreign_keys=[klient_id], lazy="joined")
-    projekt         = db.relationship("Projekt", foreign_keys=[projekt_id], lazy="joined")
+    klient          = db.relationship("Klient", foreign_keys=[klient_id], lazy="joined", overlaps="zapisy,klient_ref")
+    projekt         = db.relationship("Projekt", foreign_keys=[projekt_id], lazy="joined", overlaps="zapisy,klient")
 
 TEMPLATE_NAMES = {
     "audit":     "Audit / diagnostika",
@@ -628,26 +628,58 @@ Typ schuzky: {TEMPLATE_NAMES.get(template, template)}
         message = ai.messages.create(
             model="claude-sonnet-4-5", max_tokens=4000,
             system=system,
-            messages=[{"role": "user", "content": user_message}]
+            messages=[
+                {"role": "user",      "content": user_message},
+                {"role": "assistant", "content": "{"},  # prefill forces JSON output
+            ]
         )
-        raw = message.content[0].text.strip()
+        # Prepend the prefill character we started with
+        raw = "{" + message.content[0].text.strip()
     except Exception as e:
         return jsonify({"error": f"Chyba API: {str(e)}"}), 500
 
-    raw = re.sub(r'^```[\w]*\n?', '', raw)
-    raw = re.sub(r'\n?```$', '', raw).strip()
+    # Robust JSON extraction — handles markdown fences, preamble text, partial responses
+    app.logger.info(f"Raw AI response (first 300): {raw[:300]}")
 
-    try:
-        summary_json = json.loads(raw)
-    except json.JSONDecodeError:
-        m = re.search(r'\{.*\}', raw, re.DOTALL)
+    def extract_json(text):
+        """Try multiple strategies to extract valid JSON from AI response."""
+        # Strategy 1: strip markdown fences and parse directly
+        cleaned = re.sub(r'^```[\w]*\n?', '', text.strip())
+        cleaned = re.sub(r'\n?```$', '', cleaned).strip()
+        try:
+            return json.loads(cleaned)
+        except Exception:
+            pass
+
+        # Strategy 2: find the outermost { } block
+        start = text.find('{')
+        if start != -1:
+            # Walk forward counting braces to find matching close
+            depth = 0
+            for i, ch in enumerate(text[start:], start):
+                if ch == '{': depth += 1
+                elif ch == '}':
+                    depth -= 1
+                    if depth == 0:
+                        try:
+                            return json.loads(text[start:i+1])
+                        except Exception:
+                            break
+
+        # Strategy 3: regex fallback
+        m = re.search(r'\{.*\}', text, re.DOTALL)
         if m:
             try:
-                summary_json = json.loads(m.group())
+                return json.loads(m.group())
             except Exception:
-                return jsonify({"error": "AI vratilo nevalidni JSON. Zkus znovu."}), 500
-        else:
-            return jsonify({"error": "AI vratilo nevalidni JSON. Zkus znovu."}), 500
+                pass
+
+        return None
+
+    summary_json = extract_json(raw)
+    if summary_json is None:
+        app.logger.error(f"JSON parse failed. Raw response: {raw[:1000]}")
+        return jsonify({"error": f"AI vratilo nevalidni JSON. Zkus znovu. (zacatek odpovedi: {raw[:200]})"}), 500
 
     tasks = []
     raw_tasks = summary_json.pop("tasks", [])
@@ -953,7 +985,7 @@ def smazat_uzivatele(user_id):
 
 with app.app_context():
     try:
-        db.create_all()
+        db.create_all()  # skips existing tables — safe to run repeatedly
         # Auto-migrate new columns
         migrations = [
             ("zapis", "output_json",    "ALTER TABLE zapis ADD COLUMN output_json TEXT DEFAULT '{}'"),
@@ -974,13 +1006,16 @@ with app.app_context():
                     print(f"Migrated: {table}.{col}")
                 except Exception:
                     pass
-        if not User.query.filter_by(is_admin=True).first():
-            db.session.add(User(
-                email="admin@commarec.cz", name="Admin", role="superadmin",
-                password_hash=generate_password_hash("admin123"), is_admin=True
-            ))
-            db.session.commit()
-            print("Vytvoren vychozi admin: admin@commarec.cz / admin123")
+        if not User.query.filter_by(email="admin@commarec.cz").first():
+            try:
+                db.session.add(User(
+                    email="admin@commarec.cz", name="Admin", role="superadmin",
+                    password_hash=generate_password_hash("admin123"), is_admin=True
+                ))
+                db.session.commit()
+                print("Vytvoren vychozi admin: admin@commarec.cz / admin123")
+            except Exception:
+                db.session.rollback()  # another worker beat us to it — fine
     except Exception as e:
         print(f"DB init error: {e}")
 

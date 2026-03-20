@@ -129,27 +129,50 @@ function getNotes() {
   return notes;
 }
 
-// Projekty
-async function loadProjekty() {
-  const klientId = document.getElementById('klient-select').value;
-  const sel = document.getElementById('projekt-select');
-  if (!klientId) {
-    sel.innerHTML = '<option value="">— Nejdrive vyberte klienta —</option>';
+// Klient change — prefill fields + load projekty
+async function onKlientChange() {
+  const sel    = document.getElementById('klient-select');
+  const opt    = sel.options[sel.selectedIndex];
+  const kid    = sel.value;
+  const nazev  = opt?.dataset?.nazev  || '';
+  const kontakt= opt?.dataset?.kontakt || '';
+
+  // Prefill client info fields
+  const nameEl    = document.getElementById('client-name');
+  const contactEl = document.getElementById('client-contact');
+  if (nameEl && nazev)    { nameEl.value = nazev;    nameEl.style.borderColor=''; nameEl.style.background=''; }
+  if (contactEl && kontakt) { contactEl.value = kontakt; contactEl.style.borderColor=''; contactEl.style.background=''; }
+
+  // Show info bar
+  const bar = document.getElementById('klient-info-bar');
+  if (kid && nazev) {
+    bar.style.display = 'block';
+    bar.innerHTML = `<strong style="color:#173767;">${nazev}</strong>${kontakt ? ' — ' + kontakt : ''} &nbsp;·&nbsp; <a href="/klient/${kid}" target="_blank" style="color:#00AFF0;font-size:11px;">Otevřít profil klienta →</a>`;
+  } else {
+    bar.style.display = 'none';
+  }
+
+  // Load projekty
+  const psel = document.getElementById('projekt-select');
+  const prow = document.getElementById('projekt-row');
+  if (!kid) {
+    prow.style.display = 'none';
+    psel.innerHTML = '<option value="">— Bez projektu —</option>';
     return;
   }
-  sel.innerHTML = '<option value="">Nacitam...</option>';
+  prow.style.display = 'block';
+  psel.innerHTML = '<option value="">Načítám...</option>';
   try {
-    const data = await fetch(`/novy/projekty/${klientId}`).then(r=>r.json());
-    if (data.length === 0) {
-      sel.innerHTML = '<option value="">— Zadne projekty —</option>';
-    } else {
-      sel.innerHTML = '<option value="">— Bez projektu —</option>' +
-        data.map(p => `<option value="${p.id}">${p.nazev}</option>`).join('');
-    }
+    const data = await fetch(`/novy/projekty/${kid}`).then(r=>r.json());
+    psel.innerHTML = '<option value="">— Bez projektu —</option>' +
+      (data.length ? data.map(p => `<option value="${p.id}">${p.nazev}</option>`).join('') : '');
   } catch(e) {
-    sel.innerHTML = '<option value="">Chyba</option>';
+    psel.innerHTML = '<option value="">— Bez projektu —</option>';
   }
 }
+
+// Keep loadProjekty as alias for backward compat
+function loadProjekty() { return onKlientChange(); }
 
 // Pre-fill klient from URL param
 document.addEventListener('DOMContentLoaded', () => {
@@ -158,7 +181,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const pid = url.searchParams.get('projekt_id');
   if (kid) {
     const sel = document.getElementById('klient-select');
-    if (sel) { sel.value = kid; loadProjekty().then(() => { if (pid) { const psel = document.getElementById('projekt-select'); if (psel) psel.value = pid; } }); }
+    if (sel) { sel.value = kid; onKlientChange().then(() => { if (pid) { const psel = document.getElementById('projekt-select'); if (psel) psel.value = pid; } }); }
   }
   // Auto-fill commarec-rep from session name
   const repEl = document.getElementById('commarec-rep');
@@ -217,13 +240,47 @@ document.addEventListener('DOMContentLoaded', () => {
     </div>
   </div>
 
-  <!-- STEP 2: Client info -->
+  <!-- STEP 2: Klient + informace o schůzce -->
   <div class="card" style="margin-bottom: 1rem;">
-    <div class="step-header"><span class="step-num">02</span><span class="step-label">Informace o schůzce</span></div>
+    <div class="step-header"><span class="step-num">02</span><span class="step-label">Klient a schůzka</span></div>
+
+    <!-- Klient selector -->
+    <div style="margin-bottom:16px;">
+      <label style="display:block;font-size:11px;font-weight:700;color:var(--muted);margin-bottom:5px;text-transform:uppercase;letter-spacing:0.07em;">Klient <span style="color:#C0392B;">*</span></label>
+      <div style="display:flex;gap:8px;align-items:center;">
+        <select id="klient-select" onchange="onKlientChange()" style="flex:1;padding:10px 12px;border:1.5px solid var(--border);border-radius:var(--radius);font-size:14px;font-family:var(--font-body);background:white;color:var(--text);">
+          <option value="">— Vyberte klienta —</option>
+          {% for k in klienti %}
+          <option value="{{ k.id }}"
+            data-nazev="{{ k.nazev }}"
+            data-kontakt="{{ k.kontakt }}">{{ k.nazev }}</option>
+          {% endfor %}
+        </select>
+        <a href="{{ url_for('klient_novy') }}" target="_blank"
+           style="white-space:nowrap;font-size:11px;font-weight:700;color:#00AFF0;border:1.5px solid #00AFF0;border-radius:5px;padding:8px 14px;text-decoration:none;letter-spacing:0.06em;text-transform:uppercase;font-family:'Montserrat',sans-serif;flex-shrink:0;"
+           title="Otevře se v novém okně">
+          + Nový klient
+        </a>
+      </div>
+      <div id="klient-info-bar" style="display:none;margin-top:8px;padding:8px 12px;background:#f0f5fb;border-left:3px solid #00AFF0;border-radius:0 5px 5px 0;font-size:12px;color:#4A6080;"></div>
+    </div>
+
+    <!-- Projekt selector — zobrazí se až po výběru klienta -->
+    <div id="projekt-row" style="margin-bottom:16px;display:none;">
+      <label style="display:block;font-size:11px;font-weight:700;color:var(--muted);margin-bottom:5px;text-transform:uppercase;letter-spacing:0.07em;">Projekt</label>
+      <select id="projekt-select" style="width:100%;padding:10px 12px;border:1.5px solid var(--border);border-radius:var(--radius);font-size:14px;font-family:var(--font-body);background:white;color:var(--text);">
+        <option value="">— Bez projektu —</option>
+      </select>
+    </div>
+
+    <hr style="border:none;border-top:1px solid var(--border);margin:0 0 16px;">
+
+    <!-- Detaily schůzky — předvyplní se z klienta -->
     <div class="form-grid" style="margin-bottom: 12px;">
       <div class="form-group" style="margin:0;">
         <label>Název firmy / klienta <span style="color:#C0392B;">*</span></label>
         <input type="text" id="client-name" placeholder="např. Merlin Plus s.r.o." class="required-field">
+        <div style="font-size:10px;color:#4A6080;margin-top:3px;">Předvyplněno z klienta — upravte pokud je třeba</div>
       </div>
       <div class="form-group" style="margin:0;">
         <label>Kontaktní osoba klienta <span style="color:#C0392B;">*</span></label>
@@ -242,29 +299,6 @@ document.addEventListener('DOMContentLoaded', () => {
       <div class="form-group" style="margin:0;">
         <label>Místo <span style="color:#C0392B;">*</span></label>
         <input type="text" id="meeting-place" placeholder="např. Sídlo klienta, Brno" class="required-field">
-      </div>
-    </div>
-  </div>
-
-
-  <!-- STEP 2b: Klient a projekt -->
-  <div class="card" style="margin-bottom: 1rem;">
-    <div class="step-header"><span class="step-num" style="color:#4A6080;">02b</span><span class="step-label">Prirazeni ke klientovi</span></div>
-    <div class="form-grid" style="margin-bottom:12px;">
-      <div class="form-group" style="margin:0;">
-        <label>Klient <span style="color:#4A6080;font-size:10px;">(volitelne)</span></label>
-        <select id="klient-select" onchange="loadProjekty()" style="padding:10px 12px;border:1.5px solid var(--border);border-radius:var(--radius);font-size:14px;font-family:var(--font-body);background:white;color:var(--text);width:100%;">
-          <option value="">— Vyberte klienta —</option>
-          {% for k in klienti %}
-          <option value="{{ k.id }}">{{ k.nazev }}</option>
-          {% endfor %}
-        </select>
-      </div>
-      <div class="form-group" style="margin:0;">
-        <label>Projekt <span style="color:#4A6080;font-size:10px;">(volitelne)</span></label>
-        <select id="projekt-select" style="padding:10px 12px;border:1.5px solid var(--border);border-radius:var(--radius);font-size:14px;font-family:var(--font-body);background:white;color:var(--text);width:100%;">
-          <option value="">— Nejdrive vyberte klienta —</option>
-        </select>
       </div>
     </div>
   </div>
@@ -474,27 +508,50 @@ function getNotes() {
   return notes;
 }
 
-// Projekty
-async function loadProjekty() {
-  const klientId = document.getElementById('klient-select').value;
-  const sel = document.getElementById('projekt-select');
-  if (!klientId) {
-    sel.innerHTML = '<option value="">— Nejdrive vyberte klienta —</option>';
+// Klient change — prefill fields + load projekty
+async function onKlientChange() {
+  const sel    = document.getElementById('klient-select');
+  const opt    = sel.options[sel.selectedIndex];
+  const kid    = sel.value;
+  const nazev  = opt?.dataset?.nazev  || '';
+  const kontakt= opt?.dataset?.kontakt || '';
+
+  // Prefill client info fields
+  const nameEl    = document.getElementById('client-name');
+  const contactEl = document.getElementById('client-contact');
+  if (nameEl && nazev)    { nameEl.value = nazev;    nameEl.style.borderColor=''; nameEl.style.background=''; }
+  if (contactEl && kontakt) { contactEl.value = kontakt; contactEl.style.borderColor=''; contactEl.style.background=''; }
+
+  // Show info bar
+  const bar = document.getElementById('klient-info-bar');
+  if (kid && nazev) {
+    bar.style.display = 'block';
+    bar.innerHTML = `<strong style="color:#173767;">${nazev}</strong>${kontakt ? ' — ' + kontakt : ''} &nbsp;·&nbsp; <a href="/klient/${kid}" target="_blank" style="color:#00AFF0;font-size:11px;">Otevřít profil klienta →</a>`;
+  } else {
+    bar.style.display = 'none';
+  }
+
+  // Load projekty
+  const psel = document.getElementById('projekt-select');
+  const prow = document.getElementById('projekt-row');
+  if (!kid) {
+    prow.style.display = 'none';
+    psel.innerHTML = '<option value="">— Bez projektu —</option>';
     return;
   }
-  sel.innerHTML = '<option value="">Nacitam...</option>';
+  prow.style.display = 'block';
+  psel.innerHTML = '<option value="">Načítám...</option>';
   try {
-    const data = await fetch(`/novy/projekty/${klientId}`).then(r=>r.json());
-    if (data.length === 0) {
-      sel.innerHTML = '<option value="">— Zadne projekty —</option>';
-    } else {
-      sel.innerHTML = '<option value="">— Bez projektu —</option>' +
-        data.map(p => `<option value="${p.id}">${p.nazev}</option>`).join('');
-    }
+    const data = await fetch(`/novy/projekty/${kid}`).then(r=>r.json());
+    psel.innerHTML = '<option value="">— Bez projektu —</option>' +
+      (data.length ? data.map(p => `<option value="${p.id}">${p.nazev}</option>`).join('') : '');
   } catch(e) {
-    sel.innerHTML = '<option value="">Chyba</option>';
+    psel.innerHTML = '<option value="">— Bez projektu —</option>';
   }
 }
+
+// Keep loadProjekty as alias for backward compat
+function loadProjekty() { return onKlientChange(); }
 
 // Pre-fill klient from URL param
 document.addEventListener('DOMContentLoaded', () => {
@@ -503,7 +560,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const pid = url.searchParams.get('projekt_id');
   if (kid) {
     const sel = document.getElementById('klient-select');
-    if (sel) { sel.value = kid; loadProjekty().then(() => { if (pid) { const psel = document.getElementById('projekt-select'); if (psel) psel.value = pid; } }); }
+    if (sel) { sel.value = kid; onKlientChange().then(() => { if (pid) { const psel = document.getElementById('projekt-select'); if (psel) psel.value = pid; } }); }
   }
   // Auto-fill commarec-rep from session name
   const repEl = document.getElementById('commarec-rep');
