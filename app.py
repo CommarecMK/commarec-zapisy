@@ -1572,7 +1572,14 @@ def admin():
     users   = User.query.order_by(User.name).all()
     klienti = Klient.query.order_by(Klient.nazev).all()
     flash   = session.pop("admin_flash", None)
-    return render_template("admin.html", users=users, klienti=klienti, admin_flash=flash)
+    # Data šablon — pro inline blok
+    tmpl_configs = {}
+    for key in TEMPLATE_PROMPTS:
+        cfg = TemplateConfig.query.filter_by(template_key=key).first()
+        tmpl_configs[key] = cfg
+    return render_template("admin.html", users=users, klienti=klienti, admin_flash=flash,
+                           template_names=TEMPLATE_NAMES, tmpl_configs=tmpl_configs,
+                           tmpl_sections=TEMPLATE_SECTIONS, tmpl_default_prompts=TEMPLATE_PROMPTS)
 
 @app.route("/admin/pridat-uzivatele", methods=["POST"])
 @admin_required

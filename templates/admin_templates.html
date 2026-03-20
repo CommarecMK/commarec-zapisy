@@ -3,8 +3,7 @@
 {% block extra_head %}
 <style>
 .tmpl-prompt-panel{display:none;background:#f7f9fb;border-top:1px solid var(--border);padding:24px;}
-.tmpl-prompt-panel.open{display:block;}
-.prompt-area{width:100%;min-height:280px;padding:12px 14px;border:1.5px solid var(--border);border-radius:6px;font-size:12px;font-family:"Courier New",monospace;line-height:1.6;resize:vertical;background:white;color:#1a2533;box-sizing:border-box;}
+.prompt-area{width:100%;min-height:300px;padding:12px 14px;border:1.5px solid var(--border);border-radius:6px;font-size:12px;font-family:"Courier New",monospace;line-height:1.6;resize:vertical;background:white;color:#1a2533;box-sizing:border-box;}
 .prompt-area:focus{outline:none;border-color:#00AFF0;}
 .prompt-area[readonly]{background:#f7f9fb;color:#4A6080;}
 .section-label{font-size:11px;font-weight:700;color:#4A6080;text-transform:uppercase;letter-spacing:0.08em;display:block;margin-bottom:8px;}
@@ -21,7 +20,7 @@
 .tab-btn.active{color:#173767;border-bottom-color:#00AFF0;}
 .tab-content{display:none;}
 .tab-content.active{display:block;}
-.sec-tags{display:flex;flex-wrap:wrap;gap:5px;margin-top:6px;}
+.sec-tags{display:flex;flex-wrap:wrap;gap:5px;margin-top:10px;}
 .sec-tag{font-size:10px;font-weight:700;padding:3px 8px;border-radius:3px;background:#f0f3f7;color:#4A6080;border:1px solid var(--border);text-transform:uppercase;letter-spacing:0.03em;}
 .expand-btn{font-size:11px;font-weight:700;font-family:"Montserrat",sans-serif;background:white;border:1.5px solid var(--border);color:#173767;padding:5px 14px;border-radius:5px;cursor:pointer;text-transform:uppercase;letter-spacing:0.05em;}
 .expand-btn:hover{border-color:#173767;background:#f7f9fb;}
@@ -67,9 +66,8 @@
       <thead>
         <tr>
           <th>Šablona</th>
-          <th>Sekce</th>
           <th>Prompt</th>
-          <th style="width:120px;"></th>
+          <th style="width:100px;"></th>
         </tr>
       </thead>
       <tbody>
@@ -83,13 +81,6 @@
             <div style="font-size:11px;color:#8aa0b8;margin-top:2px;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;">{{ key }}</div>
           </td>
           <td>
-            <div class="sec-tags">
-              {% for sec in sections %}
-              <span class="sec-tag">{{ sec_labels.get(sec, sec) }}</span>
-              {% endfor %}
-            </div>
-          </td>
-          <td>
             {% if current_prompt %}
               <span class="badge badge-green">Vlastní prompt</span>
             {% else %}
@@ -101,8 +92,19 @@
           </td>
         </tr>
         <tr id="panel-{{ key }}" style="display:none;">
-          <td colspan="4" style="padding:0;">
-            <div class="tmpl-prompt-panel open">
+          <td colspan="3" style="padding:0;">
+            <div class="tmpl-prompt-panel" style="display:block;">
+
+              <!-- Sekce — zobrazeny jen v detailu -->
+              <div style="margin-bottom:20px;">
+                <span class="section-label">Sekce tohoto typu zápisu ({{ sections|length }})</span>
+                <div class="sec-tags">
+                  {% for sec in sections %}
+                  <span class="sec-tag">{{ sec_labels.get(sec, sec) }}</span>
+                  {% endfor %}
+                </div>
+              </div>
+
               <div class="tab-bar">
                 <button class="tab-btn {% if current_prompt %}active{% endif %}" onclick="showTab('{{ key }}','custom')">&#9998; Vlastní prompt</button>
                 <button class="tab-btn {% if not current_prompt %}active{% endif %}" onclick="showTab('{{ key }}','default')">Výchozí (jen pro čtení)</button>
@@ -121,6 +123,7 @@
                 <span class="section-label">Výchozí prompt (jen pro čtení)</span>
                 <textarea class="prompt-area" readonly>{{ default_prompts.get(key, '') }}</textarea>
               </div>
+
             </div>
           </td>
         </tr>
@@ -135,60 +138,48 @@ function togglePrompt(key) {
   const panel = document.getElementById('panel-' + key);
   const btn = document.getElementById('btn-' + key);
   const isOpen = panel.style.display !== 'none';
-  // Zavři všechny ostatní
   document.querySelectorAll('[id^="panel-"]').forEach(p => p.style.display = 'none');
-  document.querySelectorAll('.expand-btn').forEach(b => b.classList.remove('open'));
-  document.querySelectorAll('.expand-btn').forEach(b => b.textContent = 'Upravit');
+  document.querySelectorAll('.expand-btn').forEach(b => { b.classList.remove('open'); b.textContent = 'Upravit'; });
   if (!isOpen) {
     panel.style.display = '';
     btn.classList.add('open');
     btn.textContent = 'Zavřít';
   }
 }
-
 function showTab(key, tab) {
-  ['custom','default'].forEach(t => {
-    const el = document.getElementById(key+'-'+t);
-    if (el) el.classList.remove('active');
-  });
+  ['custom','default'].forEach(t => { const el = document.getElementById(key+'-'+t); if(el) el.classList.remove('active'); });
   const target = document.getElementById(key+'-'+tab);
-  if (target) target.classList.add('active');
-  // Aktualizuj tab buttony — hledej v panelu
+  if(target) target.classList.add('active');
   const panel = document.getElementById('panel-'+key);
-  if (panel) panel.querySelectorAll('.tab-btn').forEach((btn,i) => {
+  if(panel) panel.querySelectorAll('.tab-btn').forEach((btn,i) => {
     btn.classList.toggle('active',(i===0&&tab==='custom')||(i===1&&tab==='default'));
   });
 }
-
 async function savePrompt(key) {
   const prompt = document.getElementById('prompt-'+key).value;
   const status = document.getElementById('status-'+key);
   if (prompt.trim() && !prompt.includes('===PARTICIPANTS_COMMAREC===')) {
-    const ok = confirm('Prompt neobsahuje ===SEKCE=== markery.\nBez markerů se zápis zobrazí špatně.\n\nUložit i tak?');
-    if (!ok) return;
+    if (!confirm('Prompt neobsahuje ===SEKCE=== markery.\nBez markerů se zápis zobrazí špatně.\n\nUložit i tak?')) return;
   }
   status.style.color='#4A6080'; status.textContent='Ukládám...'; status.classList.add('show');
-  const form = new FormData();
-  form.append('system_prompt', prompt);
+  const form = new FormData(); form.append('system_prompt', prompt);
   try {
     const r = await fetch(`/admin/templates/${key}`,{method:'POST',body:form});
     const d = await r.json();
-    if (d.ok) { status.style.color='#0A7A5A'; status.textContent='✓ Uloženo'; }
-    else { status.style.color='#C0392B'; status.textContent='✗ Chyba'; }
+    status.style.color = d.ok ? '#0A7A5A' : '#C0392B';
+    status.textContent = d.ok ? '✓ Uloženo' : '✗ Chyba';
     setTimeout(()=>status.classList.remove('show'),2500);
   } catch(e) { status.style.color='#C0392B'; status.textContent='✗ Chyba sítě'; }
 }
-
 async function resetPrompt(key) {
-  if (!confirm('Resetovat na výchozí prompt? Vlastní prompt bude smazán.')) return;
+  if (!confirm('Resetovat na výchozí prompt?')) return;
   const r = await fetch(`/admin/templates/${key}/reset`,{method:'POST'});
   const d = await r.json();
-  if (d.ok) {
-    document.getElementById('prompt-'+key).value = '';
-    const status = document.getElementById('status-'+key);
-    status.style.color='#4A6080'; status.textContent='Resetováno';
-    status.classList.add('show');
-    setTimeout(()=>status.classList.remove('show'),2500);
+  if(d.ok) {
+    document.getElementById('prompt-'+key).value='';
+    const s=document.getElementById('status-'+key);
+    s.style.color='#4A6080'; s.textContent='Resetováno'; s.classList.add('show');
+    setTimeout(()=>s.classList.remove('show'),2500);
   }
 }
 </script>

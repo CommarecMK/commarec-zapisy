@@ -36,7 +36,7 @@
   {% endif %}
   <div class="page-header">
     <h1>Správa</h1>
-    <a href="{{ url_for('admin_templates') }}" class="btn btn-secondary">⚙ Šablony zápisů</a>
+
   </div>
 
   <div class="card" style="margin-bottom:1rem;">
@@ -164,5 +164,152 @@ document.getElementById('edit-modal').addEventListener('click', e=>{
   if(e.target === document.getElementById('edit-modal'))
     document.getElementById('edit-modal').style.display='none';
 });
+</script>
+
+<!-- ŠABLONY ZÁPISŮ — inline blok -->
+<div class="card" style="margin-top:1.5rem;padding:0;overflow:hidden;">
+  <div class="card-header" style="display:flex;align-items:center;justify-content:space-between;">
+    <h2>Šablony zápisů ({{ template_names|length }})</h2>
+  </div>
+
+  {% set sec_labels = {
+    'participants_commarec': 'Zastoupení Commarec', 'participants_company': 'Zastoupení klienta',
+    'introduction': 'Úvod', 'meeting_goal': 'Účel', 'findings': 'Zjištění',
+    'ratings': 'Hodnocení', 'processes_description': 'Popis procesu', 'dangers': 'Rizika',
+    'suggested_actions': 'Akční kroky', 'expected_benefits': 'Přínosy',
+    'additional_notes': 'Poznámky', 'summary': 'Shrnutí', 'current_state': 'Aktuální stav',
+    'client_situation': 'Situace klienta', 'client_needs': 'Potřeby klienta',
+    'opportunities': 'Příležitosti', 'risks': 'Rizika', 'commercial_model': 'Obchodní model',
+    'next_steps': 'Další kroky', 'expected_impact': 'Dopad', 'client_signals': 'Signály klienta',
+  } %}
+
+  <style>
+  .tmpl-panel{display:none;background:#f7f9fb;border-top:1px solid var(--border);padding:20px;}
+  .tmpl-panel.open{display:block;}
+  .tmpl-prompt-area{width:100%;min-height:260px;padding:10px 12px;border:1.5px solid var(--border);border-radius:6px;font-size:12px;font-family:"Courier New",monospace;line-height:1.6;resize:vertical;background:white;color:#1a2533;box-sizing:border-box;}
+  .tmpl-prompt-area:focus{outline:none;border-color:#00AFF0;}
+  .tmpl-prompt-area[readonly]{background:#f0f3f7;color:#4A6080;}
+  .tmpl-sec-tag{font-size:10px;font-weight:700;padding:2px 7px;border-radius:3px;background:#f0f3f7;color:#4A6080;border:1px solid var(--border);text-transform:uppercase;letter-spacing:0.03em;}
+  .tmpl-tab{padding:7px 14px;font-size:11px;font-weight:700;color:#4A6080;cursor:pointer;border-bottom:3px solid transparent;margin-bottom:-2px;text-transform:uppercase;letter-spacing:0.08em;background:none;border-left:none;border-right:none;border-top:none;font-family:"Montserrat",sans-serif;}
+  .tmpl-tab.active{color:#173767;border-bottom-color:#00AFF0;}
+  .tmpl-tab-content{display:none;}
+  .tmpl-tab-content.active{display:block;}
+  .tmpl-expand-btn{font-size:11px;font-weight:700;font-family:"Montserrat",sans-serif;background:white;border:1.5px solid var(--border);color:#173767;padding:5px 14px;border-radius:5px;cursor:pointer;text-transform:uppercase;letter-spacing:0.05em;}
+  .tmpl-expand-btn:hover{border-color:#173767;}
+  .tmpl-expand-btn.open{background:#173767;color:white;border-color:#173767;}
+  .tmpl-save-btn{font-family:"DrukCondensed","Impact",sans-serif;font-size:15px;font-weight:900;background:#173767;color:white;border:none;padding:7px 20px;border-radius:5px;cursor:pointer;text-transform:uppercase;letter-spacing:0.06em;}
+  .tmpl-save-btn:hover{background:#254f8a;}
+  .tmpl-reset-btn{font-size:12px;font-weight:600;font-family:"Montserrat",sans-serif;background:white;color:#4A6080;border:1.5px solid var(--border);padding:6px 14px;border-radius:5px;cursor:pointer;}
+  .tmpl-reset-btn:hover{border-color:#C0392B;color:#C0392B;}
+  .tmpl-status{font-size:12px;font-weight:600;opacity:0;transition:opacity 0.3s;}
+  .tmpl-status.show{opacity:1;}
+  </style>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Šablona</th>
+        <th>Prompt</th>
+        <th style="width:100px;"></th>
+      </tr>
+    </thead>
+    <tbody>
+    {% for key, name in template_names.items() %}
+    {% set cfg = tmpl_configs.get(key) %}
+    {% set sections = tmpl_sections.get(key, []) %}
+    {% set current_prompt = cfg.system_prompt if cfg and cfg.system_prompt else '' %}
+    <tr>
+      <td>
+        <div style="font-family:'DrukCondensed','Impact',sans-serif;font-size:20px;font-weight:900;color:#173767;text-transform:uppercase;letter-spacing:0.04em;">{{ name }}</div>
+        <div style="font-size:11px;color:#8aa0b8;margin-top:2px;font-weight:600;letter-spacing:0.05em;text-transform:uppercase;">{{ key }}</div>
+      </td>
+      <td>
+        {% if current_prompt %}
+          <span class="badge badge-green">Vlastní</span>
+        {% else %}
+          <span class="badge badge-gray">Výchozí</span>
+        {% endif %}
+      </td>
+      <td style="text-align:right;">
+        <button class="tmpl-expand-btn" id="tbtn-{{ key }}" onclick="tToggle('{{ key }}')">Upravit</button>
+      </td>
+    </tr>
+    <tr id="tpanel-{{ key }}" style="display:none;">
+      <td colspan="3" style="padding:0;">
+        <div class="tmpl-panel open">
+
+          <!-- Sekce -->
+          <div style="margin-bottom:16px;">
+            <div style="font-size:11px;font-weight:700;color:#4A6080;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:6px;">Sekce ({{ sections|length }})</div>
+            <div style="display:flex;flex-wrap:wrap;gap:5px;">
+              {% for sec in sections %}<span class="tmpl-sec-tag">{{ sec_labels.get(sec, sec) }}</span>{% endfor %}
+            </div>
+          </div>
+
+          <!-- Tabs -->
+          <div style="display:flex;gap:2px;border-bottom:2px solid var(--border);margin-bottom:14px;">
+            <button class="tmpl-tab {% if current_prompt %}active{% endif %}" onclick="tTab('{{ key }}','custom')">✎ Vlastní prompt</button>
+            <button class="tmpl-tab {% if not current_prompt %}active{% endif %}" onclick="tTab('{{ key }}','default')">Výchozí (jen pro čtení)</button>
+          </div>
+
+          <div id="tc-{{ key }}-custom" class="tmpl-tab-content {% if current_prompt %}active{% endif %}">
+            <div style="font-size:11px;font-weight:700;color:#4A6080;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:6px;">Vlastní system prompt pro AI</div>
+            <textarea class="tmpl-prompt-area" id="tprompt-{{ key }}" placeholder="Nechte prázdné — použije se výchozí prompt...">{{ current_prompt }}</textarea>
+            <div style="font-size:11px;color:#8aa0b8;margin-top:6px;">Výstup musí obsahovat <strong>===SEKCE===</strong> markery. Prázdné = výchozí prompt. <strong style="color:#C0392B;">Bez markerů se zápis zobrazí špatně.</strong></div>
+            <div style="display:flex;gap:10px;margin-top:12px;align-items:center;">
+              <button class="tmpl-save-btn" onclick="tSave('{{ key }}')">Uložit</button>
+              <button class="tmpl-reset-btn" onclick="tReset('{{ key }}')">Resetovat na výchozí</button>
+              <span class="tmpl-status" id="tst-{{ key }}"></span>
+            </div>
+          </div>
+          <div id="tc-{{ key }}-default" class="tmpl-tab-content {% if not current_prompt %}active{% endif %}">
+            <div style="font-size:11px;font-weight:700;color:#4A6080;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:6px;">Výchozí prompt (jen pro čtení)</div>
+            <textarea class="tmpl-prompt-area" readonly>{{ tmpl_default_prompts.get(key, '') }}</textarea>
+          </div>
+
+        </div>
+      </td>
+    </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<script>
+function tToggle(key) {
+  const panel = document.getElementById('tpanel-'+key);
+  const btn = document.getElementById('tbtn-'+key);
+  const isOpen = panel.style.display !== 'none';
+  document.querySelectorAll('[id^="tpanel-"]').forEach(p => p.style.display='none');
+  document.querySelectorAll('.tmpl-expand-btn').forEach(b => {b.classList.remove('open');b.textContent='Upravit';});
+  if (!isOpen) {panel.style.display='';btn.classList.add('open');btn.textContent='Zavřít';}
+}
+function tTab(key,tab) {
+  ['custom','default'].forEach(t=>{const el=document.getElementById('tc-'+key+'-'+t);if(el)el.classList.remove('active');});
+  const el=document.getElementById('tc-'+key+'-'+tab);if(el)el.classList.add('active');
+  const panel=document.getElementById('tpanel-'+key);
+  if(panel)panel.querySelectorAll('.tmpl-tab').forEach((b,i)=>b.classList.toggle('active',(i===0&&tab==='custom')||(i===1&&tab==='default')));
+}
+async function tSave(key) {
+  const prompt=document.getElementById('tprompt-'+key).value;
+  const st=document.getElementById('tst-'+key);
+  if(prompt.trim()&&!prompt.includes('===PARTICIPANTS_COMMAREC==='))
+    if(!confirm('Prompt neobsahuje ===SEKCE=== markery.\nBez markerů se zápis zobrazí špatně.\n\nUložit i tak?')) return;
+  st.style.color='#4A6080';st.textContent='Ukládám...';st.classList.add('show');
+  const form=new FormData();form.append('system_prompt',prompt);
+  try{
+    const r=await fetch(`/admin/templates/${key}`,{method:'POST',body:form});
+    const d=await r.json();
+    st.style.color=d.ok?'#0A7A5A':'#C0392B';st.textContent=d.ok?'✓ Uloženo':'✗ Chyba';
+    setTimeout(()=>st.classList.remove('show'),2500);
+  }catch(e){st.style.color='#C0392B';st.textContent='✗ Chyba sítě';}
+}
+async function tReset(key) {
+  if(!confirm('Resetovat na výchozí prompt?')) return;
+  const r=await fetch(`/admin/templates/${key}/reset`,{method:'POST'});
+  const d=await r.json();
+  if(d.ok){document.getElementById('tprompt-'+key).value='';const st=document.getElementById('tst-'+key);
+  st.style.color='#4A6080';st.textContent='Resetováno';st.classList.add('show');setTimeout(()=>st.classList.remove('show'),2500);}
+}
 </script>
 {% endblock %}

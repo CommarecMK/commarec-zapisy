@@ -355,10 +355,11 @@ document.addEventListener('DOMContentLoaded', () => {
 let selectedTemplate = 'audit';
 const tmplNames = {"audit": "Audit", "operativa": "Operativní schůzka", "obchod": "Obchodní schůzka"};
 // Sekce per typ šablony — odpovídají TEMPLATE_SECTIONS v app.py
+// Sekce per typ šablony — klíče odpovídají block-check onclick hodnotám
 const TEMPLATE_SECTIONS = {
   'audit':     ['uvod','zjisteni','hodnoceni','procesy','rizika','kroky','prinosy','poznamky'],
   'operativa': ['uvod','zjisteni','rizika','kroky','poznamky'],
-  'obchod':    ['uvod','zjisteni','kroky','prinosy','poznamky'],
+  'obchod':    ['uvod','zjisteni','kroky','prinosy','poznamky','dalsi_krok'],
 };
 const activeBlocks = new Set(TEMPLATE_SECTIONS[selectedTemplate] || TEMPLATE_SECTIONS['audit']);
 
@@ -391,6 +392,24 @@ function selectTmpl(el, tmpl) {
   document.querySelectorAll('.tmpl').forEach(t => t.classList.remove('selected'));
   el.classList.add('selected');
   selectedTemplate = tmpl;
+
+  // Aktualizuj aktivní sekce podle šablony
+  const sections = TEMPLATE_SECTIONS[tmpl] || TEMPLATE_SECTIONS['audit'];
+  activeBlocks.clear();
+  sections.forEach(s => activeBlocks.add(s));
+
+  // Aktualizuj vizuální stav checkboxů
+  document.querySelectorAll('.block-check').forEach(el => {
+    // Extrahuj klíč sekce z onclick atributu
+    const match = el.getAttribute('onclick') && el.getAttribute('onclick').match(/'([^']+)'/);
+    if (!match) return;
+    const key = match[1];
+    if (activeBlocks.has(key)) {
+      el.classList.add('checked');
+    } else {
+      el.classList.remove('checked');
+    }
+  });
 }
 
 function toggleBlock(el, key) {
