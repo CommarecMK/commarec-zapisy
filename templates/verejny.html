@@ -16,30 +16,39 @@ body{font-family:"Montserrat",sans-serif;background:#F0F3F7;color:#0E213E;font-s
 .top-badge{font-size:11px;font-weight:600;color:rgba(255,255,255,0.5);letter-spacing:0.1em;text-transform:uppercase;border-left:1px solid rgba(255,255,255,0.2);padding-left:10px;}
 .container{max-width:900px;margin:0 auto;padding:2rem 1.5rem;}
 .zapis-card{background:white;border:1px solid #D0DAE8;border-radius:6px;overflow:hidden;margin-bottom:2rem;}
-.zapis-meta{background:#173767;padding:1.5rem 2rem;display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:1.5rem;}
-.meta-logo{height:28px;width:auto;display:block;filter:brightness(0) invert(1);}
-.meta-title{font-family:"DrukCondensed","Impact",sans-serif;font-size:22px;font-weight:900;color:white;text-transform:uppercase;letter-spacing:0.06em;line-height:1.1;}
-.meta-title small{display:block;font-family:"Montserrat",sans-serif;font-size:11px;font-weight:500;color:rgba(255,255,255,0.5);text-transform:none;letter-spacing:0;margin-top:3px;}
-.meta-right{text-align:right;}
-.meta-row{font-size:11px;color:rgba(255,255,255,0.55);font-weight:500;line-height:2;}
+.zapis-meta{
+  background:linear-gradient(135deg,#0E213E 0%,#173767 50%,#1a4a8a 100%);
+  padding:2rem 2.5rem;display:grid;grid-template-columns:1fr auto;align-items:start;gap:2rem;
+  position:relative;overflow:hidden;
+}
+.zapis-meta::after{content:"";position:absolute;inset:0;background:radial-gradient(ellipse at 80% 50%,rgba(0,175,240,0.12) 0%,transparent 60%);pointer-events:none;}
+.meta-left{display:flex;flex-direction:column;gap:1.25rem;}
+.meta-logos{display:flex;align-items:center;gap:16px;}
+.meta-logo{height:26px;width:auto;display:block;filter:brightness(0) invert(1);}
+.meta-divider{width:1px;height:24px;background:rgba(255,255,255,0.2);}
+.klient-logo-box{height:32px;display:flex;align-items:center;background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.15);border-radius:4px;padding:0 12px;font-family:"Montserrat",sans-serif;font-size:11px;font-weight:700;color:rgba(255,255,255,0.6);text-transform:uppercase;letter-spacing:0.1em;}
+.meta-title{font-family:"DrukCondensed","Impact",sans-serif;font-size:42px;font-weight:900;color:white;text-transform:uppercase;letter-spacing:0;line-height:0.95;margin-top:4px;}
+.meta-subtitle{font-family:"Montserrat",sans-serif;font-size:12px;font-weight:500;color:rgba(255,255,255,0.45);text-transform:uppercase;letter-spacing:0.12em;margin-top:6px;}
+.meta-right{text-align:right;padding-top:2px;}
+.meta-row{font-size:11px;color:rgba(255,255,255,0.5);font-weight:500;line-height:2.2;}
 .meta-row strong{color:white;}
-.meta-badge{display:inline-block;font-size:10px;font-weight:700;padding:3px 10px;border-radius:3px;letter-spacing:0.06em;text-transform:uppercase;background:rgba(0,175,240,0.2);color:#00AFF0;border:1px solid rgba(0,175,240,0.3);margin-top:4px;}
-.header-info{background:#f0f5fb;border-bottom:1px solid #D0DAE8;padding:14px 2rem;font-size:13px;display:grid;grid-template-columns:repeat(4,1fr);}
-.hb-lbl{font-size:10px;font-weight:700;color:#4A6080;text-transform:uppercase;letter-spacing:0.08em;display:block;margin-bottom:2px;}
-.hb-val{font-size:13px;font-weight:600;color:#173767;}
+.meta-badge{display:inline-block;font-size:10px;font-weight:700;padding:3px 10px;border-radius:3px;letter-spacing:0.06em;text-transform:uppercase;background:rgba(0,175,240,0.2);color:#00AFF0;border:1px solid rgba(0,175,240,0.3);margin-top:6px;}
+.header-info{background:#f7f9fb;border-bottom:2px solid #D0DAE8;display:grid;grid-template-columns:repeat(4,1fr);}.header-info>div{padding:14px 20px;border-right:1px solid #D0DAE8;}.header-info>div:last-child{border-right:none;}
+.hb-lbl{font-size:9px;font-weight:700;color:#8aa0b8;text-transform:uppercase;letter-spacing:0.12em;display:block;margin-bottom:3px;}
+.hb-val{font-size:13px;font-weight:700;color:#173767;}
 .zapis-body{padding:2rem;}
 .zapis-section{margin-bottom:2.5rem;}
 .section-header{display:flex;align-items:center;padding-bottom:8px;border-bottom:2.5px solid #00AFF0;margin-bottom:18px;}
-.section-title{font-family:"DrukCondensed","Impact",sans-serif;font-size:26px;font-weight:900;color:#173767;text-transform:uppercase;letter-spacing:0.06em;line-height:1;}
+.section-title{font-family:"DrukCondensed","Impact",sans-serif;font-size:42px;font-weight:900;color:#173767;text-transform:uppercase;letter-spacing:0;line-height:1;}
 .section-content{font-size:14px;line-height:1.75;color:#1a2533;}
 .section-content p{margin-bottom:8px;}
 .section-content ul{padding-left:1.4rem;margin:6px 0 10px;}
 .section-content li{margin-bottom:6px;}
 .section-content strong{color:#173767;}
 .section-content table{width:100%;border-collapse:collapse;font-size:13px;margin:10px 0 16px;border-radius:6px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,0.06);}
-.section-content th{background:#173767;color:white;font-weight:700;font-size:11px;text-transform:uppercase;letter-spacing:0.06em;padding:10px 14px;text-align:left;}
+.section-content th{background:#f0f3f7;color:#4A6080;font-weight:700;font-size:10px;text-transform:uppercase;letter-spacing:0.1em;padding:10px 14px;text-align:left;border-bottom:2px solid #D0DAE8;}
 .section-content td{padding:10px 14px;border-bottom:1px solid #D0DAE8;vertical-align:middle;}
-.section-content tr:last-child td{border-bottom:none;background:#f0f3f7;}
+.section-content tr:last-child td{border-bottom:none;background:#f7f9fb;font-weight:600;}
 .section-content tr:nth-child(even) td{background:#f8f9fb;}
 .section-content td:nth-child(2){text-align:center;font-weight:700;}
 .score-badge{display:inline-block;padding:3px 12px;border-radius:20px;font-size:12px;font-weight:700;color:white;}
@@ -65,10 +74,16 @@ body{font-family:"Montserrat",sans-serif;background:#F0F3F7;color:#0E213E;font-s
 
   <div class="zapis-card" id="zapis-print">
     <div class="zapis-meta">
-      <img src="/static/logo-white.svg" alt="Commarec" class="meta-logo">
-      <div class="meta-title">
-        {{ zapis.title }}
-        <small>{{ template_names.get(zapis.template, zapis.template) }}</small>
+      <div class="meta-left">
+        <div class="meta-logos">
+          <img src="/static/logo-white.svg" alt="Commarec" class="meta-logo">
+          {% if zapis.klient %}
+          <div class="meta-divider"></div>
+          <div class="klient-logo-box">{{ zapis.klient.nazev }}</div>
+          {% endif %}
+        </div>
+        <div class="meta-title">{{ zapis.title }}</div>
+        <div class="meta-subtitle">{{ template_names.get(zapis.template, zapis.template) }}</div>
       </div>
       <div class="meta-right">
         <div class="meta-row"><strong>{{ zapis.created_at.strftime("%d. %m. %Y") }}</strong></div>
@@ -81,7 +96,7 @@ body{font-family:"Montserrat",sans-serif;background:#F0F3F7;color:#0E213E;font-s
     <div class="header-info">
       <div><span class="hb-lbl">Klient</span><span class="hb-val">{% if zapis.klient %}{{ zapis.klient.nazev }}{% else %}&mdash;{% endif %}</span></div>
       <div><span class="hb-lbl">Projekt</span><span class="hb-val">{% if zapis.projekt %}{{ zapis.projekt.nazev }}{% else %}&mdash;{% endif %}</span></div>
-      <div><span class="hb-lbl">Za Commarec</span><span class="hb-val">{{ zapis.author.name }}</span></div>
+      <div><span class="hb-lbl">Konzultant</span><span class="hb-val">{{ zapis.author.name }}</span></div>
       <div><span class="hb-lbl">Datum</span><span class="hb-val">{{ zapis.created_at.strftime("%d. %m. %Y") }}</span></div>
     </div>
     {% endif %}

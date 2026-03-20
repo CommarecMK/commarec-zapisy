@@ -90,7 +90,7 @@ a:hover { text-decoration: underline; }
 .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.5rem; }
 .card + .card { margin-top: 1rem; }
 .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; padding-bottom: 12px; border-bottom: 1px solid var(--border); }
-.card-header h2 { font-family: "DrukCondensed","Impact",sans-serif; font-size: 17px; font-weight: 900; color: var(--navy); text-transform: uppercase; letter-spacing: 0.06em; }
+.card-header h2 { font-family: "DrukCondensed","Impact",sans-serif; font-size: 20px; font-weight: 900; color: var(--navy); text-transform: uppercase; letter-spacing: 0; }
 
 /* PAGE HEADER */
 .page-header { margin-bottom: 1.75rem; display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; flex-wrap: wrap; }
@@ -119,7 +119,12 @@ h3 { font-family: var(--font-body); font-size: 11px; font-weight: 700; color: va
 .btn-danger { background: transparent; color: var(--danger); border-color: #f0bcbc; }
 .btn-danger:hover { background: var(--danger-bg); }
 .btn-sm { padding: 5px 11px; font-size: 11px; }
-button { font-family: "Montserrat", sans-serif; } input[type=submit] { font-family: "Montserrat", sans-serif; }
+/* Globalni font reset pro vsechna tlacitka */
+button, input[type="submit"], input[type="button"] {
+  font-family: "Montserrat", sans-serif !important;
+}
+/* Nav tlacitko + Novy zapis — zachovat Druk styl */
+.nav-link[style*="DrukCondensed"] { font-family: "DrukCondensed","Impact",sans-serif !important; }
 
 /* FORMS */
 .form-group { margin-bottom: 1.25rem; }
@@ -150,7 +155,7 @@ textarea { resize: vertical; min-height: 120px; line-height: 1.6; }
 
 /* TABLE */
 table { width: 100%; border-collapse: collapse; font-size: 13px; }
-th { text-align: left; font-size: 10px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; padding: 10px 14px; border-bottom: 1px solid var(--border); background: var(--bg); }
+th { text-align: left; font-size: 10px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.1em; padding: 10px 14px; border-bottom: 2px solid var(--border); background: #f0f3f7; }
 td { padding: 12px 14px; border-bottom: 1px solid var(--border); vertical-align: middle; }
 tr:last-child td { border-bottom: none; }
 tr:hover td { background: #F8FAFC; }

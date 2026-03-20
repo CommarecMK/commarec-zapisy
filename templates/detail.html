@@ -8,28 +8,50 @@
   .container{max-width:100% !important;padding:0 !important;}
   .zapis-card{border:none !important;box-shadow:none !important;}
   .zapis-meta{background:#173767 !important;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
-  .section-title{font-size:16px !important;}
+  .section-title{font-size:28px !important;}
 }
 .zapis-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;}
 /* META */
-.zapis-meta{background:#173767;padding:1.5rem 2rem;display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:1.5rem;}
-.zapis-meta-logo{height:28px;width:auto;display:block;filter:brightness(0) invert(1);}
-.zapis-meta-title{font-family:"DrukCondensed","Impact",sans-serif;font-size:22px;font-weight:900;color:white;text-transform:uppercase;letter-spacing:0.06em;line-height:1.1;}
-.zapis-meta-title small{display:block;font-family:"Montserrat",sans-serif;font-size:11px;font-weight:500;color:rgba(255,255,255,0.5);text-transform:none;letter-spacing:0;margin-top:3px;}
-.zapis-meta-right{text-align:right;}
-.meta-row{font-size:11px;color:rgba(255,255,255,0.55);font-weight:500;line-height:2;}
+.zapis-meta{
+  background:linear-gradient(135deg, #0E213E 0%, #173767 50%, #1a4a8a 100%);
+  padding:2rem 2.5rem 2rem;
+  display:grid;grid-template-columns:1fr auto;align-items:start;gap:2rem;
+  position:relative;overflow:hidden;
+}
+.zapis-meta::after{
+  content:"";position:absolute;inset:0;
+  background:radial-gradient(ellipse at 80% 50%, rgba(0,175,240,0.12) 0%, transparent 60%);
+  pointer-events:none;
+}
+.zapis-meta-left{display:flex;flex-direction:column;gap:1.25rem;}
+.zapis-meta-logos{display:flex;align-items:center;gap:16px;}
+.zapis-meta-logo{height:26px;width:auto;display:block;filter:brightness(0) invert(1);}
+.meta-divider{width:1px;height:24px;background:rgba(255,255,255,0.2);}
+.klient-logo-box{
+  height:32px;display:flex;align-items:center;
+  background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.15);
+  border-radius:4px;padding:0 12px;
+  font-family:"Montserrat",sans-serif;font-size:11px;font-weight:700;
+  color:rgba(255,255,255,0.6);text-transform:uppercase;letter-spacing:0.1em;
+}
+.zapis-meta-title{font-family:"DrukCondensed","Impact",sans-serif;font-size:42px;font-weight:900;color:white;text-transform:uppercase;letter-spacing:0;line-height:0.95;margin-top:4px;}
+.zapis-meta-subtitle{font-family:"Montserrat",sans-serif;font-size:12px;font-weight:500;color:rgba(255,255,255,0.45);text-transform:uppercase;letter-spacing:0.12em;margin-top:6px;}
+.zapis-meta-right{text-align:right;padding-top:2px;}
+.meta-row{font-size:11px;color:rgba(255,255,255,0.5);font-weight:500;line-height:2.2;}
 .meta-row strong{color:white;}
-.meta-badge{display:inline-block;font-size:10px;font-weight:700;padding:3px 10px;border-radius:3px;letter-spacing:0.06em;text-transform:uppercase;background:rgba(0,175,240,0.2);color:#00AFF0;border:1px solid rgba(0,175,240,0.3);margin-top:4px;}
+.meta-badge{display:inline-block;font-size:10px;font-weight:700;padding:3px 10px;border-radius:3px;letter-spacing:0.06em;text-transform:uppercase;background:rgba(0,175,240,0.2);color:#00AFF0;border:1px solid rgba(0,175,240,0.3);margin-top:6px;}
 /* HEADER INFO */
-.zapis-header-block{background:#f0f5fb;border-bottom:1px solid var(--border);padding:14px 2rem;font-size:13px;display:grid;grid-template-columns:repeat(4,1fr);gap:0;}
-.hb-lbl{font-size:10px;font-weight:700;color:#4A6080;text-transform:uppercase;letter-spacing:0.08em;display:block;margin-bottom:2px;}
-.hb-val{font-size:13px;font-weight:600;color:#173767;}
+.zapis-header-block{background:#f7f9fb;border-bottom:2px solid var(--border);padding:0;display:grid;grid-template-columns:repeat(4,1fr);}
+.hb-item{padding:14px 20px;border-right:1px solid var(--border);}
+.hb-item:last-child{border-right:none;}
+.hb-lbl{font-size:9px;font-weight:700;color:#8aa0b8;text-transform:uppercase;letter-spacing:0.12em;display:block;margin-bottom:3px;}
+.hb-val{font-size:13px;font-weight:700;color:#173767;display:flex;align-items:center;gap:6px;}
 /* BODY */
 .zapis-body{padding:2rem;}
 /* SECTIONS */
 .zapis-section{margin-bottom:2.5rem;}
 .section-header{display:flex;align-items:center;justify-content:space-between;padding-bottom:8px;border-bottom:2.5px solid #00AFF0;margin-bottom:18px;}
-.section-title{font-family:"DrukCondensed","Impact",sans-serif;font-size:36px;font-weight:900;color:#173767;text-transform:uppercase;letter-spacing:0.06em;line-height:1;}
+.section-title{font-family:"DrukCondensed","Impact",sans-serif;font-size:42px;font-weight:900;color:#173767;text-transform:uppercase;letter-spacing:0;line-height:1;}
 .edit-bar{display:flex;gap:6px;opacity:0;transition:opacity 0.15s;}
 .zapis-section:hover .edit-bar{opacity:1;}
 .btn-edit-sec,.btn-ai-sec{font-size:11px;font-weight:700;font-family:"Montserrat",sans-serif;border-radius:4px;padding:6px 14px;cursor:pointer;white-space:nowrap;transition:all 0.15s;}
@@ -46,10 +68,10 @@
 .section-content em{color:#4A6080;}
 /* TABLES */
 .section-content table{width:100%;border-collapse:collapse;font-size:13px;margin:10px 0 16px;border-radius:6px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,0.06);}
-.section-content th{background:#173767;color:white;font-weight:700;font-size:11px;text-transform:uppercase;letter-spacing:0.06em;padding:10px 14px;text-align:left;}
-.section-content td{padding:10px 14px;border-bottom:1px solid var(--border);vertical-align:middle;}
-.section-content tr:last-child td{border-bottom:none;background:#f0f3f7;}
-.section-content tr:nth-child(even) td{background:#f8f9fb;}
+.section-content th{background:#f0f3f7;color:#4A6080;font-weight:700;font-size:10px;text-transform:uppercase;letter-spacing:0.1em;padding:10px 14px;text-align:left;border-bottom:2px solid #D0DAE8;}
+.section-content td{padding:10px 14px;border-bottom:1px solid #e8eef4;vertical-align:middle;}
+.section-content tr:last-child td{border-bottom:none;background:#f7f9fb;font-weight:600;}
+.section-content tr:nth-child(even) td{background:#fafbfd;}
 .section-content td:nth-child(2){text-align:center;font-weight:700;}
 .score-badge{display:inline-block;padding:3px 12px;border-radius:20px;font-size:12px;font-weight:700;color:white;}
 /* EDIT */
@@ -141,10 +163,16 @@
 
   <div class="zapis-card" id="zapis-print">
     <div class="zapis-meta">
-      <img src="/static/logo-white.svg" alt="Commarec" class="zapis-meta-logo">
-      <div class="zapis-meta-title">
-        {{ zapis.title }}
-        <small>{{ template_names.get(zapis.template, zapis.template) }}</small>
+      <div class="zapis-meta-left">
+        <div class="zapis-meta-logos">
+          <img src="/static/logo-white.svg" alt="Commarec" class="zapis-meta-logo">
+          {% if zapis.klient %}
+          <div class="meta-divider"></div>
+          <div class="klient-logo-box">{{ zapis.klient.nazev }}</div>
+          {% endif %}
+        </div>
+        <div class="zapis-meta-title">{{ zapis.title }}</div>
+        <div class="zapis-meta-subtitle">{{ template_names.get(zapis.template, zapis.template) }}</div>
       </div>
       <div class="zapis-meta-right">
         <div class="meta-row"><strong>{{ zapis.created_at.strftime("%d. %m. %Y") }}</strong></div>
@@ -155,10 +183,34 @@
 
     {% if zapis.output_json and zapis.output_json != "{}" %}
     <div class="zapis-header-block">
-      <div class="hb-item"><span class="hb-lbl">Klient</span><span class="hb-val">{% if zapis.klient %}{{ zapis.klient.nazev }}{% else %}—{% endif %}</span></div>
-      <div class="hb-item"><span class="hb-lbl">Projekt</span><span class="hb-val">{% if zapis.projekt %}{{ zapis.projekt.nazev }}{% else %}—{% endif %}</span></div>
-      <div class="hb-item"><span class="hb-lbl">Za Commarec</span><span class="hb-val">{{ zapis.author.name }}</span></div>
-      <div class="hb-item"><span class="hb-lbl">Datum</span><span class="hb-val">{{ zapis.created_at.strftime("%d. %m. %Y") }}</span></div>
+      <div class="hb-item">
+        <span class="hb-lbl">Klient</span>
+        <span class="hb-val">
+          <svg width="12" height="12" viewBox="0 0 16 16" fill="none" style="opacity:.4;flex-shrink:0"><path d="M8 2a3 3 0 100 6 3 3 0 000-6zM3 13s1-3 5-3 5 3 5 3" stroke="#173767" stroke-width="1.5" stroke-linecap="round"/></svg>
+          {% if zapis.klient %}{{ zapis.klient.nazev }}{% else %}—{% endif %}
+        </span>
+      </div>
+      <div class="hb-item">
+        <span class="hb-lbl">Projekt</span>
+        <span class="hb-val">
+          <svg width="12" height="12" viewBox="0 0 16 16" fill="none" style="opacity:.4;flex-shrink:0"><rect x="2" y="4" width="12" height="9" rx="1.5" stroke="#173767" stroke-width="1.5"/><path d="M5 4V3a1 1 0 011-1h4a1 1 0 011 1v1" stroke="#173767" stroke-width="1.5"/></svg>
+          {% if zapis.projekt %}{{ zapis.projekt.nazev }}{% else %}—{% endif %}
+        </span>
+      </div>
+      <div class="hb-item">
+        <span class="hb-lbl">Konzultant</span>
+        <span class="hb-val">
+          <svg width="12" height="12" viewBox="0 0 16 16" fill="none" style="opacity:.4;flex-shrink:0"><circle cx="8" cy="5" r="3" stroke="#173767" stroke-width="1.5"/><path d="M2 13.5C2 11 4.7 9 8 9s6 2 6 4.5" stroke="#173767" stroke-width="1.5" stroke-linecap="round"/></svg>
+          {{ zapis.author.name }}
+        </span>
+      </div>
+      <div class="hb-item">
+        <span class="hb-lbl">Datum</span>
+        <span class="hb-val">
+          <svg width="12" height="12" viewBox="0 0 16 16" fill="none" style="opacity:.4;flex-shrink:0"><rect x="2" y="3" width="12" height="11" rx="1.5" stroke="#173767" stroke-width="1.5"/><path d="M5 1v4M11 1v4M2 7h12" stroke="#173767" stroke-width="1.5" stroke-linecap="round"/></svg>
+          {{ zapis.created_at.strftime("%d. %m. %Y") }}
+        </span>
+      </div>
     </div>
     {% endif %}
 
@@ -233,7 +285,7 @@
   <div class="card tasks-section" style="margin-top:1rem;" id="freelo-panel">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.25rem;padding-bottom:12px;border-bottom:1px solid var(--border);">
       <div>
-        <div style="font-family:'DrukCondensed','Impact',sans-serif;font-size:22px;font-weight:900;color:#173767;text-transform:uppercase;letter-spacing:0.06em;">Ukoly pro Freelo</div>
+        <div style="font-family:'Montserrat',sans-serif;font-size:16px;font-weight:800;color:#173767;text-transform:uppercase;letter-spacing:0.12em;">Ukoly pro Freelo</div>
         <div id="task-count-label" style="font-size:10px;font-weight:600;color:#4A6080;text-transform:uppercase;letter-spacing:0.1em;margin-top:3px;"></div>
       </div>
       {% if zapis.freelo_sent %}<span class="badge badge-green" style="font-size:11px;padding:5px 14px;">&#x2713; Odeslano</span>{% endif %}
@@ -277,7 +329,7 @@
       {% endif %}
     </div>
     <div style="margin-top:1.25rem;display:flex;gap:12px;align-items:center;flex-wrap:wrap;">
-      <button id="freelo-send-btn" onclick="odeslatDoFreela()" style="font-family:'DrukCondensed','Impact',sans-serif;font-size:15px;font-weight:900;letter-spacing:0.06em;text-transform:uppercase;background:#0A7A5A;color:white;border:none;padding:11px 24px;border-radius:5px;cursor:pointer;">Odeslat vybrane do Freela &rarr;</button>
+      <button id="freelo-send-btn" onclick="odeslatDoFreela()" style="font-family:'Montserrat',sans-serif;font-size:13px;font-weight:700;background:#0A7A5A;color:white;border:none;padding:11px 24px;border-radius:5px;cursor:pointer;">Odeslat vybrane do Freela &rarr;</button>
       <span id="freelo-status" style="font-size:12px;color:#4A6080;font-weight:500;"></span>
     </div>
     <div id="freelo-result" style="margin-top:12px;"></div>
