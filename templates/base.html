@@ -175,7 +175,7 @@ hr { border: none; border-top: 1px solid var(--border); margin: 1.5rem 0; }
   <div class="nav-links">
     <a href="{{ url_for('dashboard') }}" class="nav-link {% if request.endpoint == 'dashboard' %}active{% endif %}">Přehled</a>
     <a href="{{ url_for('klienti_list') }}" class="nav-link {% if request.endpoint in ['klienti_list','klient_detail','klient_novy','klient_upravit','projekt_detail'] %}active{% endif %}">Klienti</a>
-    <a href="{{ url_for('novy_zapis') }}" class="nav-link {% if request.endpoint == 'novy_zapis' %}active{% endif %}" style="background:#00AFF0; color:#0E213E; padding:5px 14px; border-radius:4px; font-family:'DrukCondensed','Impact',sans-serif; font-weight:900; font-size:13px; letter-spacing:0.06em; text-transform:uppercase;">+ Nový zápis</a>
+    <a href="{{ url_for('novy_zapis') }}" class="nav-link {% if request.endpoint == 'novy_zapis' %}active{% endif %}" style="background:#00AFF0; color:#0E213E; padding:6px 16px; border-radius:4px; font-family:'DrukCondensed','Impact',sans-serif; font-weight:900; font-size:16px; letter-spacing:0.06em; text-transform:uppercase; white-space:nowrap;">+ Nový zápis</a>
     {% if session.is_admin %}
     <a href="{{ url_for('admin') }}" class="nav-link {% if request.endpoint == 'admin' %}active{% endif %}">Správa</a>
     {% endif %}

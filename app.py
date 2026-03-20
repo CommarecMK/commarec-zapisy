@@ -6,6 +6,9 @@ from functools import wraps
 import anthropic
 import requests
 import os, json, re, secrets, string
+import smtplib
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
 from werkzeug.utils import secure_filename
 
 app = Flask(__name__)
@@ -259,6 +262,17 @@ SECTION_TITLES = {
     "expected_benefits":     "Očekávané přínosy",
     "additional_notes":      "Poznámky z terénu",
     "summary":               "Shrnutí",
+    # Operativa
+    "current_state":         "Aktuální stav provozu",
+    # Obchod
+    "client_situation":      "Situace klienta",
+    "client_needs":          "Potřeby klienta",
+    "opportunities":         "Příležitosti",
+    "risks":                 "Rizika",
+    "commercial_model":      "Obchodní model spolupráce",
+    "next_steps":            "Další kroky",
+    "expected_impact":       "Očekávaný dopad",
+    "client_signals":        "Signály klienta",
 }
 
 # ─────────────────────────────────────────────
@@ -615,6 +629,59 @@ def save_klient_logo(file_obj, klient_id):
     return f"/static/logos/{filename}"
 # ────────────────────────────────────────────────────────────────────
 
+
+def send_welcome_email(to_email, to_name, password):
+    """Odešle uvítací email novému uživateli s přihlašovacími údaji."""
+    smtp_host = os.environ.get("SMTP_HOST", "")
+    smtp_port = int(os.environ.get("SMTP_PORT", "587"))
+    smtp_user = os.environ.get("SMTP_USER", "")
+    smtp_pass = os.environ.get("SMTP_PASS", "")
+    smtp_from = os.environ.get("SMTP_FROM", smtp_user)
+
+    if not smtp_host or not smtp_user:
+        app.logger.warning("SMTP not configured — welcome email not sent")
+        return False
+
+    try:
+        msg = MIMEMultipart("alternative")
+        msg["Subject"] = "Přístup do Commarec Zápisy"
+        msg["From"]    = f"Commarec Zápisy <{smtp_from}>"
+        msg["To"]      = to_email
+
+        app_url = os.environ.get("APP_URL", "https://web-production-76f2.up.railway.app")
+
+        html = f"""
+        <div style="font-family:Arial,sans-serif;max-width:500px;margin:0 auto;padding:32px;">
+          <img src="{app_url}/static/logo-dark.svg" alt="Commarec" style="height:32px;margin-bottom:24px;">
+          <h2 style="color:#173767;font-size:22px;margin-bottom:8px;">Vítejte, {to_name}</h2>
+          <p style="color:#4A6080;margin-bottom:24px;">Byl vám vytvořen přístup do aplikace Commarec Zápisy.</p>
+          <table style="background:#f7f9fb;border-radius:8px;padding:20px;width:100%;border-collapse:collapse;">
+            <tr><td style="padding:8px 12px;color:#4A6080;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;">Přihlašovací URL</td>
+                <td style="padding:8px 12px;"><a href="{app_url}" style="color:#173767;font-weight:700;">{app_url}</a></td></tr>
+            <tr><td style="padding:8px 12px;color:#4A6080;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;">Email</td>
+                <td style="padding:8px 12px;font-weight:600;">{to_email}</td></tr>
+            <tr><td style="padding:8px 12px;color:#4A6080;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;">Heslo</td>
+                <td style="padding:8px 12px;font-weight:700;font-size:18px;letter-spacing:0.1em;color:#173767;">{password}</td></tr>
+          </table>
+          <p style="color:#8aa0b8;font-size:12px;margin-top:24px;">Po prvním přihlášení si heslo změňte. Tento email byl vygenerován automaticky.</p>
+          <p style="color:#8aa0b8;font-size:12px;margin-top:4px;">Commarec s.r.o. · Varšavská 715/36, Praha 2</p>
+        </div>"""
+
+        msg.attach(MIMEText(html, "html", "utf-8"))
+
+        with smtplib.SMTP(smtp_host, smtp_port) as server:
+            server.ehlo()
+            server.starttls()
+            server.login(smtp_user, smtp_pass)
+            server.sendmail(smtp_from, to_email, msg.as_string())
+
+        app.logger.info(f"Welcome email sent to {to_email}")
+        return True
+    except Exception as e:
+        app.logger.warning(f"Email send failed: {e}")
+        return False
+
+
 @app.route("/klienti")
 @login_required
 def klienti_list():
@@ -955,9 +1022,15 @@ Typ schuzky: {TEMPLATE_NAMES.get(template, template)}
 
     # Parse section markers ===SEKCE===
     SECTION_KEYS = [
+        # Standardní sekce (všechny typy)
         "participants_commarec", "participants_company", "introduction", "meeting_goal",
         "findings", "ratings", "processes_description", "dangers", "suggested_actions",
         "expected_benefits", "additional_notes", "summary", "tasks",
+        # Operativa
+        "current_state",
+        # Obchod
+        "client_situation", "client_needs", "opportunities", "risks",
+        "commercial_model", "next_steps", "expected_impact", "client_signals",
     ]
 
     def parse_sections(text):
@@ -1463,21 +1536,44 @@ def test_freelo_description():
 def admin():
     users   = User.query.order_by(User.name).all()
     klienti = Klient.query.order_by(Klient.nazev).all()
-    return render_template("admin.html", users=users, klienti=klienti)
+    flash   = session.pop("admin_flash", None)
+    return render_template("admin.html", users=users, klienti=klienti, admin_flash=flash)
 
 @app.route("/admin/pridat-uzivatele", methods=["POST"])
 @admin_required
 def pridat_uzivatele():
     email    = request.form.get("email","").strip().lower()
     name     = request.form.get("name","").strip()
-    password = request.form.get("password","")
     is_admin = bool(request.form.get("is_admin"))
     role     = request.form.get("role","konzultant")
+    send_email = bool(request.form.get("send_email", True))
+
+    if not email or not name:
+        return redirect(url_for("admin"))
     if User.query.filter_by(email=email).first():
         return redirect(url_for("admin"))
-    db.session.add(User(email=email, name=name, role=role,
-                        password_hash=generate_password_hash(password), is_admin=is_admin))
+
+    # Generuj bezpečné heslo: 3 slova + čísla (snadno zapamatovatelné)
+    words = ["Sklad", "Logistika", "Komárec", "Picking", "Trasa", "Expres", "Projekt"]
+    import random
+    password = random.choice(words) + str(random.randint(10,99)) + random.choice(words) + "!"
+
+    u = User(email=email, name=name, role=role,
+             password_hash=generate_password_hash(password), is_admin=is_admin)
+    db.session.add(u)
     db.session.commit()
+
+    # Odešli uvítací email
+    email_sent = False
+    if send_email:
+        email_sent = send_welcome_email(email, name, password)
+
+    # Flash zpráva s heslem (vždy zobrazit, i když email selhal)
+    flash_msg = f"Uživatel {name} vytvořen. Heslo: {password}"
+    if send_email and not email_sent:
+        flash_msg += " (email se nepodařilo odeslat — zkopírujte heslo ručně)"
+    session["admin_flash"] = flash_msg
+
     return redirect(url_for("admin"))
 
 @app.route("/admin/upravit-uzivatele/<int:user_id>", methods=["POST"])
@@ -1542,10 +1638,20 @@ def admin_template_reset(template_key):
 @app.route("/admin/smazat-uzivatele/<int:user_id>", methods=["POST"])
 @admin_required
 def smazat_uzivatele(user_id):
-    if user_id == session["user_id"]: return redirect(url_for("admin"))
+    if user_id == session["user_id"]:
+        return redirect(url_for("admin"))  # nelze smazat sám sebe
     user = User.query.get_or_404(user_id)
-    user.is_active = False
+    # Nelze smazat superadmina
+    if user.role == "superadmin":
+        return redirect(url_for("admin"))
+    # Přeřaď zápisy na admina před smazáním
+    admin_user = User.query.filter_by(role="superadmin").first()
+    if admin_user:
+        Zapis.query.filter_by(user_id=user_id).update({"user_id": admin_user.id})
+        db.session.flush()
+    db.session.delete(user)
     db.session.commit()
+    session["admin_flash"] = f"Uživatel {user.name} byl smazán."
     return redirect(url_for("admin"))
 
 # ─────────────────────────────────────────────

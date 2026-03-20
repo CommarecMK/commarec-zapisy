@@ -4,11 +4,12 @@
 <style>
 .card-header h2{
   font-family:"DrukCondensed","Impact",sans-serif !important;
-  font-size:18px !important;
+  font-size:28px !important;
   font-weight:900 !important;
   color:#173767 !important;
   text-transform:uppercase !important;
-  letter-spacing:0.06em !important;
+  letter-spacing:0.05em !important;
+  line-height:1.0 !important;
 }
 .btn, button, input[type=submit]{
   font-family:"Montserrat",sans-serif !important;
@@ -23,15 +24,21 @@
 {% endblock %}
 {% block content %}
 <div class="container">
+  {% if admin_flash %}
+  <div style="background:#173767;color:white;padding:14px 20px;border-radius:8px;margin-bottom:20px;display:flex;align-items:center;gap:12px;font-size:14px;">
+    <span style="font-size:20px;">&#9432;</span>
+    <span>{{ admin_flash }}</span>
+  </div>
+  {% endif %}
   <div class="page-header">
     <h1>Správa</h1>
     <a href="{{ url_for('admin_templates') }}" class="btn btn-secondary">⚙ Šablony zápisů</a>
   </div>
 
   <div class="card" style="margin-bottom:1rem;">
-    <div class="card-header"><h2>Uzivatele ({{ users|length }})</h2></div>
+    <div class="card-header"><h2>Uživatelé ({{ users|length }})</h2></div>
     <table>
-      <thead><tr><th>Jmeno</th><th>Email</th><th>Role</th><th>Stav</th><th>Zápisy</th><th></th></tr></thead>
+      <thead><tr><th>Jméno</th><th>Email</th><th>Role</th><th>Stav</th><th>Zápisy</th><th></th></tr></thead>
       <tbody>
       {% for u in users %}
       <tr>
@@ -43,9 +50,12 @@
         <td>
           <button onclick="editUser({{ u.id }},'{{ u.name }}','{{ u.email }}','{{ u.role }}',{{ 'true' if u.is_admin else 'false' }},{{ 'true' if u.is_active else 'false' }})" class="btn btn-secondary btn-sm">Upravit</button>
           {% if u.id != session.user_id %}
-          <form method="POST" action="{{ url_for('smazat_uzivatele', user_id=u.id) }}" style="display:inline;" onsubmit="return confirm('Deaktivovat uzivatele {{ u.name }}?')">
-            <button type="submit" class="btn btn-danger btn-sm">Deaktivovat</button>
+          {% if u.role != 'superadmin' %}
+          <form method="POST" action="{{ url_for('smazat_uzivatele', user_id=u.id) }}" style="display:inline;"
+            onsubmit="return confirm('Smazat uživatele {{ u.name }}?\nTato akce je nevratná. Zápisy budou převedeny na admina.')">
+            <button type="submit" class="btn btn-danger btn-sm">Smazat</button>
           </form>
+          {% endif %}
           {% endif %}
         </td>
       </tr>
@@ -58,15 +68,17 @@
   <div class="card" style="margin-bottom:1rem;">
     <div class="card-header"><h2>Přidat uživatele</h2></div>
     <form method="POST" action="{{ url_for('pridat_uzivatele') }}">
-      <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:10px;margin-bottom:10px;">
-        <div><label>Jmeno</label><input type="text" name="name" required placeholder="Jan Novak"></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:10px;">
+        <div><label>Jméno</label><input type="text" name="name" required placeholder="Jan Novák"></div>
         <div><label>Email</label><input type="email" name="email" required placeholder="jan@commarec.cz"></div>
-        <div><label>Heslo</label><input type="password" name="password" required placeholder="minimum 8 znaku"></div>
         <div><label>Role</label><select name="role"><option value="konzultant">konzultant</option><option value="admin">admin</option><option value="superadmin">superadmin</option></select></div>
+      </div>
+      <div style="background:#f0f7ff;border:1px solid #c0d8f0;border-radius:6px;padding:10px 14px;margin-bottom:10px;font-size:13px;color:#173767;">
+        <strong>Heslo se vygeneruje automaticky.</strong> Zobrazí se po vytvoření a odešle se na email uživatele.
       </div>
       <div style="display:flex;gap:12px;align-items:center;">
         <label style="display:flex;align-items:center;gap:6px;font-size:13px;text-transform:none;letter-spacing:0;font-weight:500;cursor:pointer;">
-          <input type="checkbox" name="is_admin" value="1"> Administrator (plny pristup)
+          <input type="checkbox" name="send_email" value="1" checked> Odeslat uvítací email s přihlašovacími údaji &nbsp;&nbsp; <input type="checkbox" name="is_admin" value="1"> Administrátor (plný přístup)
         </label>
         <button type="submit" class="btn btn-navy btn-sm" style="font-family:'DrukCondensed','Impact',sans-serif;font-weight:900;letter-spacing:0.06em;text-transform:uppercase;">Přidat</button>
       </div>
@@ -119,7 +131,7 @@
     <div style="font-family:'DrukCondensed','Impact',sans-serif;font-size:20px;font-weight:900;color:#173767;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:18px;">Upravit uživatele</div>
     <form id="edit-form" method="POST">
       <div style="display:grid;gap:12px;">
-        <div><label>Jmeno</label><input type="text" name="name" id="edit-name" required></div>
+        <div><label>Jméno</label><input type="text" name="name" id="edit-name" required></div>
         <div><label>Role</label><select name="role" id="edit-role"><option value="konzultant">konzultant</option><option value="admin">admin</option><option value="superadmin">superadmin</option></select></div>
         <div style="display:flex;gap:16px;">
           <label style="display:flex;align-items:center;gap:6px;font-size:13px;text-transform:none;letter-spacing:0;font-weight:500;cursor:pointer;"><input type="checkbox" name="is_admin" value="1" id="edit-admin"> Administrator</label>
