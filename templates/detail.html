@@ -3,67 +3,90 @@
 {% block extra_head %}
 <style>
 @media print {
-  .nav,.card-actions,.tasks-section,#print-btn,.edit-bar{display:none !important;}
+  .nav,.card-actions,.tasks-section,.edit-bar,.ai-bar,#pub-bar-wrap,#toast,.modal-bg,#print-btn{display:none !important;}
   body{background:white !important;}
   .container{max-width:100% !important;padding:0 !important;}
   .zapis-card{border:none !important;box-shadow:none !important;}
+  .zapis-meta{background:#173767 !important;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+  .section-title{font-size:16px !important;}
 }
-.zapis-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);}
-.zapis-meta{display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:12px;padding:1.25rem 1.5rem;border-bottom:1px solid var(--border);}
-.zapis-meta-info{text-align:right;font-size:11px;color:var(--muted);line-height:2;font-weight:500;text-transform:uppercase;letter-spacing:0.06em;}
-.zapis-body{padding:1.5rem 2rem 2rem;}
-/* Sections */
-.zapis-section{position:relative;margin-bottom:2.5rem;border-radius:6px;transition:background 0.15s;}
+.zapis-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;}
+/* META */
+.zapis-meta{background:#173767;padding:1.5rem 2rem;display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:1.5rem;}
+.zapis-meta-logo{height:28px;width:auto;display:block;filter:brightness(0) invert(1);}
+.zapis-meta-title{font-family:"DrukCondensed","Impact",sans-serif;font-size:22px;font-weight:900;color:white;text-transform:uppercase;letter-spacing:0.06em;line-height:1.1;}
+.zapis-meta-title small{display:block;font-family:"Montserrat",sans-serif;font-size:11px;font-weight:500;color:rgba(255,255,255,0.5);text-transform:none;letter-spacing:0;margin-top:3px;}
+.zapis-meta-right{text-align:right;}
+.meta-row{font-size:11px;color:rgba(255,255,255,0.55);font-weight:500;line-height:2;}
+.meta-row strong{color:white;}
+.meta-badge{display:inline-block;font-size:10px;font-weight:700;padding:3px 10px;border-radius:3px;letter-spacing:0.06em;text-transform:uppercase;background:rgba(0,175,240,0.2);color:#00AFF0;border:1px solid rgba(0,175,240,0.3);margin-top:4px;}
+/* HEADER INFO */
+.zapis-header-block{background:#f0f5fb;border-bottom:1px solid var(--border);padding:14px 2rem;font-size:13px;display:grid;grid-template-columns:repeat(4,1fr);gap:0;}
+.hb-lbl{font-size:10px;font-weight:700;color:#4A6080;text-transform:uppercase;letter-spacing:0.08em;display:block;margin-bottom:2px;}
+.hb-val{font-size:13px;font-weight:600;color:#173767;}
+/* BODY */
+.zapis-body{padding:2rem;}
+/* SECTIONS */
+.zapis-section{margin-bottom:2.5rem;}
+.section-header{display:flex;align-items:center;justify-content:space-between;padding-bottom:8px;border-bottom:2.5px solid #00AFF0;margin-bottom:18px;}
+.section-title{font-family:"DrukCondensed","Impact",sans-serif;font-size:26px;font-weight:900;color:#173767;text-transform:uppercase;letter-spacing:0.06em;line-height:1;}
+.edit-bar{display:flex;gap:6px;opacity:0;transition:opacity 0.15s;}
 .zapis-section:hover .edit-bar{opacity:1;}
-.section-title{font-family:'DrukCondensed','Impact',sans-serif;font-size:20px;font-weight:900;color:#173767;text-transform:uppercase;letter-spacing:0.06em;padding-bottom:7px;border-bottom:2.5px solid #00AFF0;margin-bottom:16px;}
-.section-content{font-size:13px;line-height:1.7;color:#1a2533;}
-/* Edit bar */
-.edit-bar{opacity:0;transition:opacity 0.15s;display:flex;gap:6px;align-items:center;margin-bottom:8px;}
-.edit-bar button{font-size:11px;font-weight:600;font-family:'Montserrat',sans-serif;border-radius:4px;padding:4px 11px;cursor:pointer;border:1.5px solid;}
-.btn-edit{background:white;color:#173767;border-color:#c5d0de;}
-.btn-edit:hover{border-color:#173767;}
-.btn-ai{background:white;color:#00AFF0;border-color:#00AFF0;}
-.btn-ai:hover{background:#00AFF0;color:white;}
-.btn-save{background:#173767;color:white;border-color:#173767;}
-.btn-cancel-edit{background:white;color:#4A6080;border-color:#c5d0de;}
-/* Edit textarea */
-.section-editor{display:none;width:100%;min-height:120px;padding:10px 12px;border:2px solid #00AFF0;border-radius:6px;font-size:13px;font-family:'Montserrat',sans-serif;resize:vertical;line-height:1.6;}
-.section-editor.active{display:block;}
-/* AI prompt bar */
-.ai-bar{display:none;gap:8px;align-items:center;margin-top:8px;}
-.ai-bar.active{display:flex;}
-.ai-input{flex:1;padding:7px 11px;border:1.5px solid #00AFF0;border-radius:5px;font-size:12px;font-family:'Montserrat',sans-serif;}
-/* Header block */
-.zapis-header-block{background:#f0f5fb;border-left:4px solid #00AFF0;padding:13px 17px;border-radius:0 6px 6px 0;font-size:13px;line-height:1.9;margin-bottom:2rem;}
-/* HTML content */
-.section-content table{width:100%;border-collapse:collapse;font-size:13px;margin:10px 0;}
-.section-content th,.section-content td{padding:8px 12px;border:1px solid var(--border);text-align:left;vertical-align:middle;}
-.section-content th{background:#f8f9fb;font-weight:700;font-size:11px;text-transform:uppercase;letter-spacing:0.06em;color:#4A6080;}
+.btn-edit-sec,.btn-ai-sec{font-size:11px;font-weight:600;font-family:"Montserrat",sans-serif;border-radius:4px;padding:5px 13px;cursor:pointer;white-space:nowrap;transition:all 0.15s;}
+.btn-edit-sec{border:1.5px solid #c5d0de;background:white;color:#173767;}
+.btn-edit-sec:hover{border-color:#173767;}
+.btn-ai-sec{border:1.5px solid #00AFF0;background:white;color:#00AFF0;}
+.btn-ai-sec:hover{background:#00AFF0;color:white;}
+/* CONTENT */
+.section-content{font-size:14px;line-height:1.75;color:#1a2533;}
+.section-content p{margin-bottom:8px;}
+.section-content ul{padding-left:1.4rem;margin:6px 0 10px;}
+.section-content li{margin-bottom:6px;}
+.section-content strong{color:#173767;}
+.section-content em{color:#4A6080;}
+/* TABLES */
+.section-content table{width:100%;border-collapse:collapse;font-size:13px;margin:10px 0 16px;border-radius:6px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,0.06);}
+.section-content th{background:#173767;color:white;font-weight:700;font-size:11px;text-transform:uppercase;letter-spacing:0.06em;padding:10px 14px;text-align:left;}
+.section-content td{padding:10px 14px;border-bottom:1px solid var(--border);vertical-align:middle;}
+.section-content tr:last-child td{border-bottom:none;background:#f0f3f7;}
+.section-content tr:nth-child(even) td{background:#f8f9fb;}
 .section-content td:nth-child(2){text-align:center;font-weight:700;}
-.section-content ul{padding-left:1.4rem;margin:6px 0;}
-.section-content li{margin-bottom:4px;}
-.score-badge{display:inline-block;padding:2px 10px;border-radius:20px;font-size:12px;font-weight:700;color:white;}
-/* Toast */
-#toast{position:fixed;bottom:24px;right:24px;background:#173767;color:white;padding:10px 18px;border-radius:6px;font-size:13px;font-family:'Montserrat',sans-serif;font-weight:600;z-index:9999;opacity:0;transition:opacity 0.3s;pointer-events:none;}
+.score-badge{display:inline-block;padding:3px 12px;border-radius:20px;font-size:12px;font-weight:700;color:white;}
+/* EDIT */
+.section-edit-wrap{display:none;}
+.section-edit-wrap.active{display:block;margin-top:8px;}
+.section-editor{width:100%;min-height:140px;padding:12px 14px;border:2px solid #00AFF0;border-radius:6px;font-size:13px;font-family:"Montserrat",sans-serif;resize:vertical;line-height:1.6;background:#fafcff;}
+.edit-actions{display:flex;gap:8px;margin-top:8px;align-items:center;}
+.btn-save-sec{font-family:"DrukCondensed","Impact",sans-serif;font-size:13px;font-weight:900;letter-spacing:0.05em;text-transform:uppercase;background:#173767;color:white;border:none;padding:9px 22px;border-radius:5px;cursor:pointer;}
+.btn-save-sec:hover{background:#254f8a;}
+.btn-cancel-sec{font-size:12px;font-weight:600;font-family:"Montserrat",sans-serif;background:white;color:#4A6080;border:1.5px solid var(--border);padding:8px 18px;border-radius:5px;cursor:pointer;}
+.btn-cancel-sec:hover{border-color:#4A6080;color:#173767;}
+.edit-hint{font-size:11px;color:#8aa0b8;margin-left:4px;}
+/* AI BAR */
+.ai-bar{display:none;gap:8px;align-items:center;margin-top:10px;background:#f0f5fb;border-radius:6px;padding:10px 12px;}
+.ai-bar.active{display:flex;}
+.ai-input{flex:1;padding:8px 12px;border:1.5px solid #00AFF0;border-radius:5px;font-size:13px;font-family:"Montserrat",sans-serif;}
+/* TOAST */
+#toast{position:fixed;bottom:24px;right:24px;background:#173767;color:white;padding:11px 20px;border-radius:6px;font-size:13px;font-family:"Montserrat",sans-serif;font-weight:600;z-index:9999;opacity:0;transition:opacity 0.3s;pointer-events:none;box-shadow:0 4px 20px rgba(0,0,0,0.2);}
 #toast.show{opacity:1;}
-/* Task panel */
+/* FREELO */
+.fl-lbl{font-size:10px;font-weight:700;color:#4A6080;text-transform:uppercase;letter-spacing:0.08em;display:block;margin-bottom:3px;}
+.fl-in{width:100%;padding:7px 9px;border:1.5px solid var(--border);border-radius:4px;font-size:12px;font-family:"Montserrat",sans-serif;color:#173767;}
+.fl-in:focus{outline:none;border-color:#00AFF0;}
 .task-row{display:grid;grid-template-columns:28px 1fr 180px 150px 34px;gap:8px;align-items:start;padding:10px 0;border-bottom:1px solid var(--border);}
 .task-row:last-child{border-bottom:none;}
-.fl-lbl{font-size:10px;font-weight:700;color:#4A6080;text-transform:uppercase;letter-spacing:0.08em;display:block;margin-bottom:3px;}
-.fl-in{width:100%;padding:7px 9px;border:1.5px solid var(--border);border-radius:4px;font-size:12px;font-family:'Montserrat',sans-serif;color:#173767;}
-.fl-in:focus{outline:none;border-color:#00AFF0;}
 .modal-bg{display:none;position:fixed;inset:0;background:rgba(14,33,62,0.65);z-index:2000;align-items:center;justify-content:center;}
 .modal-bg.open{display:flex;}
 .modal-box{background:white;border-radius:8px;padding:28px 32px;width:500px;max-width:calc(100vw - 32px);box-shadow:0 20px 60px rgba(0,0,0,0.3);}
-.modal-title{font-family:'DrukCondensed','Impact',sans-serif;font-size:20px;font-weight:900;color:#173767;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:18px;}
+.modal-title{font-family:"DrukCondensed","Impact",sans-serif;font-size:20px;font-weight:900;color:#173767;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:18px;}
 .modal-foot{display:flex;gap:10px;justify-content:flex-end;margin-top:20px;}
-.btn-mcancel{padding:9px 18px;border:1.5px solid var(--border);border-radius:5px;background:white;font-size:12px;font-weight:700;cursor:pointer;font-family:'Montserrat',sans-serif;}
-.btn-msave{padding:9px 20px;background:#173767;color:white;border:none;border-radius:5px;font-family:'DrukCondensed','Impact',sans-serif;font-size:14px;font-weight:900;letter-spacing:0.05em;text-transform:uppercase;cursor:pointer;}
+.btn-mcancel{padding:9px 18px;border:1.5px solid var(--border);border-radius:5px;background:white;font-size:12px;font-weight:700;cursor:pointer;font-family:"Montserrat",sans-serif;}
+.btn-msave{padding:9px 20px;background:#173767;color:white;border:none;border-radius:5px;font-family:"DrukCondensed","Impact",sans-serif;font-size:14px;font-weight:900;letter-spacing:0.05em;text-transform:uppercase;cursor:pointer;}
 .btn-msave:hover{background:#254f8a;}
 .asgn-wrap{position:relative;}
 .asgn-dd{display:none;position:absolute;top:100%;left:0;right:0;background:white;border:1.5px solid #00AFF0;border-radius:5px;z-index:200;max-height:180px;overflow-y:auto;box-shadow:0 6px 20px rgba(0,0,0,0.12);}
 .asgn-dd.open{display:block;}
-.asgn-opt{padding:8px 12px;font-size:12px;color:#173767;cursor:pointer;font-family:'Montserrat',sans-serif;}
+.asgn-opt{padding:8px 12px;font-size:12px;color:#173767;cursor:pointer;font-family:"Montserrat",sans-serif;}
 .asgn-opt:hover{background:#f0f5fb;}
 @keyframes spin{to{transform:rotate(360deg);}}
 </style>
@@ -74,125 +97,120 @@
 <div class="container">
 
   <div class="card-actions" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;flex-wrap:wrap;gap:10px;">
-    <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
-      <h1 style="font-family:'DrukCondensed','Impact',sans-serif;font-size:30px;font-weight:900;color:#173767;text-transform:uppercase;letter-spacing:0.05em;line-height:1;">{{ zapis.title }}</h1>
-      <span class="badge badge-blue">{{ template_names.get(zapis.template, zapis.template) }}</span>
-      {% if zapis.klient %}<a href="{{ url_for('klient_detail', klient_id=zapis.klient.id) }}" class="badge badge-cyan" style="text-decoration:none;">{{ zapis.klient.nazev }}</a>{% endif %}
-      {% if zapis.projekt %}<span class="badge badge-gray">{{ zapis.projekt.nazev }}</span>{% endif %}
-      {% if zapis.is_public %}<span class="badge badge-green" title="Verejny odkaz aktivni">&#x1F30D; Verejny</span>{% endif %}
+    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+      {% if zapis.klient %}<a href="{{ url_for('klient_detail', klient_id=zapis.klient.id) }}" style="font-size:12px;color:#00AFF0;font-weight:600;text-decoration:none;">{{ zapis.klient.nazev }}</a><span style="color:#c5d0de;">/</span>{% endif %}
+      {% if zapis.projekt %}<span style="font-size:12px;color:#4A6080;">{{ zapis.projekt.nazev }}</span><span style="color:#c5d0de;">/</span>{% endif %}
+      <span style="font-size:12px;color:#4A6080;">{{ zapis.created_at.strftime("%d. %m. %Y") }}</span>
     </div>
     <div style="display:flex;gap:8px;flex-wrap:wrap;">
       <button onclick="togglePublish()" id="pub-btn" class="btn {% if zapis.is_public %}btn-success{% else %}btn-secondary{% endif %} btn-sm">{% if zapis.is_public %}&#x1F30D; Zverejneno{% else %}Zverejnit{% endif %}</button>
-      <button id="print-btn" class="btn btn-secondary" onclick="downloadPDF()">&#x2b07; PDF</button>
-      <a href="{{ url_for('dashboard') }}" class="btn btn-secondary">&larr; Zpet</a>
+      <button id="print-btn" class="btn btn-secondary btn-sm" onclick="downloadPDF()">&#x2b07; PDF</button>
+      <a href="{{ url_for("dashboard") }}" class="btn btn-secondary btn-sm">&larr; Zpet</a>
     </div>
   </div>
+
   {% if zapis.is_public and zapis.public_token %}
-  <div id="pub-bar" style="background:#E2F5EE;border:1px solid #0A7A5A;border-radius:5px;padding:8px 14px;margin-bottom:1rem;font-size:12px;display:flex;align-items:center;gap:10px;">
-    <span style="color:#0A7A5A;font-weight:600;">Verejny odkaz:</span>
-    <a id="pub-link" href="{{ url_for('zapis_verejny', token=zapis.public_token, _external=True) }}" target="_blank" style="color:#0A7A5A;word-break:break-all;">{{ url_for('zapis_verejny', token=zapis.public_token, _external=True) }}</a>
-    <button onclick="copyPubLink()" class="btn btn-secondary btn-sm" style="flex-shrink:0;">Kopirovat</button>
+  <div id="pub-bar-wrap" style="background:#E2F5EE;border:1px solid #0A7A5A;border-radius:5px;padding:9px 14px;margin-bottom:1rem;font-size:12px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+    <span style="color:#0A7A5A;font-weight:700;">&#x1F30D; Verejny odkaz:</span>
+    <a id="pub-link" href="{{ url_for("zapis_verejny", token=zapis.public_token, _external=True) }}" target="_blank" style="color:#0A7A5A;word-break:break-all;flex:1;">{{ url_for("zapis_verejny", token=zapis.public_token, _external=True) }}</a>
+    <button onclick="copyPubLink()" class="btn btn-secondary btn-sm">Kopirovat</button>
   </div>
   {% endif %}
 
   <div class="zapis-card" id="zapis-print">
     <div class="zapis-meta">
-      <div><img src="/static/logo-dark.svg" alt="Commarec" style="height:20px;width:auto;"></div>
-      <div class="zapis-meta-info">
-        <div>{{ zapis.created_at.strftime('%d. %m. %Y') }}</div>
-        <div>{{ zapis.author.name }}</div>
-        <div style="margin-top:4px;"><span class="badge badge-blue">{{ template_names.get(zapis.template, zapis.template) }}</span></div>
+      <img src="/static/logo-white.svg" alt="Commarec" class="zapis-meta-logo">
+      <div class="zapis-meta-title">
+        {{ zapis.title }}
+        <small>{{ template_names.get(zapis.template, zapis.template) }}</small>
+      </div>
+      <div class="zapis-meta-right">
+        <div class="meta-row"><strong>{{ zapis.created_at.strftime("%d. %m. %Y") }}</strong></div>
+        <div class="meta-row">{{ zapis.author.name }}</div>
+        <div><span class="meta-badge">{{ template_names.get(zapis.template, zapis.template) }}</span></div>
       </div>
     </div>
 
+    {% if zapis.output_json and zapis.output_json != "{}" %}
+    <div class="zapis-header-block">
+      <div class="hb-item"><span class="hb-lbl">Klient</span><span class="hb-val">{% if zapis.klient %}{{ zapis.klient.nazev }}{% else %}—{% endif %}</span></div>
+      <div class="hb-item"><span class="hb-lbl">Projekt</span><span class="hb-val">{% if zapis.projekt %}{{ zapis.projekt.nazev }}{% else %}—{% endif %}</span></div>
+      <div class="hb-item"><span class="hb-lbl">Za Commarec</span><span class="hb-val">{{ zapis.author.name }}</span></div>
+      <div class="hb-item"><span class="hb-lbl">Datum</span><span class="hb-val">{{ zapis.created_at.strftime("%d. %m. %Y") }}</span></div>
+    </div>
+    {% endif %}
+
     {% if zapis.interni_prompt %}
-    <div style="background:#fff9e6;border-left:3px solid #00AFF0;padding:10px 16px;font-size:12px;color:#4A6080;border-bottom:1px solid var(--border);">
-      <strong style="color:#173767;text-transform:uppercase;font-size:10px;letter-spacing:0.08em;">Interni instrukce AI:</strong>
+    <div style="background:#fff9e6;border-left:3px solid #FFB800;padding:8px 2rem;font-size:11px;color:#856000;border-bottom:1px solid var(--border);">
+      <strong style="text-transform:uppercase;letter-spacing:0.08em;">Interni instrukce:</strong>
       <span style="margin-left:8px;">{{ zapis.interni_prompt }}</span>
     </div>
     {% endif %}
+
     <div class="zapis-body">
-
-      {% if zapis.output_json and zapis.output_json != '{}' %}
-        {# New structured JSON record — render each section individually #}
+      {% if zapis.output_json and zapis.output_json != "{}" %}
         {% set s = summary %}
-
-        {# Header block #}
-        <div class="zapis-header-block" id="header-block">
-          {{ zapis.output_text | safe | truncate(600, True, '') }}
-        </div>
-
         {% set sections = [
-          ('participants_commarec', 'Zastoupeni Commarec'),
-          ('participants_company',  'Zastoupeni klienta'),
-          ('introduction',          'Uvod'),
-          ('meeting_goal',          'Ucel navstevy'),
-          ('findings',              'Shrn. hlavnich zjisteni'),
-          ('ratings',               'Hodnoceni hlavnich oblasti'),
-          ('processes_description', 'Popis procesu a vizualni pozorovani'),
-          ('dangers',               'Klicove problemy a rizika'),
-          ('suggested_actions',     'Doporucene akcni kroky'),
-          ('expected_benefits',     'Ocekavane prinosy'),
-          ('additional_notes',      'Poznamky z terenu'),
-          ('summary',               'Shrnuti'),
+          ("participants_commarec", "Zastoupeni Commarec"),
+          ("participants_company",  "Zastoupeni klienta"),
+          ("introduction",          "Uvod"),
+          ("meeting_goal",          "Ucel navstevy"),
+          ("findings",              "Shrn. hlavnich zjisteni"),
+          ("ratings",               "Hodnoceni hlavnich oblasti"),
+          ("processes_description", "Popis procesu"),
+          ("dangers",               "Klicove problemy a rizika"),
+          ("suggested_actions",     "Doporucene akcni kroky"),
+          ("expected_benefits",     "Ocekavane prinosy"),
+          ("additional_notes",      "Poznamky z terenu"),
+          ("summary",               "Shrnuti"),
         ] %}
-
         {% for key, title in sections %}
           {% if s.get(key) %}
           <div class="zapis-section" data-key="{{ key }}">
-            <div class="edit-bar">
-              <span style="font-size:10px;font-weight:700;color:#4A6080;text-transform:uppercase;letter-spacing:0.08em;flex:1;">{{ section_titles.get(key, title) }}</span>
-              <button class="btn-edit" onclick="startEdit('{{ key }}')">&#x270E; Upravit</button>
-              <button class="btn-ai" onclick="toggleAiBar('{{ key }}')">&#x2728; AI uprava</button>
+            <div class="section-header">
+              <h2 class="section-title">{{ section_titles.get(key, title) | upper }}</h2>
+              <div class="edit-bar">
+                <button class="btn-edit-sec" onclick="startEdit('{{ key }}')">&#x270E; Upravit</button>
+                <button class="btn-ai-sec" onclick="toggleAiBar('{{ key }}')">&#x2728; AI uprava</button>
+              </div>
             </div>
-            <h2 class="section-title">{{ section_titles.get(key, title) | upper }}</h2>
-            <div class="section-content" id="content-{{ key }}">{{ s.get(key, '') | safe }}</div>
-            <textarea class="section-editor" id="editor-{{ key }}"></textarea>
-            <div style="display:none;gap:6px;margin-top:6px;" id="editor-btns-{{ key }}">
-              <button class="btn-save" onclick="saveSection('{{ key }}')">Ulozit</button>
-              <button class="btn-cancel-edit" onclick="cancelEdit('{{ key }}')">Zrusit</button>
+            <div class="section-content" id="content-{{ key }}">{{ s.get(key, "") | safe }}</div>
+            <div class="section-edit-wrap" id="edit-wrap-{{ key }}">
+              <textarea class="section-editor" id="editor-{{ key }}"></textarea>
+              <div class="edit-actions">
+                <button class="btn-save-sec" onclick="saveSection('{{ key }}')">Ulozit zmeny</button>
+                <button class="btn-cancel-sec" onclick="cancelEdit('{{ key }}')">Zrusit</button>
+                <span class="edit-hint">HTML: &lt;ul&gt;&lt;li&gt;, &lt;strong&gt;, &lt;table&gt;</span>
+              </div>
             </div>
             <div class="ai-bar" id="ai-bar-{{ key }}">
-              <input class="ai-input" id="ai-input-{{ key }}" type="text" placeholder='Napr. "Zkrat na 3 body" nebo "Pridej vice cisel"' onkeydown="if(event.key==='Enter')runAi('{{ key }}')">
-              <button class="btn-ai" onclick="runAi('{{ key }}')" style="white-space:nowrap;">Upravit s AI</button>
-              <button class="btn-cancel-edit" onclick="toggleAiBar('{{ key }}')">&#x2715;</button>
+              <input class="ai-input" id="ai-input-{{ key }}" type="text"
+                placeholder="Napr: Zkrat na 3 body | Pridej vice cisel | Formalne preformuluj"
+                onkeydown="if(event.key==='Enter')runAi('{{ key }}')">
+              <button class="btn-ai-sec" onclick="runAi('{{ key }}')" style="flex-shrink:0;">Upravit &rarr;</button>
+              <button onclick="toggleAiBar('{{ key }}')" style="background:none;border:none;cursor:pointer;color:#4A6080;font-size:20px;line-height:1;padding:0 4px;">&times;</button>
             </div>
           </div>
           {% endif %}
         {% endfor %}
-
       {% else %}
-        {# Old plain-text record — display as-is #}
-        <div id="zapis-formatted" style="font-size:13px;line-height:1.7;">{{ zapis.output_text }}</div>
+        <div style="font-size:14px;line-height:1.75;">{{ zapis.output_text | safe }}</div>
       {% endif %}
-
     </div>
   </div>
 
-  <!-- Freelo panel -->
+  <!-- FREELO -->
   <div class="card tasks-section" style="margin-top:1rem;" id="freelo-panel">
-
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.25rem;padding-bottom:12px;border-bottom:1px solid var(--border);">
       <div>
-        <div style="font-family:'DrukCondensed','Impact',sans-serif;font-size:20px;font-weight:900;color:#173767;text-transform:uppercase;letter-spacing:0.06em;">Ukoly pro Freelo</div>
-        <div id="task-count-label" style="font-size:10px;font-weight:600;color:#4A6080;text-transform:uppercase;letter-spacing:0.1em;margin-top:3px;">Nacitam...</div>
+        <div style="font-family:'DrukCondensed','Impact',sans-serif;font-size:22px;font-weight:900;color:#173767;text-transform:uppercase;letter-spacing:0.06em;">Ukoly pro Freelo</div>
+        <div id="task-count-label" style="font-size:10px;font-weight:600;color:#4A6080;text-transform:uppercase;letter-spacing:0.1em;margin-top:3px;"></div>
       </div>
       {% if zapis.freelo_sent %}<span class="badge badge-green" style="font-size:11px;padding:5px 14px;">&#x2713; Odeslano</span>{% endif %}
     </div>
-
     <div style="display:flex;align-items:flex-end;gap:10px;margin-bottom:1rem;flex-wrap:wrap;">
-      <div style="flex:1;min-width:140px;">
-        <label class="fl-lbl">Projekt</label>
-        <select id="project-select" onchange="onProjectChange()" class="fl-in" style="cursor:pointer;">
-          <option value="">Nacitam...</option>
-        </select>
-      </div>
-      <div style="flex:1;min-width:140px;">
-        <label class="fl-lbl">To-Do list</label>
-        <select id="tasklist-select" class="fl-in" style="cursor:pointer;">
-          <option value="">- vyberte projekt -</option>
-        </select>
-      </div>
+      <div style="flex:1;min-width:140px;"><label class="fl-lbl">Freelo projekt</label><select id="project-select" onchange="onProjectChange()" class="fl-in" style="cursor:pointer;"><option value="">Nacitam...</option></select></div>
+      <div style="flex:1;min-width:140px;"><label class="fl-lbl">To-Do list</label><select id="tasklist-select" class="fl-in" style="cursor:pointer;"><option value="">— vyberte projekt —</option></select></div>
       <div style="display:flex;gap:6px;flex-wrap:wrap;padding-bottom:1px;">
         <button onclick="openNewListModal()" class="btn btn-secondary btn-sm">+ Novy list</button>
         <button onclick="selectAllTasks(true)" style="font-size:10px;font-weight:700;color:#00AFF0;background:none;border:1.5px solid #00AFF0;border-radius:4px;padding:6px 11px;cursor:pointer;text-transform:uppercase;letter-spacing:0.06em;font-family:'Montserrat',sans-serif;">Vse</button>
@@ -200,37 +218,34 @@
         <button onclick="addTaskRow()" style="font-size:10px;font-weight:700;color:#0A7A5A;background:none;border:1.5px solid #0A7A5A;border-radius:4px;padding:6px 11px;cursor:pointer;text-transform:uppercase;letter-spacing:0.06em;font-family:'Montserrat',sans-serif;">+ Pridat ukol</button>
       </div>
     </div>
-
     <div style="display:grid;grid-template-columns:28px 1fr 180px 150px 34px;gap:8px;padding:0 0 6px;border-bottom:2px solid var(--border);margin-bottom:2px;">
       <div></div>
-      <div style="font-size:10px;font-weight:700;color:#4A6080;text-transform:uppercase;letter-spacing:0.08em;">Ukol</div>
+      <div style="font-size:10px;font-weight:700;color:#4A6080;text-transform:uppercase;letter-spacing:0.08em;">Ukol + popis</div>
       <div style="font-size:10px;font-weight:700;color:#4A6080;text-transform:uppercase;letter-spacing:0.08em;">Zodpovědná osoba</div>
       <div style="font-size:10px;font-weight:700;color:#4A6080;text-transform:uppercase;letter-spacing:0.08em;">Termin</div>
       <div></div>
     </div>
-
     <div id="tasks-list-container">
       {% if tasks %}
         {% for task in tasks %}
         <div class="task-row freelo-task-row" data-idx="{{ loop.index0 }}">
-          <div style="padding-top:4px;"><input type="checkbox" class="task-checkbox" data-idx="{{ loop.index0 }}" checked style="width:16px;height:16px;accent-color:#00AFF0;cursor:pointer;margin:0;"></div>
+          <div style="padding-top:4px;"><input type="checkbox" class="task-checkbox" checked style="width:16px;height:16px;accent-color:#00AFF0;cursor:pointer;margin:0;"></div>
           <div>
             <input type="text" class="task-name-input fl-in" value="{{ task.name }}" style="font-size:13px;font-weight:600;margin-bottom:4px;">
-            <textarea class="task-desc-text fl-in" rows="2" placeholder="Popis ukolu..." style="font-size:11px;color:#4A6080;resize:vertical;margin-top:2px;padding:5px 8px;line-height:1.5;width:100%;">{{ task.desc if task.desc else '' }}</textarea>
+            <textarea class="task-desc-text fl-in" rows="2" placeholder="Popis ukolu..." style="font-size:11px;color:#4A6080;resize:vertical;margin-top:2px;padding:5px 8px;line-height:1.5;width:100%;">{{ task.desc if task.desc else "" }}</textarea>
           </div>
           <div class="asgn-wrap">
             <input type="text" class="task-assignee fl-in" placeholder="Vybrat..." autocomplete="off" onfocus="openAD(this)" oninput="filterAD(this)" style="cursor:pointer;">
             <div class="asgn-dd"></div>
           </div>
-          <input type="date" class="task-deadline fl-in" value="{{ task.deadline if task.deadline and task.deadline not in ['dle dohody',''] else '' }}">
-          <button onclick="openDetail(this)" title="Detail" style="background:none;border:1.5px solid var(--border);border-radius:4px;width:32px;height:32px;cursor:pointer;font-size:14px;color:#4A6080;display:flex;align-items:center;justify-content:center;margin-top:1px;">&#x22EF;</button>
+          <input type="date" class="task-deadline fl-in" value="{{ task.deadline if task.deadline and task.deadline not in ["dle dohody",""] else "" }}">
+          <button onclick="openDetail(this)" title="Detail" style="background:none;border:1.5px solid var(--border);border-radius:4px;width:32px;height:32px;cursor:pointer;font-size:16px;color:#4A6080;display:flex;align-items:center;justify-content:center;margin-top:1px;">&#x22EF;</button>
         </div>
         {% endfor %}
       {% else %}
         <div id="no-tasks-msg" style="padding:1.5rem 0;font-size:13px;color:#4A6080;font-style:italic;text-align:center;">Zadne ukoly.</div>
       {% endif %}
     </div>
-
     <div style="margin-top:1.25rem;display:flex;gap:12px;align-items:center;flex-wrap:wrap;">
       <button id="freelo-send-btn" onclick="odeslatDoFreela()" style="font-family:'DrukCondensed','Impact',sans-serif;font-size:15px;font-weight:900;letter-spacing:0.06em;text-transform:uppercase;background:#0A7A5A;color:white;border:none;padding:11px 24px;border-radius:5px;cursor:pointer;">Odeslat vybrane do Freela &rarr;</button>
       <span id="freelo-status" style="font-size:12px;color:#4A6080;font-weight:500;"></span>
@@ -241,16 +256,13 @@
 
 <div id="toast"></div>
 
-<!-- MODAL: Novy list -->
 <div id="modal-new-list" class="modal-bg">
   <div class="modal-box">
     <div class="modal-title">Novy To-Do list</div>
-    <div style="margin-bottom:4px;">
-      <label class="fl-lbl" style="margin-bottom:5px;">Projekt</label>
-      <select id="new-list-project" class="fl-in" style="margin-bottom:14px;cursor:pointer;padding:9px 12px;font-size:13px;"></select>
-      <label class="fl-lbl" style="margin-bottom:5px;">Nazev listu</label>
-      <input id="new-list-name" type="text" class="fl-in" placeholder="napr. Klient - akcni kroky" style="font-size:14px;padding:10px 12px;">
-    </div>
+    <label class="fl-lbl" style="margin-bottom:5px;">Projekt</label>
+    <select id="new-list-project" class="fl-in" style="margin-bottom:14px;cursor:pointer;padding:9px 12px;font-size:13px;"></select>
+    <label class="fl-lbl" style="margin-bottom:5px;">Nazev listu</label>
+    <input id="new-list-name" type="text" class="fl-in" placeholder="napr. Klient — akcni kroky" style="font-size:14px;padding:10px 12px;">
     <div class="modal-foot">
       <button class="btn-mcancel" onclick="closeModal('modal-new-list')">Zrusit</button>
       <button class="btn-msave" id="create-list-btn" onclick="createNewList()">Vytvorit</button>
@@ -258,29 +270,15 @@
   </div>
 </div>
 
-<!-- MODAL: Detail ukolu -->
 <div id="modal-task-detail" class="modal-bg">
   <div class="modal-box">
     <div class="modal-title">Detail ukolu</div>
     <div style="display:grid;gap:14px;">
-      <div>
-        <label class="fl-lbl" style="margin-bottom:5px;">Nazev ukolu</label>
-        <input id="detail-name" type="text" class="fl-in" style="font-size:13px;font-weight:600;padding:9px 12px;">
-      </div>
-      <div>
-        <label class="fl-lbl" style="margin-bottom:5px;">Popis / kontext</label>
-        <textarea id="detail-desc" rows="4" class="fl-in" style="resize:vertical;font-size:13px;padding:9px 12px;"></textarea>
-      </div>
+      <div><label class="fl-lbl" style="margin-bottom:5px;">Nazev ukolu</label><input id="detail-name" type="text" class="fl-in" style="font-size:13px;font-weight:600;padding:9px 12px;"></div>
+      <div><label class="fl-lbl" style="margin-bottom:5px;">Popis</label><textarea id="detail-desc" rows="4" class="fl-in" style="resize:vertical;font-size:13px;padding:9px 12px;"></textarea></div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
-        <div class="asgn-wrap">
-          <label class="fl-lbl" style="margin-bottom:5px;">Zodpovědná osoba</label>
-          <input id="detail-assignee" type="text" class="fl-in" placeholder="Vybrat..." autocomplete="off" onfocus="openAD(this)" oninput="filterAD(this)" style="padding:9px 12px;cursor:pointer;">
-          <div class="asgn-dd"></div>
-        </div>
-        <div>
-          <label class="fl-lbl" style="margin-bottom:5px;">Termin</label>
-          <input id="detail-deadline" type="date" class="fl-in" style="padding:9px 12px;">
-        </div>
+        <div class="asgn-wrap"><label class="fl-lbl" style="margin-bottom:5px;">Zodpovědná osoba</label><input id="detail-assignee" type="text" class="fl-in" placeholder="Vybrat..." autocomplete="off" onfocus="openAD(this)" oninput="filterAD(this)" style="padding:9px 12px;cursor:pointer;"><div class="asgn-dd"></div></div>
+        <div><label class="fl-lbl" style="margin-bottom:5px;">Termin</label><input id="detail-deadline" type="date" class="fl-in" style="padding:9px 12px;"></div>
       </div>
     </div>
     <div class="modal-foot">
@@ -291,343 +289,170 @@
 </div>
 
 <script>
-const ZAPIS_ID = {{ zapis.id }};
-let freeloProjects=[], freeloMembers=[], activeRow=null, nextIdx=1000;
-
-document.addEventListener('DOMContentLoaded',()=>{
-  applyScoreBadges();
-  loadProjects();
-  updateCount();
-  document.querySelectorAll('.task-checkbox').forEach(cb=>cb.addEventListener('change',updateCount));
-  document.querySelectorAll('.task-row').forEach(r=>populateAD(r.querySelector('.task-assignee')));
-  document.addEventListener('click',e=>{
-    if(!e.target.closest('.asgn-wrap')) document.querySelectorAll('.asgn-dd.open').forEach(d=>d.classList.remove('open'));
-    ['modal-new-list','modal-task-detail'].forEach(id=>{if(e.target===document.getElementById(id))closeModal(id);});
+const ZAPIS_ID={{ zapis.id }};
+let freeloProjects=[],freeloMembers=[],activeRow=null,nextIdx=1000;
+document.addEventListener("DOMContentLoaded",()=>{
+  applyScoreBadges();loadProjects();updateCount();
+  document.querySelectorAll(".task-checkbox").forEach(cb=>cb.addEventListener("change",updateCount));
+  document.querySelectorAll(".task-row").forEach(r=>populateAD(r.querySelector(".task-assignee")));
+  document.addEventListener("click",e=>{
+    if(!e.target.closest(".asgn-wrap"))document.querySelectorAll(".asgn-dd.open").forEach(d=>d.classList.remove("open"));
+    ["modal-new-list","modal-task-detail"].forEach(id=>{if(e.target===document.getElementById(id))closeModal(id);});
   });
 });
-
-// ---- Score badges ----
 function applyScoreBadges(){
-  document.querySelectorAll('.section-content td').forEach(td=>{
+  document.querySelectorAll(".section-content td").forEach(td=>{
     const txt=td.textContent.trim();
     const m=txt.match(/^(\d+)\s*%?$/);
-    if(m&&parseInt(m[1])<=100&&txt.length<=4){
+    if(m&&parseInt(m[1])<=100&&txt.length<=5){
       const p=parseInt(m[1]);
-      let bg='#FF383C';
-      if(p>=70)bg='#34C759';else if(p>=55)bg='#00AFF0';else if(p>=40)bg='#FF8D00';
+      let bg="#FF383C";
+      if(p>=70)bg="#34C759";else if(p>=55)bg="#00AFF0";else if(p>=40)bg="#FF8D00";
       td.innerHTML=`<span class="score-badge" style="background:${bg}">${p}%</span>`;
     }
   });
 }
-
-// ---- Toast ----
-function toast(msg,ok=true){
-  const t=document.getElementById('toast');
-  t.textContent=msg;
-  t.style.background=ok?'#173767':'#C0392B';
-  t.classList.add('show');
-  setTimeout(()=>t.classList.remove('show'),2500);
-}
-
-// ---- PDF ----
+function toast(msg,ok=true){const t=document.getElementById("toast");t.textContent=msg;t.style.background=ok?"#173767":"#C0392B";t.classList.add("show");setTimeout(()=>t.classList.remove("show"),2500);}
 function downloadPDF(){
-  const btn=document.getElementById('print-btn');
-  btn.disabled=true;btn.textContent='Generuji...';
-  const el=document.getElementById('zapis-print');
-  const fn='commarec-'+(document.querySelector('h1')?.textContent||'zapis').trim().toLowerCase()
-    .normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,'-').slice(0,40)+'.pdf';
-  html2pdf().set({margin:[12,14,12,14],filename:fn,
-    image:{type:'jpeg',quality:0.97},
+  const btn=document.getElementById("print-btn");btn.disabled=true;btn.textContent="Generuji...";
+  const el=document.getElementById("zapis-print");
+  const title="{{ zapis.title }}".toLowerCase().replace(/[^a-z0-9]+/g,"-").slice(0,40);
+  html2pdf().set({margin:[0,0,0,0],filename:"commarec-"+title+".pdf",
+    image:{type:"jpeg",quality:0.98},
     html2canvas:{scale:2,useCORS:true,logging:false},
-    jsPDF:{unit:'mm',format:'a4',orientation:'portrait'}})
-  .from(el).save().finally(()=>{btn.disabled=false;btn.textContent='Stahnout PDF';});
+    jsPDF:{unit:"mm",format:"a4",orientation:"portrait"}})
+  .from(el).save().finally(()=>{btn.disabled=false;btn.textContent="PDF";});
 }
-
-// ─── SECTION EDITING ───────────────────────────────────
 function startEdit(key){
-  const content = document.getElementById('content-'+key);
-  const editor  = document.getElementById('editor-'+key);
-  const btns    = document.getElementById('editor-btns-'+key);
-  editor.value  = content.innerHTML;
-  content.style.display='none';
-  editor.classList.add('active');
-  btns.style.display='flex';
-  editor.focus();
+  const content=document.getElementById("content-"+key);
+  const e=document.getElementById("editor-"+key);e.value=content.innerHTML;
+  content.style.display="none";
+  const w=document.getElementById("edit-wrap-"+key);w.classList.add("active");
+  e.focus();
+  document.getElementById("ai-bar-"+key)?.classList.remove("active");
 }
-
-function cancelEdit(key){
-  const content = document.getElementById('content-'+key);
-  const editor  = document.getElementById('editor-'+key);
-  const btns    = document.getElementById('editor-btns-'+key);
-  content.style.display='';
-  editor.classList.remove('active');
-  btns.style.display='none';
-}
-
+function cancelEdit(key){document.getElementById("content-"+key).style.display="";document.getElementById("edit-wrap-"+key).classList.remove("active");}
 async function saveSection(key){
-  const content = document.getElementById('content-'+key);
-  const editor  = document.getElementById('editor-'+key);
-  const html    = editor.value.trim();
+  const html=document.getElementById("editor-"+key).value.trim();
   try{
-    const resp = await fetch(`/api/zapis/${ZAPIS_ID}/sekce`,{
-      method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({key, html})
-    });
-    const data = await resp.json();
-    if(data.ok){
-      content.innerHTML = html;
-      cancelEdit(key);
-      applyScoreBadges();
-      toast('Ulozeno');
-    } else {
-      toast('Chyba: '+(data.error||'?'), false);
-    }
-  }catch(e){ toast('Chyba: '+e.message, false); }
+    const r=await fetch(`/api/zapis/${ZAPIS_ID}/sekce`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({key,html})});
+    const d=await r.json();
+    if(d.ok){document.getElementById("content-"+key).innerHTML=html;cancelEdit(key);applyScoreBadges();toast("Ulozeno");}
+    else toast("Chyba: "+(d.error||"?"),false);
+  }catch(e){toast("Chyba: "+e.message,false);}
 }
-
 function toggleAiBar(key){
-  const bar = document.getElementById('ai-bar-'+key);
-  const isOpen = bar.classList.contains('active');
-  // Close all others
-  document.querySelectorAll('.ai-bar.active').forEach(b=>b.classList.remove('active'));
-  if(!isOpen){
-    bar.classList.add('active');
-    document.getElementById('ai-input-'+key).focus();
-  }
+  const bar=document.getElementById("ai-bar-"+key);const open=bar.classList.contains("active");
+  document.querySelectorAll(".ai-bar.active").forEach(b=>b.classList.remove("active"));
+  if(!open){bar.classList.add("active");document.getElementById("ai-input-"+key).focus();}
 }
-
 async function runAi(key){
-  const input   = document.getElementById('ai-input-'+key);
-  const prompt  = input.value.trim();
-  if(!prompt){ input.focus(); return; }
-  const content = document.getElementById('content-'+key);
-  const currentHtml = content.innerHTML;
-  input.disabled=true;
-  const origPlaceholder = input.placeholder;
-  input.placeholder='Pracuji...';
+  const input=document.getElementById("ai-input-"+key);const prompt=input.value.trim();if(!prompt){input.focus();return;}
+  const content=document.getElementById("content-"+key);
+  input.disabled=true;const op=input.placeholder;input.placeholder="Pracuji...";
   try{
-    const resp = await fetch(`/api/zapis/${ZAPIS_ID}/ai-sekce`,{
-      method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({key, prompt, html: currentHtml})
-    });
-    const data = await resp.json();
-    if(data.ok && data.html){
-      content.innerHTML = data.html;
-      applyScoreBadges();
-      // Auto-save
-      await fetch(`/api/zapis/${ZAPIS_ID}/sekce`,{
-        method:'POST', headers:{'Content-Type':'application/json'},
-        body: JSON.stringify({key, html: data.html})
-      });
-      input.value='';
-      toggleAiBar(key);
-      toast('AI uprava ulozena');
-    } else {
-      toast('Chyba: '+(data.error||'?'), false);
-    }
-  }catch(e){ toast('Chyba: '+e.message, false); }
-  finally{ input.disabled=false; input.placeholder=origPlaceholder; }
+    const r=await fetch(`/api/zapis/${ZAPIS_ID}/ai-sekce`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({key,prompt,html:content.innerHTML})});
+    const d=await r.json();
+    if(d.ok&&d.html){content.innerHTML=d.html;applyScoreBadges();
+      await fetch(`/api/zapis/${ZAPIS_ID}/sekce`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({key,html:d.html})});
+      input.value="";toggleAiBar(key);toast("AI uprava ulozena");}
+    else toast("Chyba: "+(d.error||"?"),false);
+  }catch(e){toast("Chyba: "+e.message,false);}finally{input.disabled=false;input.placeholder=op;}
 }
-
-// ─── FREELO ────────────────────────────────────────────
-async function loadProjects(){
+async function togglePublish(){
+  const btn=document.getElementById("pub-btn");const isPublic=btn.classList.contains("btn-success");
   try{
-    const data=await fetch('/api/freelo/projects').then(r=>r.json());
-    freeloProjects=data.projects||[];
-    const sel=document.getElementById('project-select');
-    const nlp=document.getElementById('new-list-project');
+    const d=await fetch(`/api/zapis/${ZAPIS_ID}/publikovat`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({publish:!isPublic})}).then(r=>r.json());
+    if(d.ok){
+      if(d.is_public){btn.className="btn btn-success btn-sm";btn.innerHTML="&#x1F30D; Zverejneno";
+        let bar=document.getElementById("pub-bar-wrap");
+        if(!bar){bar=document.createElement("div");bar.id="pub-bar-wrap";
+          bar.style.cssText="background:#E2F5EE;border:1px solid #0A7A5A;border-radius:5px;padding:9px 14px;margin-bottom:1rem;font-size:12px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;";
+          bar.innerHTML=`<span style="color:#0A7A5A;font-weight:700;">&#x1F30D; Verejny odkaz:</span><a id="pub-link" href="${d.url}" target="_blank" style="color:#0A7A5A;word-break:break-all;flex:1;">${d.url}</a><button onclick="copyPubLink()" class="btn btn-secondary btn-sm">Kopirovat</button>`;
+          document.querySelector(".card-actions").insertAdjacentElement("afterend",bar);}
+        toast("Zapis je nyni verejny");
+      }else{btn.className="btn btn-secondary btn-sm";btn.innerHTML="Zverejnit";document.getElementById("pub-bar-wrap")?.remove();toast("Zapis je nyni soukromy");}
+    }
+  }catch(e){toast("Chyba: "+e.message,false);}
+}
+function copyPubLink(){navigator.clipboard.writeText(document.getElementById("pub-link").href);toast("Odkaz zkopirovan");}
+async function loadProjects(){
+  try{const d=await fetch("/api/freelo/projects").then(r=>r.json());freeloProjects=d.projects||[];
+    const sel=document.getElementById("project-select");const nlp=document.getElementById("new-list-project");
     if(!freeloProjects.length){sel.innerHTML='<option value="">Zadne projekty</option>';return;}
-    const opts=freeloProjects.map(p=>`<option value="${p.id}">${p.name}</option>`).join('');
-    sel.innerHTML=opts; nlp.innerHTML=opts;
-    onProjectChange();
-    loadMembers(freeloProjects[0]?.id);
-  }catch(e){document.getElementById('project-select').innerHTML='<option value="">Chyba</option>';}
+    const opts=freeloProjects.map(p=>`<option value="${p.id}">${p.name}</option>`).join("");
+    sel.innerHTML=opts;nlp.innerHTML=opts;onProjectChange();loadMembers(freeloProjects[0]?.id);
+  }catch(e){document.getElementById("project-select").innerHTML='<option value="">Chyba</option>';}
   updateCount();
 }
 function onProjectChange(){
-  const pid=document.getElementById('project-select').value;
+  const pid=document.getElementById("project-select").value;
   const proj=freeloProjects.find(p=>String(p.id)===String(pid));
-  const sel=document.getElementById('tasklist-select');
-  if(!proj){sel.innerHTML='<option value="">- vyberte projekt -</option>';return;}
-  sel.innerHTML=(proj.tasklists||[]).length
-    ?proj.tasklists.map(tl=>`<option value="${tl.id}">${tl.name}</option>`).join('')
-    :'<option value="">Zadne listy - vytvorte novy</option>';
+  const sel=document.getElementById("tasklist-select");
+  if(!proj){sel.innerHTML='<option value="">— vyberte projekt —</option>';return;}
+  sel.innerHTML=(proj.tasklists||[]).length?proj.tasklists.map(tl=>`<option value="${tl.id}">${tl.name}</option>`).join(""):'<option value="">Zadne listy</option>';
   loadMembers(pid);
 }
-async function loadMembers(pid){
-  if(!pid)return;
-  try{
-    const data=await fetch(`/api/freelo/members/${pid}`).then(r=>r.json());
-    freeloMembers=data.members||[];
-    document.querySelectorAll('.task-assignee,#detail-assignee').forEach(populateAD);
-  }catch(e){}
-}
-
-// ─── ASSIGNEE DROPDOWN ─────────────────────────────────
-function populateAD(input){
-  if(!input)return;
-  const wrap=input.closest('.asgn-wrap');if(!wrap)return;
-  let dd=wrap.querySelector('.asgn-dd');
-  if(!dd){dd=document.createElement('div');dd.className='asgn-dd';wrap.appendChild(dd);}
-  renderAD(dd,input);
-}
-function renderAD(dd,input){
-  const q=(input.value||'').toLowerCase();
-  const members=freeloMembers.filter(m=>m.name.toLowerCase().includes(q)||(m.email||'').toLowerCase().includes(q));
-  dd.innerHTML=members.length
-    ?members.map(m=>`<div class="asgn-opt" onclick="pickAsgn(this,'${m.name.replace(/'/g,"\\'")}')"><strong>${m.name}</strong><span style="color:#4A6080;font-size:11px;margin-left:6px;">${m.email||''}</span></div>`).join('')
-    :'<div class="asgn-opt" style="color:#4A6080;font-style:italic;">Zadne vysledky</div>';
-}
-function openAD(input){populateAD(input);input.closest('.asgn-wrap')?.querySelector('.asgn-dd')?.classList.add('open');}
-function filterAD(input){const dd=input.closest('.asgn-wrap')?.querySelector('.asgn-dd');if(dd){renderAD(dd,input);dd.classList.add('open');}}
-function pickAsgn(opt,name){const w=opt.closest('.asgn-wrap');if(w?.querySelector('input'))w.querySelector('input').value=name;w?.querySelector('.asgn-dd')?.classList.remove('open');}
-
-// ─── TASKS ─────────────────────────────────────────────
-function selectAllTasks(v){document.querySelectorAll('.task-checkbox').forEach(cb=>cb.checked=v);updateCount();}
-function updateCount(){
-  const t=document.querySelectorAll('.task-checkbox').length;
-  const s=document.querySelectorAll('.task-checkbox:checked').length;
-  const el=document.getElementById('task-count-label');
-  if(el)el.textContent=`${s} z ${t} ukolu vybrano`;
-}
+async function loadMembers(pid){if(!pid)return;try{const d=await fetch(`/api/freelo/members/${pid}`).then(r=>r.json());freeloMembers=d.members||[];document.querySelectorAll(".task-assignee,#detail-assignee").forEach(populateAD);}catch(e){}}
+function populateAD(input){if(!input)return;const wrap=input.closest(".asgn-wrap");if(!wrap)return;let dd=wrap.querySelector(".asgn-dd");if(!dd){dd=document.createElement("div");dd.className="asgn-dd";wrap.appendChild(dd);}renderAD(dd,input);}
+function renderAD(dd,input){const q=(input.value||"").toLowerCase();const members=freeloMembers.filter(m=>m.name.toLowerCase().includes(q)||(m.email||"").toLowerCase().includes(q));dd.innerHTML=members.length?members.map(m=>`<div class="asgn-opt" onclick="pickAsgn(this,'${m.name.replace(/'/g,"\\'")}')"><strong>${m.name}</strong><span style="color:#4A6080;font-size:11px;margin-left:6px;">${m.email||""}</span></div>`).join(""):"<div class=\"asgn-opt\" style=\"color:#4A6080;font-style:italic;\">Zadne vysledky</div>";}
+function openAD(input){populateAD(input);input.closest(".asgn-wrap")?.querySelector(".asgn-dd")?.classList.add("open");}
+function filterAD(input){const dd=input.closest(".asgn-wrap")?.querySelector(".asgn-dd");if(dd){renderAD(dd,input);dd.classList.add("open");}}
+function pickAsgn(opt,name){const w=opt.closest(".asgn-wrap");if(w?.querySelector("input"))w.querySelector("input").value=name;w?.querySelector(".asgn-dd")?.classList.remove("open");}
+function selectAllTasks(v){document.querySelectorAll(".task-checkbox").forEach(cb=>cb.checked=v);updateCount();}
+function updateCount(){const t=document.querySelectorAll(".task-checkbox").length;const s=document.querySelectorAll(".task-checkbox:checked").length;const el=document.getElementById("task-count-label");if(el)el.textContent=`${s} z ${t} ukolu vybrano`;}
 function addTaskRow(){
-  const c=document.getElementById('tasks-list-container');
-  const nm=document.getElementById('no-tasks-msg');if(nm)nm.remove();
-  const idx=nextIdx++;
-  const row=document.createElement('div');
-  row.className='task-row freelo-task-row';row.dataset.idx=idx;
-  row.innerHTML=`
-    <div style="padding-top:4px;"><input type="checkbox" class="task-checkbox" data-idx="${idx}" checked style="width:16px;height:16px;accent-color:#00AFF0;cursor:pointer;margin:0;"></div>
-    <div>
-      <input type="text" class="task-name-input fl-in" placeholder="Nazev ukolu..." style="font-size:13px;font-weight:600;margin-bottom:4px;">
-      <textarea class="task-desc-text fl-in" rows="2" placeholder="Popis..." style="font-size:11px;color:#4A6080;resize:vertical;margin-top:2px;padding:5px 8px;line-height:1.5;width:100%;"></textarea>
-    </div>
-    <div class="asgn-wrap">
-      <input type="text" class="task-assignee fl-in" placeholder="Vybrat..." autocomplete="off" onfocus="openAD(this)" oninput="filterAD(this)" style="cursor:pointer;">
-      <div class="asgn-dd"></div>
-    </div>
-    <input type="date" class="task-deadline fl-in">
-    <button onclick="openDetail(this)" title="Detail" style="background:none;border:1.5px solid var(--border);border-radius:4px;width:32px;height:32px;cursor:pointer;font-size:14px;color:#4A6080;display:flex;align-items:center;justify-content:center;margin-top:1px;">&#x22EF;</button>`;
-  c.appendChild(row);
-  row.querySelector('.task-checkbox').addEventListener('change',updateCount);
-  populateAD(row.querySelector('.task-assignee'));
-  row.querySelector('.task-name-input').focus();
-  updateCount();
+  const c=document.getElementById("tasks-list-container");const nm=document.getElementById("no-tasks-msg");if(nm)nm.remove();
+  const idx=nextIdx++;const row=document.createElement("div");row.className="task-row freelo-task-row";row.dataset.idx=idx;
+  row.innerHTML=`<div style="padding-top:4px;"><input type="checkbox" class="task-checkbox" checked style="width:16px;height:16px;accent-color:#00AFF0;cursor:pointer;margin:0;"></div><div><input type="text" class="task-name-input fl-in" placeholder="Nazev ukolu..." style="font-size:13px;font-weight:600;margin-bottom:4px;"><textarea class="task-desc-text fl-in" rows="2" placeholder="Popis..." style="font-size:11px;color:#4A6080;resize:vertical;margin-top:2px;padding:5px 8px;line-height:1.5;width:100%;"></textarea></div><div class="asgn-wrap"><input type="text" class="task-assignee fl-in" placeholder="Vybrat..." autocomplete="off" onfocus="openAD(this)" oninput="filterAD(this)" style="cursor:pointer;"><div class="asgn-dd"></div></div><input type="date" class="task-deadline fl-in"><button onclick="openDetail(this)" title="Detail" style="background:none;border:1.5px solid var(--border);border-radius:4px;width:32px;height:32px;cursor:pointer;font-size:16px;color:#4A6080;display:flex;align-items:center;justify-content:center;margin-top:1px;">&#x22EF;</button>`;
+  c.appendChild(row);row.querySelector(".task-checkbox").addEventListener("change",updateCount);populateAD(row.querySelector(".task-assignee"));row.querySelector(".task-name-input").focus();updateCount();
 }
-
-// ─── MODALS ────────────────────────────────────────────
-function closeModal(id){document.getElementById(id).classList.remove('open');if(id==='modal-task-detail')activeRow=null;}
-function openNewListModal(){document.getElementById('modal-new-list').classList.add('open');setTimeout(()=>document.getElementById('new-list-name').focus(),50);}
+function closeModal(id){document.getElementById(id).classList.remove("open");if(id==="modal-task-detail")activeRow=null;}
+function openNewListModal(){document.getElementById("modal-new-list").classList.add("open");setTimeout(()=>document.getElementById("new-list-name").focus(),50);}
 async function createNewList(){
-  const name=document.getElementById('new-list-name').value.trim();
-  const pid=document.getElementById('new-list-project').value;
-  if(!name){alert('Zadejte nazev listu.');return;} if(!pid){alert('Vyberte projekt.');return;}
-  const btn=document.getElementById('create-list-btn');
-  btn.disabled=true;btn.textContent='Vytvarzim...';
-  try{
-    const data=await fetch('/api/freelo/create-tasklist',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name,project_id:pid})}).then(r=>r.json());
-    if(data.id){
-      const proj=freeloProjects.find(p=>String(p.id)===String(pid));
-      if(proj){proj.tasklists=proj.tasklists||[];proj.tasklists.push({id:data.id,name:data.name});}
-      document.getElementById('project-select').value=pid;onProjectChange();
-      document.getElementById('tasklist-select').value=data.id;
-      closeModal('modal-new-list');
-      toast('List vytvoren');
-    }else{toast('Chyba: '+(data.error||'?'),false);}
-  }catch(e){toast('Chyba: '+e.message,false);}
-  finally{btn.disabled=false;btn.textContent='Vytvorit';}
+  const name=document.getElementById("new-list-name").value.trim();const pid=document.getElementById("new-list-project").value;
+  if(!name||!pid){toast("Vyplnte nazev a vyberte projekt",false);return;}
+  const btn=document.getElementById("create-list-btn");btn.disabled=true;btn.textContent="Vytvarzim...";
+  try{const d=await fetch("/api/freelo/create-tasklist",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({name,project_id:pid})}).then(r=>r.json());
+    if(d.id){const proj=freeloProjects.find(p=>String(p.id)===String(pid));if(proj){proj.tasklists=proj.tasklists||[];proj.tasklists.push({id:d.id,name:d.name});}
+      document.getElementById("project-select").value=pid;onProjectChange();document.getElementById("tasklist-select").value=d.id;closeModal("modal-new-list");toast("List vytvoren");}
+    else toast("Chyba: "+(d.error||"?"),false);
+  }catch(e){toast("Chyba: "+e.message,false);}finally{btn.disabled=false;btn.textContent="Vytvorit";}
 }
 function openDetail(btn){
-  activeRow=btn.closest('.freelo-task-row');
-  document.getElementById('detail-name').value=activeRow.querySelector('.task-name-input')?.value||'';
-  document.getElementById('detail-assignee').value=activeRow.querySelector('.task-assignee')?.value||'';
-  document.getElementById('detail-deadline').value=activeRow.querySelector('.task-deadline')?.value||'';
-  const d=activeRow.querySelector('.task-desc-text');
-  document.getElementById('detail-desc').value=d?(d.value!==undefined?d.value:d.textContent).trim():'';
-  populateAD(document.getElementById('detail-assignee'));
-  document.getElementById('modal-task-detail').classList.add('open');
+  activeRow=btn.closest(".freelo-task-row");
+  document.getElementById("detail-name").value=activeRow.querySelector(".task-name-input")?.value||"";
+  document.getElementById("detail-assignee").value=activeRow.querySelector(".task-assignee")?.value||"";
+  document.getElementById("detail-deadline").value=activeRow.querySelector(".task-deadline")?.value||"";
+  const d=activeRow.querySelector(".task-desc-text");document.getElementById("detail-desc").value=d?(d.value!==undefined?d.value:d.textContent).trim():"";
+  populateAD(document.getElementById("detail-assignee"));document.getElementById("modal-task-detail").classList.add("open");
 }
 function saveDetail(){
   if(!activeRow)return;
-  const ni=activeRow.querySelector('.task-name-input');if(ni)ni.value=document.getElementById('detail-name').value;
-  const ai2=activeRow.querySelector('.task-assignee');if(ai2)ai2.value=document.getElementById('detail-assignee').value;
-  const di=activeRow.querySelector('.task-deadline');if(di)di.value=document.getElementById('detail-deadline').value;
-  let de=activeRow.querySelector('.task-desc-text');
-  const dv=document.getElementById('detail-desc').value.trim();
-  if(dv){if(!de){de=document.createElement('textarea');de.className='task-desc-text fl-in';de.rows=2;de.style.cssText='font-size:11px;color:#4A6080;resize:vertical;margin-top:2px;padding:5px 8px;line-height:1.5;width:100%;';const ni2=activeRow.querySelector('.task-name-input');if(ni2)ni2.insertAdjacentElement('afterend',de);}
-  if(de.tagName==='TEXTAREA')de.value=dv;else de.textContent=dv;}
-  closeModal('modal-task-detail');
+  const ni=activeRow.querySelector(".task-name-input");if(ni)ni.value=document.getElementById("detail-name").value;
+  const ai2=activeRow.querySelector(".task-assignee");if(ai2)ai2.value=document.getElementById("detail-assignee").value;
+  const di=activeRow.querySelector(".task-deadline");if(di)di.value=document.getElementById("detail-deadline").value;
+  let de=activeRow.querySelector(".task-desc-text");const dv=document.getElementById("detail-desc").value.trim();
+  if(dv){if(!de){de=document.createElement("textarea");de.className="task-desc-text fl-in";de.rows=2;de.style.cssText="font-size:11px;color:#4A6080;resize:vertical;margin-top:2px;padding:5px 8px;line-height:1.5;width:100%;";activeRow.querySelector(".task-name-input")?.insertAdjacentElement("afterend",de);}de.value=dv;}
+  closeModal("modal-task-detail");
 }
-
-// ─── SEND TO FREELO ────────────────────────────────────
-
-// ─── PUBLISH ──────────────────────────────────
-async function togglePublish(){
-  const btn = document.getElementById('pub-btn');
-  const isPublic = btn.classList.contains('btn-success');
-  try {
-    const data = await fetch(`/api/zapis/${ZAPIS_ID}/publikovat`,{
-      method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({publish: !isPublic})
-    }).then(r=>r.json());
-    if(data.ok){
-      if(data.is_public){
-        btn.className='btn btn-success btn-sm';
-        btn.innerHTML='&#x1F30D; Zverejneno';
-        // Show link bar
-        let bar = document.getElementById('pub-bar');
-        if(!bar){
-          bar = document.createElement('div');
-          bar.id='pub-bar';
-          bar.style.cssText='background:#E2F5EE;border:1px solid #0A7A5A;border-radius:5px;padding:8px 14px;margin-bottom:1rem;font-size:12px;display:flex;align-items:center;gap:10px;';
-          bar.innerHTML=`<span style="color:#0A7A5A;font-weight:600;">Verejny odkaz:</span><a id="pub-link" href="${data.url}" target="_blank" style="color:#0A7A5A;word-break:break-all;">${data.url}</a><button onclick="copyPubLink()" class="btn btn-secondary btn-sm" style="flex-shrink:0;">Kopirovat</button>`;
-          document.querySelector('.card-actions').insertAdjacentElement('afterend', bar);
-        }
-        toast('Zapis je nyni verejny');
-      } else {
-        btn.className='btn btn-secondary btn-sm';
-        btn.innerHTML='Zverejnit';
-        const bar = document.getElementById('pub-bar');
-        if(bar) bar.remove();
-        toast('Zapis je nyni soukromy');
-      }
-    }
-  } catch(e){ toast('Chyba: '+e.message, false); }
-}
-function copyPubLink(){
-  const link = document.getElementById('pub-link');
-  if(link){ navigator.clipboard.writeText(link.href); toast('Odkaz zkopirovan'); }
-}
-
 async function odeslatDoFreela(){
-  const btn=document.getElementById('freelo-send-btn');
-  const status=document.getElementById('freelo-status');
-  const tlId=document.getElementById('tasklist-select')?.value||null;
-  if(!tlId){status.textContent='Vyberte To-Do list.';status.style.color='#C0392B';return;}
+  const btn=document.getElementById("freelo-send-btn");const tlId=document.getElementById("tasklist-select")?.value||null;
+  if(!tlId){toast("Vyberte To-Do list",false);return;}
   const sel=[];
-  document.querySelectorAll('.task-checkbox:checked').forEach(cb=>{
-    const row=cb.closest('.freelo-task-row');if(!row)return;
-    const name=(row.querySelector('.task-name-input')?.value||'').trim();if(!name)return;
-    const de=row.querySelector('.task-desc-text');
-    sel.push({name,desc:(de?(de.value!==undefined?de.value:de.textContent):'').trim(),
-      assignee:(row.querySelector('.task-assignee')?.value||'').trim(),
-      deadline:(row.querySelector('.task-deadline')?.value||'').trim()});
+  document.querySelectorAll(".task-checkbox:checked").forEach(cb=>{
+    const row=cb.closest(".freelo-task-row");if(!row)return;
+    const name=(row.querySelector(".task-name-input")?.value||"").trim();if(!name)return;
+    const de=row.querySelector(".task-desc-text");
+    sel.push({name,desc:(de?(de.value!==undefined?de.value:de.textContent):"").trim(),assignee:(row.querySelector(".task-assignee")?.value||"").trim(),deadline:(row.querySelector(".task-deadline")?.value||"").trim()});
   });
-  if(!sel.length){status.textContent='Vyberte alespon jeden ukol.';status.style.color='#C0392B';return;}
-  btn.disabled=true;
-  btn.innerHTML=`<span style="display:inline-block;width:12px;height:12px;border:2px solid rgba(255,255,255,0.3);border-top-color:white;border-radius:50%;animation:spin 0.7s linear infinite;margin-right:6px;vertical-align:middle"></span>Odesilam ${sel.length} ukolu...`;
-  status.textContent='';
+  if(!sel.length){toast("Vyberte alespon jeden ukol",false);return;}
+  btn.disabled=true;btn.innerHTML=`<span style="display:inline-block;width:12px;height:12px;border:2px solid rgba(255,255,255,0.3);border-top-color:white;border-radius:50%;animation:spin 0.7s linear infinite;margin-right:6px;vertical-align:middle"></span>Odesilam ${sel.length} ukolu...`;
   try{
-    const data=await fetch(`/api/freelo/${ZAPIS_ID}`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({tasks:sel,tasklist_id:tlId})}).then(r=>r.json());
-    const result=document.getElementById('freelo-result');
-    if(data.created&&data.created.length>0){
-      result.innerHTML=`<div style="background:#E2F5EE;border:1px solid #0A7A5A;border-radius:5px;padding:10px 14px;font-size:13px;color:#0A7A5A;font-weight:600;">&#x2713; Odeslano ${data.created.length} ukolu do Freela</div>`;
-      btn.style.background='#0A7A5A';btn.innerHTML='&#x2713; Odeslano';
-    }else{
-      result.innerHTML=`<div style="background:#FCEAEA;border:1px solid #C0392B;border-radius:5px;padding:10px 14px;font-size:13px;color:#C0392B;">Chyba: ${(data.errors||[]).join(', ')||data.error||'Neznama chyba'}</div>`;
-      btn.disabled=false;btn.innerHTML='Odeslat vybrane do Freela &rarr;';
-    }
-  }catch(e){status.textContent='Chyba: '+e.message;status.style.color='#C0392B';btn.disabled=false;btn.innerHTML='Odeslat vybrane do Freela &rarr;';}
+    const d=await fetch(`/api/freelo/${ZAPIS_ID}`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({tasks:sel,tasklist_id:tlId})}).then(r=>r.json());
+    if(d.created?.length>0){document.getElementById("freelo-result").innerHTML=`<div style="background:#E2F5EE;border:1px solid #0A7A5A;border-radius:5px;padding:10px 14px;font-size:13px;color:#0A7A5A;font-weight:600;">&#x2713; Odeslano ${d.created.length} ukolu do Freela</div>`;btn.style.background="#0A7A5A";btn.innerHTML="&#x2713; Odeslano";}
+    else{document.getElementById("freelo-result").innerHTML=`<div style="background:#FCEAEA;border:1px solid #C0392B;border-radius:5px;padding:10px 14px;font-size:13px;color:#C0392B;">Chyba: ${(d.errors||[]).join(", ")||d.error||"Neznama chyba"}</div>`;btn.disabled=false;btn.innerHTML="Odeslat vybrane do Freela &rarr;";}
+  }catch(e){toast("Chyba: "+e.message,false);btn.disabled=false;btn.innerHTML="Odeslat vybrane do Freela &rarr;";}
 }
 </script>
 {% endblock %}

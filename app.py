@@ -961,8 +961,11 @@ def odeslat_do_freela(zapis_id):
                 task_data = resp.json()
                 task_id   = (task_data.get("data") or task_data).get("id")
                 if task_id:
-                    if task.get("desc"):
-                        freelo_post(f"/task/{task_id}/description", {"description": task["desc"]})
+                    desc = (task.get("desc") or "").strip()
+                    if desc:
+                        # Freelo description endpoint — try both field names
+                        dr = freelo_post(f"/task/{task_id}/description", {"description": desc, "note": desc})
+                        app.logger.info(f"  desc for {task_id}: {dr.status_code} {dr.text[:100]}")
                     if assignee and not members_by_name.get(assignee.lower()):
                         freelo_post(f"/task/{task_id}/comments", {"comment": f"Zodpovedna osoba: {assignee}"})
             else:

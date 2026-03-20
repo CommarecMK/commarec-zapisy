@@ -3,82 +3,150 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>{{ zapis.title }} — Commarec</title>
+<title>{{ zapis.title }} &mdash; Commarec</title>
 <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 <style>
-@font-face{font-family:'DrukCondensed';src:url('/static/DrukCondensed-Super.otf') format('opentype');font-weight:900;}
+@font-face{font-family:"DrukCondensed";src:url("/static/DrukCondensed-Super.otf") format("opentype");font-weight:900;}
+@media print{.no-print{display:none !important;}.zapis-meta{background:#173767 !important;-webkit-print-color-adjust:exact;print-color-adjust:exact;}}
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
-body{font-family:'Montserrat',sans-serif;background:#F0F3F7;color:#0E213E;font-size:14px;line-height:1.6;}
-.header{background:#173767;border-bottom:3px solid #00AFF0;padding:0 2rem;height:56px;display:flex;align-items:center;justify-content:space-between;}
-.header-logo{height:26px;width:auto;}
-.header-badge{font-size:11px;font-weight:600;color:rgba(255,255,255,0.5);letter-spacing:0.1em;text-transform:uppercase;border-left:1px solid rgba(255,255,255,0.2);padding-left:10px;}
+body{font-family:"Montserrat",sans-serif;background:#F0F3F7;color:#0E213E;font-size:14px;line-height:1.6;}
+.top-bar{background:#173767;border-bottom:3px solid #00AFF0;padding:0 2rem;height:52px;display:flex;align-items:center;justify-content:space-between;}
+.top-logo{height:26px;width:auto;filter:brightness(0) invert(1);}
+.top-badge{font-size:11px;font-weight:600;color:rgba(255,255,255,0.5);letter-spacing:0.1em;text-transform:uppercase;border-left:1px solid rgba(255,255,255,0.2);padding-left:10px;}
 .container{max-width:900px;margin:0 auto;padding:2rem 1.5rem;}
-.zapis-card{background:white;border:1px solid #D0DAE8;border-radius:6px;}
-.meta{display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:12px;padding:1.25rem 1.5rem;border-bottom:1px solid #D0DAE8;}
-.meta-info{text-align:right;font-size:11px;color:#4A6080;line-height:2;font-weight:500;text-transform:uppercase;letter-spacing:0.06em;}
-.zapis-body{padding:1.5rem 2rem 2rem;}
+.zapis-card{background:white;border:1px solid #D0DAE8;border-radius:6px;overflow:hidden;margin-bottom:2rem;}
+.zapis-meta{background:#173767;padding:1.5rem 2rem;display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:1.5rem;}
+.meta-logo{height:28px;width:auto;display:block;filter:brightness(0) invert(1);}
+.meta-title{font-family:"DrukCondensed","Impact",sans-serif;font-size:22px;font-weight:900;color:white;text-transform:uppercase;letter-spacing:0.06em;line-height:1.1;}
+.meta-title small{display:block;font-family:"Montserrat",sans-serif;font-size:11px;font-weight:500;color:rgba(255,255,255,0.5);text-transform:none;letter-spacing:0;margin-top:3px;}
+.meta-right{text-align:right;}
+.meta-row{font-size:11px;color:rgba(255,255,255,0.55);font-weight:500;line-height:2;}
+.meta-row strong{color:white;}
+.meta-badge{display:inline-block;font-size:10px;font-weight:700;padding:3px 10px;border-radius:3px;letter-spacing:0.06em;text-transform:uppercase;background:rgba(0,175,240,0.2);color:#00AFF0;border:1px solid rgba(0,175,240,0.3);margin-top:4px;}
+.header-info{background:#f0f5fb;border-bottom:1px solid #D0DAE8;padding:14px 2rem;font-size:13px;display:grid;grid-template-columns:repeat(4,1fr);}
+.hb-lbl{font-size:10px;font-weight:700;color:#4A6080;text-transform:uppercase;letter-spacing:0.08em;display:block;margin-bottom:2px;}
+.hb-val{font-size:13px;font-weight:600;color:#173767;}
+.zapis-body{padding:2rem;}
 .zapis-section{margin-bottom:2.5rem;}
-.section-title{font-family:'DrukCondensed','Impact',sans-serif;font-size:20px;font-weight:900;color:#173767;text-transform:uppercase;letter-spacing:0.06em;padding-bottom:7px;border-bottom:2.5px solid #00AFF0;margin-bottom:16px;}
-.section-content{font-size:13px;line-height:1.7;color:#1a2533;}
-.section-content table{width:100%;border-collapse:collapse;font-size:13px;margin:10px 0;}
-.section-content th,.section-content td{padding:8px 12px;border:1px solid #D0DAE8;text-align:left;vertical-align:middle;}
-.section-content th{background:#f8f9fb;font-weight:700;font-size:11px;text-transform:uppercase;letter-spacing:0.06em;color:#4A6080;}
+.section-header{display:flex;align-items:center;padding-bottom:8px;border-bottom:2.5px solid #00AFF0;margin-bottom:18px;}
+.section-title{font-family:"DrukCondensed","Impact",sans-serif;font-size:26px;font-weight:900;color:#173767;text-transform:uppercase;letter-spacing:0.06em;line-height:1;}
+.section-content{font-size:14px;line-height:1.75;color:#1a2533;}
+.section-content p{margin-bottom:8px;}
+.section-content ul{padding-left:1.4rem;margin:6px 0 10px;}
+.section-content li{margin-bottom:6px;}
+.section-content strong{color:#173767;}
+.section-content table{width:100%;border-collapse:collapse;font-size:13px;margin:10px 0 16px;border-radius:6px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,0.06);}
+.section-content th{background:#173767;color:white;font-weight:700;font-size:11px;text-transform:uppercase;letter-spacing:0.06em;padding:10px 14px;text-align:left;}
+.section-content td{padding:10px 14px;border-bottom:1px solid #D0DAE8;vertical-align:middle;}
+.section-content tr:last-child td{border-bottom:none;background:#f0f3f7;}
+.section-content tr:nth-child(even) td{background:#f8f9fb;}
 .section-content td:nth-child(2){text-align:center;font-weight:700;}
-.section-content ul{padding-left:1.4rem;margin:6px 0;}
-.section-content li{margin-bottom:4px;}
-.score-badge{display:inline-block;padding:2px 10px;border-radius:20px;font-size:12px;font-weight:700;color:white;}
-.zapis-header-block{background:#f0f5fb;border-left:4px solid #00AFF0;padding:13px 17px;border-radius:0 6px 6px 0;font-size:13px;line-height:1.9;margin-bottom:2rem;}
-.footer{text-align:center;padding:2rem;font-size:11px;color:#4A6080;margin-top:2rem;}
+.score-badge{display:inline-block;padding:3px 12px;border-radius:20px;font-size:12px;font-weight:700;color:white;}
+.dl-btn{font-family:"DrukCondensed","Impact",sans-serif;font-size:13px;font-weight:900;letter-spacing:0.06em;text-transform:uppercase;background:#173767;color:white;border:none;padding:9px 20px;border-radius:5px;cursor:pointer;}
+.dl-btn:hover{background:#254f8a;}
+.footer-bar{text-align:center;padding:1.5rem;font-size:11px;color:#4A6080;}
 </style>
 </head>
 <body>
-<div class="header">
-  <img src="/static/logo-white.svg" alt="Commarec" class="header-logo">
-  <span class="header-badge">Zapisy ze schuzek</span>
+<div class="top-bar">
+  <img src="/static/logo-white.svg" alt="Commarec" class="top-logo">
+  <span class="top-badge">Zapisy Commarec</span>
 </div>
 
 <div class="container">
-  <div style="margin-bottom:1rem;display:flex;justify-content:space-between;align-items:center;">
-    <div>
-      <h1 style="font-family:'DrukCondensed','Impact',sans-serif;font-size:30px;font-weight:900;color:#173767;text-transform:uppercase;letter-spacing:0.05em;line-height:1;">{{ zapis.title }}</h1>
-      <div style="margin-top:6px;"><span style="display:inline-block;font-size:10px;font-weight:700;padding:3px 8px;border-radius:3px;letter-spacing:0.06em;text-transform:uppercase;background:#e0f5fd;color:#006E8A;">{{ template_names.get(zapis.template, zapis.template) }}</span></div>
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;" class="no-print">
+    <div style="font-size:12px;color:#4A6080;">
+      {% if zapis.klient %}<span style="font-weight:600;color:#173767;">{{ zapis.klient.nazev }}</span>{% endif %}
+      {% if zapis.projekt %}<span style="color:#c5d0de;margin:0 5px;">/</span><span>{{ zapis.projekt.nazev }}</span>{% endif %}
     </div>
+    <button class="dl-btn" onclick="downloadPDF()">&#x2b07; Stahnout PDF</button>
   </div>
 
-  <div class="zapis-card">
-    <div class="meta">
-      <img src="/static/logo-dark.svg" alt="Commarec" style="height:20px;width:auto;">
-      <div class="meta-info">
-        <div>{{ zapis.created_at.strftime('%d. %m. %Y') }}</div>
-        <div>{{ zapis.author.name }}</div>
+  <div class="zapis-card" id="zapis-print">
+    <div class="zapis-meta">
+      <img src="/static/logo-white.svg" alt="Commarec" class="meta-logo">
+      <div class="meta-title">
+        {{ zapis.title }}
+        <small>{{ template_names.get(zapis.template, zapis.template) }}</small>
+      </div>
+      <div class="meta-right">
+        <div class="meta-row"><strong>{{ zapis.created_at.strftime("%d. %m. %Y") }}</strong></div>
+        <div class="meta-row">{{ zapis.author.name }}</div>
+        <div><span class="meta-badge">{{ template_names.get(zapis.template, zapis.template) }}</span></div>
       </div>
     </div>
+
+    {% if zapis.output_json and zapis.output_json != "{}" %}
+    <div class="header-info">
+      <div><span class="hb-lbl">Klient</span><span class="hb-val">{% if zapis.klient %}{{ zapis.klient.nazev }}{% else %}&mdash;{% endif %}</span></div>
+      <div><span class="hb-lbl">Projekt</span><span class="hb-val">{% if zapis.projekt %}{{ zapis.projekt.nazev }}{% else %}&mdash;{% endif %}</span></div>
+      <div><span class="hb-lbl">Za Commarec</span><span class="hb-val">{{ zapis.author.name }}</span></div>
+      <div><span class="hb-lbl">Datum</span><span class="hb-val">{{ zapis.created_at.strftime("%d. %m. %Y") }}</span></div>
+    </div>
+    {% endif %}
+
     <div class="zapis-body">
-      {% if zapis.output_json and zapis.output_json != '{}' %}
-        {# New structured records — render section by section with styling #}
-        {{ zapis.output_text | safe }}
+      {% if zapis.output_json and zapis.output_json != "{}" %}
+        {% set s = summary %}
+        {% set sections = [
+          ("participants_commarec", "Zastoupeni Commarec"),
+          ("participants_company",  "Zastoupeni klienta"),
+          ("introduction",          "Uvod"),
+          ("meeting_goal",          "Ucel navstevy"),
+          ("findings",              "Shrn. hlavnich zjisteni"),
+          ("ratings",               "Hodnoceni hlavnich oblasti"),
+          ("processes_description", "Popis procesu"),
+          ("dangers",               "Klicove problemy a rizika"),
+          ("suggested_actions",     "Doporucene akcni kroky"),
+          ("expected_benefits",     "Ocekavane prinosy"),
+          ("additional_notes",      "Poznamky z terenu"),
+          ("summary",               "Shrnuti"),
+        ] %}
+        {% for key, title in sections %}
+          {% if s.get(key) %}
+          <div class="zapis-section">
+            <div class="section-header">
+              <h2 class="section-title">{{ section_titles.get(key, title) | upper }}</h2>
+            </div>
+            <div class="section-content" id="sc-{{ key }}">{{ s.get(key, "") | safe }}</div>
+          </div>
+          {% endif %}
+        {% endfor %}
       {% elif zapis.output_text %}
-        <pre style="white-space:pre-wrap;font-size:13px;line-height:1.7;">{{ zapis.output_text }}</pre>
+        <div style="font-size:14px;line-height:1.75;">{{ zapis.output_text | safe }}</div>
       {% else %}
         <p style="color:#4A6080;font-style:italic;">Obsah neni dostupny.</p>
       {% endif %}
     </div>
   </div>
 
-  <div class="footer">Commarec s.r.o. &mdash; Tento dokument byl sdilen prostrednictvim Commarec Zapisy.</div>
+  <div class="footer-bar">Commarec s.r.o. &mdash; Dokument sdilen prostrednictvim Commarec Zapisy.</div>
 </div>
 
 <script>
-document.querySelectorAll('.section-content td').forEach(td=>{
-  const txt=td.textContent.trim();
-  const m=txt.match(/^(\d+)\s*%?$/);
-  if(m&&parseInt(m[1])<=100&&txt.length<=4){
-    const p=parseInt(m[1]);
-    let bg='#FF383C';
-    if(p>=70)bg='#34C759';else if(p>=55)bg='#00AFF0';else if(p>=40)bg='#FF8D00';
-    td.innerHTML=`<span class="score-badge" style="background:${bg}">${p}%</span>`;
-  }
+document.addEventListener("DOMContentLoaded",()=>{
+  document.querySelectorAll(".section-content td").forEach(td=>{
+    const txt=td.textContent.trim();
+    const m=txt.match(/^(\d+)\s*%?$/);
+    if(m&&parseInt(m[1])<=100&&txt.length<=5){
+      const p=parseInt(m[1]);
+      let bg="#FF383C";
+      if(p>=70)bg="#34C759";else if(p>=55)bg="#00AFF0";else if(p>=40)bg="#FF8D00";
+      td.innerHTML=`<span class="score-badge" style="background:${bg}">${p}%</span>`;
+    }
+  });
 });
+function downloadPDF(){
+  const btn=event.target;btn.disabled=true;btn.textContent="Generuji...";
+  const el=document.getElementById("zapis-print");
+  const title="{{ zapis.title }}".toLowerCase().replace(/[^a-z0-9]+/g,"-").slice(0,40);
+  html2pdf().set({margin:[0,0,0,0],filename:"commarec-"+title+".pdf",
+    image:{type:"jpeg",quality:0.98},
+    html2canvas:{scale:2,useCORS:true,logging:false},
+    jsPDF:{unit:"mm",format:"a4",orientation:"portrait"}})
+  .from(el).save().finally(()=>{btn.disabled=false;btn.textContent="Stahnout PDF";});
+}
 </script>
 </body>
 </html>
