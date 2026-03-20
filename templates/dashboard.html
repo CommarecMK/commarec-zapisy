@@ -1,128 +1,75 @@
 {% extends "base.html" %}
-{% block title %}Přehled{% endblock %}
+{% block title %}Prehled{% endblock %}
 {% block extra_head %}
 <style>
-/* STAT CARDS */
-.stats {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 14px;
-  margin-bottom: 1.75rem;
-}
-.stat {
-  background: #173767;
-  border-radius: 8px;
-  padding: 1.25rem 1.5rem;
-  position: relative;
-  overflow: hidden;
-  border: 1px solid rgba(255,255,255,0.06);
-}
-/* Decorative chevron shape — per brand guidelines */
-.stat::after {
-  content: '';
-  position: absolute;
-  right: -10px;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 90px;
-  height: 90px;
-  background: rgba(255,255,255,0.04);
-  clip-path: polygon(0 0, 65% 0, 100% 50%, 65% 100%, 0 100%, 35% 50%);
-}
-.stat-label {
-  font-family: 'Montserrat', sans-serif;
-  font-size: 10px;
-  font-weight: 400;
-  color: rgba(255,255,255,0.4);
-  text-transform: uppercase;
-  letter-spacing: 0.12em;
-  margin-bottom: 8px;
-}
-.stat-value {
-  font-family: 'DrukCondensed', 'Impact', sans-serif;
-  font-size: 48px;
-  font-weight: 900;
-  color: white;
-  line-height: 1;
-  letter-spacing: 0.02em;
-}
-.stat-sub {
-  font-family: 'Montserrat', sans-serif;
-  font-size: 11px;
-  color: rgba(255,255,255,0.3);
-  margin-top: 6px;
-  font-weight: 400;
-}
-.stat-cyan { background: #0E213E; border-top: 3px solid #00AFF0; }
-.stat-cyan .stat-value { color: #00AFF0; }
-.stat-dark { background: #0E213E; }
-
-/* TABLE */
-.td-title { font-weight: 700; color: #173767; font-size: 13px; }
-.td-title:hover { color: #00AFF0; text-decoration: none; }
-
-/* EMPTY STATE */
-.empty { text-align: center; padding: 4rem 2rem; }
-.empty-title {
-  font-family: 'DrukCondensed', 'Impact', sans-serif;
-  font-size: 22px;
-  font-weight: 900;
-  color: #173767;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  margin-bottom: 8px;
-}
-.empty-sub { color: #4A6080; font-size: 13px; font-weight: 400; margin-bottom: 1.5rem; }
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:1.75rem;}
+.stat{background:#173767;border-radius:8px;padding:1.1rem 1.25rem;position:relative;overflow:hidden;border:1px solid rgba(255,255,255,0.06);}
+.stat-label{font-size:10px;font-weight:400;color:rgba(255,255,255,0.4);text-transform:uppercase;letter-spacing:0.12em;margin-bottom:6px;}
+.stat-value{font-family:'DrukCondensed','Impact',sans-serif;font-size:42px;font-weight:900;color:white;line-height:1;}
+.stat-sub{font-size:11px;color:rgba(255,255,255,0.3);margin-top:4px;}
+.stat-cyan{background:#0E213E;border-top:3px solid #00AFF0;}.stat-cyan .stat-value{color:#00AFF0;}
+.stat-dark{background:#0E213E;}
+.td-title{font-weight:700;color:#173767;font-size:13px;}.td-title:hover{color:#00AFF0;text-decoration:none;}
+.empty{text-align:center;padding:3rem 2rem;}
+.empty-title{font-family:'DrukCondensed','Impact',sans-serif;font-size:22px;font-weight:900;color:#173767;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:8px;}
+.empty-sub{color:#4A6080;font-size:13px;margin-bottom:1.5rem;}
+.filter-bar{display:flex;gap:8px;margin-bottom:1rem;flex-wrap:wrap;align-items:center;}
+.filter-bar select,.filter-bar input{padding:7px 10px;border:1.5px solid var(--border);border-radius:5px;font-size:12px;font-family:'Montserrat',sans-serif;color:#173767;background:white;}
+@media(max-width:700px){.stats{grid-template-columns:1fr 1fr;}}
 </style>
 {% endblock %}
-
 {% block content %}
 <div class="container">
   <div class="page-header">
     <div>
-      <h1>Zápisy</h1>
-      <p class="perex" style="font-size:13px; font-weight:500; color:#4A6080; margin-top:4px;">Přehled všech zápisů ze schůzek vašeho týmu</p>
+      <h1>Zapisy</h1>
+      <p style="font-size:13px;font-weight:500;color:#4A6080;margin-top:4px;">Prehled vsech zapisu ze schuzek</p>
     </div>
-    <a href="{{ url_for('novy_zapis') }}" class="btn btn-navy" style="font-family:'DrukCondensed','Impact',sans-serif; font-size:14px; font-weight:900; letter-spacing:0.06em; text-transform:uppercase; background:#173767; color:white; border:none; padding:10px 20px; border-radius:5px;">+ Nový zápis</a>
+    <a href="{{ url_for('novy_zapis') }}" class="btn btn-navy" style="font-family:'DrukCondensed','Impact',sans-serif;font-size:14px;font-weight:900;letter-spacing:0.06em;text-transform:uppercase;">+ Novy zapis</a>
   </div>
-
-  {% set total = zapisy|length %}
-  {% set freelo_count = zapisy|selectattr('freelo_sent')|list|length %}
 
   <div class="stats">
     <div class="stat">
-      <div class="stat-label">Celkem zápisů</div>
-      <div style="display:flex;align-items:flex-end;justify-content:space-between;">
-        <div class="stat-value">{{ total }}</div>
-        <svg width="40" height="40" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" style="opacity:0.15;flex-shrink:0;"><path d="M17.5 4V11.5H25V28H7V4H17.5ZM19 4L25 10H19V4ZM10.375 14.5H9.625V15.25V16.75V20.5V24.25V25H10.375H14.125H17.875H21.625H22.375V24.25V20.5V16.75V15.25V14.5H21.625H10.375ZM11.125 19.75V17.5H13.375V19.75H11.125ZM14.875 19.75V17.5H17.125V19.75H14.875ZM18.625 19.75V17.5H20.875V19.75H18.625ZM18.625 21.25H20.875V23.5H18.625V21.25ZM17.125 21.25V23.5H14.875V21.25H17.125ZM13.375 21.25V23.5H11.125V21.25H13.375Z" fill="white"/></svg>
-      </div>
-      <div class="stat-sub">posledních 20 zápisů</div>
+      <div class="stat-label">Celkem zapisu</div>
+      <div class="stat-value">{{ stats.celkem }}</div>
+      <div class="stat-sub">vsechny zapisy</div>
     </div>
     <div class="stat stat-cyan">
-      <div class="stat-label">Odesláno do Freela</div>
-      <div style="display:flex;align-items:flex-end;justify-content:space-between;">
-        <div class="stat-value">{{ freelo_count }}</div>
-        <svg width="40" height="40" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" style="opacity:0.2;flex-shrink:0;"><path d="M11.1484 8.125L7.77344 11.875L7.11719 12.5781L6.41406 11.9219L4.53906 10.0469L3.88281 9.34375L5.24219 8.03125L5.89844 8.6875L7.07031 9.85938L9.78906 6.85938L10.3984 6.15625L11.8047 7.42188L11.1484 8.125ZM11.1484 15.625L7.77344 19.375L7.11719 20.0781L6.41406 19.4219L4.53906 17.5469L3.88281 16.8438L5.24219 15.5312L5.89844 16.1875L7.07031 17.3594L9.78906 14.3594L10.3984 13.6562L11.8047 14.9219L11.1484 15.625ZM13.1172 8.21875H28.1172V10.4688H13.1172V8.21875ZM13.1172 15.7188H28.1172V17.9688H13.1172V15.7188ZM11.6172 23.2188H28.1172V25.4688H11.6172V23.2188ZM8.61719 24.3438C8.61719 25.1875 7.91406 25.8438 7.11719 25.8438C6.27344 25.8438 5.61719 25.1875 5.61719 24.3438C5.61719 23.5469 6.27344 22.8438 7.11719 22.8438C7.91406 22.8438 8.61719 23.5469 8.61719 24.3438Z" fill="white"/></svg>
-      </div>
-      <div class="stat-sub">zápisů synchronizováno</div>
+      <div class="stat-label">Odeslan do Freela</div>
+      <div class="stat-value">{{ stats.freelo }}</div>
+      <div class="stat-sub">ukoly synchronizovany</div>
     </div>
     <div class="stat stat-dark">
-      <div class="stat-label">Šablony</div>
-      <div style="display:flex;align-items:flex-end;justify-content:space-between;">
-        <div class="stat-value">3</div>
-        <svg width="40" height="40" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" style="opacity:0.15;flex-shrink:0;"><path d="M19.9141 12.4375C23.1953 12.4375 25.9141 15.1094 25.9141 18.4375C25.9141 19.6562 25.4922 20.8281 24.8359 21.8125L27.7891 24.7188L28.5859 25.5156L27.0391 27.1094L23.2891 23.3594C22.3047 24.0156 21.1328 24.4375 19.9141 24.4375C16.5859 24.4375 13.9141 21.7188 13.9141 18.4375C13.9141 15.1094 16.5859 12.4375 19.9141 12.4375ZM14.668 12.3906C12.9798 13.8551 11.9141 16.0164 11.9141 18.4375C11.9141 21.8024 14.0185 24.7209 17.0107 25.8906H3.41406V12.3906H14.668ZM19.9141 14.6875C18.5547 14.6875 17.3359 15.3906 16.6328 16.5625C15.9766 17.6875 15.9766 19.1406 16.6328 20.3125C17.3359 21.4375 18.5547 22.1875 19.9141 22.1875C21.2266 22.1875 22.4453 21.4375 23.1484 20.3125C23.8047 19.1406 23.8047 17.6875 23.1484 16.5625C22.4453 15.3906 21.2266 14.6875 19.9141 14.6875ZM13.1641 10.8906H3.41406L6.41406 4.89062H13.1641V10.8906ZM24.4141 10.8906H14.6641V4.89062H21.4141L24.4141 10.8906Z" fill="white"/></svg>
-      </div>
-      <div class="stat-sub">audit · operativa · obchod</div>
+      <div class="stat-label">Aktivni klienti</div>
+      <div class="stat-value">{{ stats.klienti }}</div>
+      <div class="stat-sub"><a href="{{ url_for('klienti_list') }}" style="color:#00AFF0;font-size:11px;">zobrazit vsechny &rarr;</a></div>
+    </div>
+    <div class="stat stat-dark">
+      <div class="stat-label">Projekty</div>
+      <div class="stat-value">{{ stats.projekty }}</div>
+      <div class="stat-sub">aktivnich projektu</div>
     </div>
   </div>
 
-  <div class="card" style="padding:0; overflow:hidden;">
+  {% if klienti %}
+  <div class="card" style="margin-bottom:1rem;padding:12px 16px;">
+    <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+      <span style="font-size:11px;font-weight:700;color:#4A6080;text-transform:uppercase;letter-spacing:0.08em;">Klienti:</span>
+      {% for k in klienti %}
+      <a href="{{ url_for('klient_detail', klient_id=k.id) }}" class="badge badge-cyan" style="cursor:pointer;text-decoration:none;">{{ k.nazev }}</a>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+
+  <div class="card" style="padding:0;overflow:hidden;">
     {% if zapisy %}
     <table>
       <thead>
         <tr>
-          <th>Název zápisu</th>
-          <th>Šablona</th>
+          <th>Nazev zapisu</th>
+          <th>Klient / Projekt</th>
+          <th>Sablona</th>
           <th>Autor</th>
           <th>Freelo</th>
           <th>Datum</th>
@@ -133,23 +80,24 @@
         {% for z in zapisy %}
         <tr>
           <td><a href="{{ url_for('detail_zapisu', zapis_id=z.id) }}" class="td-title">{{ z.title }}</a></td>
-          <td><span class="badge badge-blue">{{ template_names.get(z.template, z.template) }}</span></td>
-          <td style="color:#4A6080; font-size:12px;">{{ z.author.name }}</td>
-          <td>
-            {% if z.freelo_sent %}<span class="badge badge-green">✓ Odesláno</span>
-            {% else %}<span class="badge badge-gray">Čeká</span>{% endif %}
+          <td style="font-size:12px;color:#4A6080;">
+            {% if z.klient %}<a href="{{ url_for('klient_detail', klient_id=z.klient.id) }}" style="color:#173767;font-weight:600;">{{ z.klient.nazev }}</a>{% endif %}
+            {% if z.projekt %}<br><span style="font-size:11px;color:#4A6080;">{{ z.projekt.nazev }}</span>{% endif %}
           </td>
-          <td style="color:#4A6080; font-size:12px; white-space:nowrap;">{{ z.created_at.strftime('%d. %m. %Y') }}</td>
-          <td><a href="{{ url_for('detail_zapisu', zapis_id=z.id) }}" class="btn btn-secondary btn-sm">Detail →</a></td>
+          <td><span class="badge badge-blue">{{ template_names.get(z.template, z.template) }}</span></td>
+          <td style="color:#4A6080;font-size:12px;">{{ z.author.name }}</td>
+          <td>{% if z.freelo_sent %}<span class="badge badge-green">&#x2713; Odeslano</span>{% else %}<span class="badge badge-gray">Ceka</span>{% endif %}</td>
+          <td style="color:#4A6080;font-size:12px;white-space:nowrap;">{{ z.created_at.strftime('%d. %m. %Y') }}</td>
+          <td><a href="{{ url_for('detail_zapisu', zapis_id=z.id) }}" class="btn btn-secondary btn-sm">Detail &rarr;</a></td>
         </tr>
         {% endfor %}
       </tbody>
     </table>
     {% else %}
     <div class="empty">
-      <div class="empty-title">Zatím žádné zápisy</div>
-      <div class="empty-sub">Vytvořte první zápis ze schůzky — AI ho vygeneruje za vás.</div>
-      <a href="{{ url_for('novy_zapis') }}" class="btn btn-navy" style="font-family:'DrukCondensed','Impact',sans-serif; font-size:14px; font-weight:900; letter-spacing:0.06em; text-transform:uppercase; background:#173767; color:white; border:none; padding:10px 24px; border-radius:5px;">Vytvořit první zápis</a>
+      <div class="empty-title">Zatim zadne zapisy</div>
+      <div class="empty-sub">Vytvorte prvni zapis ze schuzky — AI ho vygeneruje za vas.</div>
+      <a href="{{ url_for('novy_zapis') }}" class="btn btn-navy" style="font-family:'DrukCondensed','Impact',sans-serif;font-size:14px;font-weight:900;letter-spacing:0.06em;text-transform:uppercase;">Vytvorit prvni zapis</a>
     </div>
     {% endif %}
   </div>

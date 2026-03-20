@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+{% block title %}{{ p.nazev }}{% endblock %}
+{% block content %}
+<div class="container">
+  <div class="page-header">
+    <div>
+      <div style="font-size:12px;color:#4A6080;margin-bottom:4px;"><a href="{{ url_for('klient_detail', klient_id=p.klient_id) }}" style="color:#00AFF0;">{{ p.klient.nazev }}</a> &rsaquo; Projekt</div>
+      <h1>{{ p.nazev }}</h1>
+      {% if p.popis %}<p style="font-size:13px;color:#4A6080;margin-top:4px;">{{ p.popis }}</p>{% endif %}
+    </div>
+    <div style="display:flex;gap:8px;">
+      <a href="{{ url_for('novy_zapis') }}?klient_id={{ p.klient_id }}&projekt_id={{ p.id }}" class="btn btn-navy" style="font-family:'DrukCondensed','Impact',sans-serif;font-size:13px;font-weight:900;letter-spacing:0.06em;text-transform:uppercase;">+ Novy zapis</a>
+      <a href="{{ url_for('klient_detail', klient_id=p.klient_id) }}" class="btn btn-secondary">&larr; Zpet</a>
+    </div>
+  </div>
+
+  <!-- Meta -->
+  <div class="card" style="margin-bottom:1rem;">
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:16px;">
+      <div><div style="font-size:10px;font-weight:700;color:#4A6080;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:3px;">Konzultant</div><div style="font-size:13px;font-weight:600;">{{ p.konzultant.name if p.konzultant else '—' }}</div></div>
+      <div><div style="font-size:10px;font-weight:700;color:#4A6080;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:3px;">Zacatek</div><div style="font-size:13px;">{{ p.datum_od.strftime('%d. %m. %Y') if p.datum_od else '—' }}</div></div>
+      <div><div style="font-size:10px;font-weight:700;color:#4A6080;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:3px;">Konec</div><div style="font-size:13px;">{{ p.datum_do.strftime('%d. %m. %Y') if p.datum_do else '—' }}</div></div>
+      <div><div style="font-size:10px;font-weight:700;color:#4A6080;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:3px;">Stav</div><div>{% if p.is_active %}<span class="badge badge-green">Aktivni</span>{% else %}<span class="badge badge-gray">Uzavreny</span>{% endif %}</div></div>
+    </div>
+    <!-- Edit form inline -->
+    <details style="margin-top:12px;border-top:1px solid var(--border);padding-top:12px;">
+      <summary style="font-size:11px;font-weight:700;color:#4A6080;text-transform:uppercase;letter-spacing:0.08em;cursor:pointer;">Upravit projekt</summary>
+      <form method="POST" action="{{ url_for('projekt_upravit', projekt_id=p.id) }}" style="margin-top:12px;">
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:10px;">
+          <div><label style="font-size:10px;font-weight:700;color:#4A6080;text-transform:uppercase;letter-spacing:0.08em;display:block;margin-bottom:3px;">Nazev</label><input type="text" name="nazev" value="{{ p.nazev }}" required style="padding:8px 10px;border:1.5px solid var(--border);border-radius:5px;font-size:13px;width:100%;font-family:'Montserrat',sans-serif;"></div>
+          <div><label style="font-size:10px;font-weight:700;color:#4A6080;text-transform:uppercase;letter-spacing:0.08em;display:block;margin-bottom:3px;">Konzultant</label><select name="user_id" style="padding:8px 10px;border:1.5px solid var(--border);border-radius:5px;font-size:13px;width:100%;font-family:'Montserrat',sans-serif;"><option value="">— nevybrano —</option>{% for u in konzultanti %}<option value="{{ u.id }}" {% if p.user_id==u.id %}selected{% endif %}>{{ u.name }}</option>{% endfor %}</select></div>
+          <div><label style="font-size:10px;font-weight:700;color:#4A6080;text-transform:uppercase;letter-spacing:0.08em;display:block;margin-bottom:3px;">Stav</label><select name="is_active" style="padding:8px 10px;border:1.5px solid var(--border);border-radius:5px;font-size:13px;width:100%;font-family:'Montserrat',sans-serif;"><option value="1" {% if p.is_active %}selected{% endif %}>Aktivni</option><option value="0" {% if not p.is_active %}selected{% endif %}>Uzavreny</option></select></div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:10px;">
+          <div><label style="font-size:10px;font-weight:700;color:#4A6080;text-transform:uppercase;letter-spacing:0.08em;display:block;margin-bottom:3px;">Od</label><input type="date" name="datum_od" value="{{ p.datum_od.isoformat() if p.datum_od else '' }}" style="padding:8px 10px;border:1.5px solid var(--border);border-radius:5px;font-size:13px;width:100%;font-family:'Montserrat',sans-serif;"></div>
+          <div><label style="font-size:10px;font-weight:700;color:#4A6080;text-transform:uppercase;letter-spacing:0.08em;display:block;margin-bottom:3px;">Do</label><input type="date" name="datum_do" value="{{ p.datum_do.isoformat() if p.datum_do else '' }}" style="padding:8px 10px;border:1.5px solid var(--border);border-radius:5px;font-size:13px;width:100%;font-family:'Montserrat',sans-serif;"></div>
+          <div style="display:flex;align-items:flex-end;"><button type="submit" class="btn btn-navy btn-sm" style="font-family:'DrukCondensed','Impact',sans-serif;font-weight:900;letter-spacing:0.06em;text-transform:uppercase;">Ulozit</button></div>
+        </div>
+        <div><label style="font-size:10px;font-weight:700;color:#4A6080;text-transform:uppercase;letter-spacing:0.08em;display:block;margin-bottom:3px;">Popis</label><input type="text" name="popis" value="{{ p.popis }}" style="padding:8px 10px;border:1.5px solid var(--border);border-radius:5px;font-size:13px;width:100%;font-family:'Montserrat',sans-serif;"></div>
+      </form>
+    </details>
+  </div>
+
+  <!-- Zapisy timeline -->
+  <div class="card">
+    <div style="font-family:'DrukCondensed','Impact',sans-serif;font-size:16px;font-weight:900;color:#173767;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:16px;padding-bottom:10px;border-bottom:2px solid #00AFF0;">
+      Timeline schuzek ({{ zapisy|length }})
+    </div>
+    {% if zapisy %}
+    <div style="border-left:2px solid var(--border);padding-left:16px;">
+      {% for z in zapisy %}
+      <div style="position:relative;margin-bottom:20px;">
+        <div style="position:absolute;left:-21px;top:5px;width:8px;height:8px;border-radius:50%;background:#00AFF0;border:2px solid white;box-shadow:0 0 0 2px #00AFF0;"></div>
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;">
+          <div>
+            <span class="badge badge-gray" style="margin-bottom:5px;display:inline-block;">{{ z.created_at.strftime('%d. %m. %Y') }}</span>
+            <div><a href="{{ url_for('detail_zapisu', zapis_id=z.id) }}" style="font-weight:700;color:#173767;font-size:14px;">{{ z.title }}</a></div>
+            <div style="margin-top:3px;"><span class="badge badge-blue">{{ template_names.get(z.template, z.template) }}</span>
+            {% if z.freelo_sent %}<span class="badge badge-green" style="margin-left:4px;">&#x2713; Freelo</span>{% endif %}
+            {% if z.is_public %}<span class="badge badge-cyan" style="margin-left:4px;">Verejny</span>{% endif %}</div>
+          </div>
+          <a href="{{ url_for('detail_zapisu', zapis_id=z.id) }}" class="btn btn-secondary btn-sm">Otevrit</a>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div style="text-align:center;padding:2rem;color:#4A6080;font-size:13px;">Zatim zadne zapisy pro tento projekt.</div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

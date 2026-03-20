@@ -104,7 +104,68 @@
   40% { transform: scale(1); opacity: 1; }
 }
 </style>
-<script src="/static/format.js"></script>
+<script src="/static/format.js">
+// Notes
+let noteIdx = 0;
+function addNote() {
+  const c = document.getElementById('notes-container');
+  const idx = noteIdx++;
+  const div = document.createElement('div');
+  div.id = 'note-' + idx;
+  div.style.cssText = 'display:grid;grid-template-columns:180px 1fr auto;gap:8px;margin-bottom:8px;align-items:start;';
+  div.innerHTML = `
+    <input type="text" placeholder="Titulek (napr. Sklad)" class="note-title" style="padding:8px 10px;border:1.5px solid var(--border);border-radius:5px;font-size:13px;font-family:'Montserrat',sans-serif;">
+    <textarea placeholder="Text poznamky..." class="note-text" rows="2" style="resize:vertical;padding:8px 10px;border:1.5px solid var(--border);border-radius:5px;font-size:13px;font-family:'Montserrat',sans-serif;"></textarea>
+    <button onclick="document.getElementById('note-${idx}').remove()" style="padding:6px 10px;border:1.5px solid #f0bcbc;border-radius:5px;background:white;color:#C0392B;cursor:pointer;font-size:16px;margin-top:2px;">&times;</button>`;
+  c.appendChild(div);
+}
+function getNotes() {
+  const notes = [];
+  document.querySelectorAll('#notes-container > div').forEach(div => {
+    const title = div.querySelector('.note-title')?.value.trim() || 'Poznamka';
+    const text  = div.querySelector('.note-text')?.value.trim() || '';
+    if (text) notes.push({ title, text });
+  });
+  return notes;
+}
+
+// Projekty
+async function loadProjekty() {
+  const klientId = document.getElementById('klient-select').value;
+  const sel = document.getElementById('projekt-select');
+  if (!klientId) {
+    sel.innerHTML = '<option value="">— Nejdrive vyberte klienta —</option>';
+    return;
+  }
+  sel.innerHTML = '<option value="">Nacitam...</option>';
+  try {
+    const data = await fetch(`/novy/projekty/${klientId}`).then(r=>r.json());
+    if (data.length === 0) {
+      sel.innerHTML = '<option value="">— Zadne projekty —</option>';
+    } else {
+      sel.innerHTML = '<option value="">— Bez projektu —</option>' +
+        data.map(p => `<option value="${p.id}">${p.nazev}</option>`).join('');
+    }
+  } catch(e) {
+    sel.innerHTML = '<option value="">Chyba</option>';
+  }
+}
+
+// Pre-fill klient from URL param
+document.addEventListener('DOMContentLoaded', () => {
+  const url = new URL(window.location.href);
+  const kid = url.searchParams.get('klient_id');
+  const pid = url.searchParams.get('projekt_id');
+  if (kid) {
+    const sel = document.getElementById('klient-select');
+    if (sel) { sel.value = kid; loadProjekty().then(() => { if (pid) { const psel = document.getElementById('projekt-select'); if (psel) psel.value = pid; } }); }
+  }
+  // Auto-fill commarec-rep from session name
+  const repEl = document.getElementById('commarec-rep');
+  if (repEl && !repEl.value) repEl.value = '{{ session.user_name }}';
+});
+
+</script>
 {% endblock %}
 
 {% block content %}
@@ -185,6 +246,29 @@
     </div>
   </div>
 
+
+  <!-- STEP 2b: Klient a projekt -->
+  <div class="card" style="margin-bottom: 1rem;">
+    <div class="step-header"><span class="step-num" style="color:#4A6080;">02b</span><span class="step-label">Prirazeni ke klientovi</span></div>
+    <div class="form-grid" style="margin-bottom:12px;">
+      <div class="form-group" style="margin:0;">
+        <label>Klient <span style="color:#4A6080;font-size:10px;">(volitelne)</span></label>
+        <select id="klient-select" onchange="loadProjekty()" style="padding:10px 12px;border:1.5px solid var(--border);border-radius:var(--radius);font-size:14px;font-family:var(--font-body);background:white;color:var(--text);width:100%;">
+          <option value="">— Vyberte klienta —</option>
+          {% for k in klienti %}
+          <option value="{{ k.id }}">{{ k.nazev }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="form-group" style="margin:0;">
+        <label>Projekt <span style="color:#4A6080;font-size:10px;">(volitelne)</span></label>
+        <select id="projekt-select" style="padding:10px 12px;border:1.5px solid var(--border);border-radius:var(--radius);font-size:14px;font-family:var(--font-body);background:white;color:var(--text);width:100%;">
+          <option value="">— Nejdrive vyberte klienta —</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
   <!-- STEP 3: Blocks -->
   <div class="card" style="margin-bottom: 1rem;">
     <div class="step-header"><span class="step-num">03</span><span class="step-label">Sekce zápisu</span></div>
@@ -199,6 +283,22 @@
       <div class="block-check checked" onclick="toggleBlock(this, 'poznamky')"><div class="block-dot"></div><svg width="15" height="15" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" style="flex-shrink:0;" class="block-icon"><path d="M17.5 4V11.5H25V28H7V4H17.5ZM19 4L25 10H19V4ZM10.375 14.5H9.625V15.25V16.75V20.5V24.25V25H10.375H14.125H17.875H21.625H22.375V24.25V20.5V16.75V15.25V14.5H21.625H10.375ZM11.125 19.75V17.5H13.375V19.75H11.125ZM14.875 19.75V17.5H17.125V19.75H14.875ZM18.625 19.75V17.5H20.875V19.75H18.625ZM18.625 21.25H20.875V23.5H18.625V21.25ZM17.125 21.25V23.5H14.875V21.25H17.125ZM13.375 21.25V23.5H11.125V21.25H13.375Z" fill="currentColor"/></svg><span class="block-label">Poznámky z terénu</span></div>
       <div class="block-check checked" onclick="toggleBlock(this, 'dalsi_krok')"><div class="block-dot"></div><svg width="15" height="15" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" style="flex-shrink:0;" class="block-icon"><path d="M25.3516 17.0547L18.6016 23.8047L17.5703 24.8828L15.4141 22.7266L16.4922 21.6953L20.6641 17.4766H7.07031H5.57031V14.4766H7.07031H20.6641L16.4922 10.3047L15.4141 9.22656L17.5703 7.11719L18.6016 8.19531L25.3516 14.9453L26.4297 15.9766L25.3516 17.0547Z" fill="currentColor"/></svg><span class="block-label">Další krok spolupráce</span></div>
     </div>
+  </div>
+
+
+  <!-- STEP 3b: Poznamky z terenu -->
+  <div class="card" style="margin-bottom: 1rem;">
+    <div class="step-header"><span class="step-num" style="color:#4A6080;">03b</span><span class="step-label">Strukturovane poznamky z terenu</span></div>
+    <div style="font-size:12px;color:#4A6080;margin-bottom:12px;">Pridejte strukturovane poznamky z navstevy — oddelenou od prepisu. Maji stejnou vahu jako prepis.</div>
+    <div id="notes-container"></div>
+    <button onclick="addNote()" class="btn btn-secondary btn-sm" style="margin-top:8px;">+ Pridat poznamku</button>
+  </div>
+
+  <!-- STEP 3c: Interni prompt -->
+  <div class="card" style="margin-bottom: 1rem; border-left: 3px solid #00AFF0;">
+    <div class="step-header"><span class="step-num" style="color:#00AFF0;">!</span><span class="step-label">Interni instrukce pro AI</span></div>
+    <div style="font-size:12px;color:#4A6080;margin-bottom:10px;">Specialni instrukce ktere AI musi splnit na 100%. Napr: "Zduraznit problemy s pickovanim B2B", "Pridat doporuceni pro WMS", "Zapis pis strucne".</div>
+    <textarea id="interni-prompt" rows="3" placeholder="napr. Zduraznit urgentni kroky v prvnich 2 tydnech. Pridat kontext o sezonnich spickach..." style="resize:vertical;min-height:80px;"></textarea>
   </div>
 
   <!-- STEP 4: Transcript -->
@@ -309,12 +409,18 @@ async function generovat() {
     meeting_place: document.getElementById('meeting-place').value.trim(),
     blocks: Array.from(activeBlocks)
   };
+  const klientId = document.getElementById('klient-select')?.value || null;
+  const projektId = document.getElementById('projekt-select')?.value || null;
+  const interniPrompt = document.getElementById('interni-prompt')?.value.trim() || '';
+  const notes = getNotes();
 
   try {
     const rawResp = await fetch('/api/generovat', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ template: selectedTemplate, text, client_info: clientInfo })
+      body: JSON.stringify({ template: selectedTemplate, text, client_info: clientInfo,
+        klient_id: klientId || undefined, projekt_id: projektId || undefined,
+        interni_prompt: interniPrompt, notes })
     });
     const rawText = await rawResp.text();
     let data;
@@ -343,5 +449,66 @@ async function generovat() {
     btn.textContent = 'Generovat zápis →';
   }
 }
+
+// Notes
+let noteIdx = 0;
+function addNote() {
+  const c = document.getElementById('notes-container');
+  const idx = noteIdx++;
+  const div = document.createElement('div');
+  div.id = 'note-' + idx;
+  div.style.cssText = 'display:grid;grid-template-columns:180px 1fr auto;gap:8px;margin-bottom:8px;align-items:start;';
+  div.innerHTML = `
+    <input type="text" placeholder="Titulek (napr. Sklad)" class="note-title" style="padding:8px 10px;border:1.5px solid var(--border);border-radius:5px;font-size:13px;font-family:'Montserrat',sans-serif;">
+    <textarea placeholder="Text poznamky..." class="note-text" rows="2" style="resize:vertical;padding:8px 10px;border:1.5px solid var(--border);border-radius:5px;font-size:13px;font-family:'Montserrat',sans-serif;"></textarea>
+    <button onclick="document.getElementById('note-${idx}').remove()" style="padding:6px 10px;border:1.5px solid #f0bcbc;border-radius:5px;background:white;color:#C0392B;cursor:pointer;font-size:16px;margin-top:2px;">&times;</button>`;
+  c.appendChild(div);
+}
+function getNotes() {
+  const notes = [];
+  document.querySelectorAll('#notes-container > div').forEach(div => {
+    const title = div.querySelector('.note-title')?.value.trim() || 'Poznamka';
+    const text  = div.querySelector('.note-text')?.value.trim() || '';
+    if (text) notes.push({ title, text });
+  });
+  return notes;
+}
+
+// Projekty
+async function loadProjekty() {
+  const klientId = document.getElementById('klient-select').value;
+  const sel = document.getElementById('projekt-select');
+  if (!klientId) {
+    sel.innerHTML = '<option value="">— Nejdrive vyberte klienta —</option>';
+    return;
+  }
+  sel.innerHTML = '<option value="">Nacitam...</option>';
+  try {
+    const data = await fetch(`/novy/projekty/${klientId}`).then(r=>r.json());
+    if (data.length === 0) {
+      sel.innerHTML = '<option value="">— Zadne projekty —</option>';
+    } else {
+      sel.innerHTML = '<option value="">— Bez projektu —</option>' +
+        data.map(p => `<option value="${p.id}">${p.nazev}</option>`).join('');
+    }
+  } catch(e) {
+    sel.innerHTML = '<option value="">Chyba</option>';
+  }
+}
+
+// Pre-fill klient from URL param
+document.addEventListener('DOMContentLoaded', () => {
+  const url = new URL(window.location.href);
+  const kid = url.searchParams.get('klient_id');
+  const pid = url.searchParams.get('projekt_id');
+  if (kid) {
+    const sel = document.getElementById('klient-select');
+    if (sel) { sel.value = kid; loadProjekty().then(() => { if (pid) { const psel = document.getElementById('projekt-select'); if (psel) psel.value = pid; } }); }
+  }
+  // Auto-fill commarec-rep from session name
+  const repEl = document.getElementById('commarec-rep');
+  if (repEl && !repEl.value) repEl.value = '{{ session.user_name }}';
+});
+
 </script>
 {% endblock %}

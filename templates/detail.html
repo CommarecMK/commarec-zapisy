@@ -3,28 +3,49 @@
 {% block extra_head %}
 <style>
 @media print {
-  .nav,.card-actions,.tasks-section,#print-btn{display:none !important;}
+  .nav,.card-actions,.tasks-section,#print-btn,.edit-bar{display:none !important;}
   body{background:white !important;}
   .container{max-width:100% !important;padding:0 !important;}
-  .zapis-card{border:none !important;}
+  .zapis-card{border:none !important;box-shadow:none !important;}
 }
 .zapis-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);}
 .zapis-meta{display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:12px;padding:1.25rem 1.5rem;border-bottom:1px solid var(--border);}
 .zapis-meta-info{text-align:right;font-size:11px;color:var(--muted);line-height:2;font-weight:500;text-transform:uppercase;letter-spacing:0.06em;}
 .zapis-body{padding:1.5rem 2rem 2rem;}
-/* Section styles */
-.zapis-body section{margin-bottom:2rem;}
-.section-title{font-family:'DrukCondensed','Impact',sans-serif;font-size:18px;font-weight:900;color:#173767;text-transform:uppercase;letter-spacing:0.06em;padding-bottom:6px;border-bottom:2px solid #00AFF0;margin-bottom:14px;}
-.zapis-header-block{background:#f0f5fb;border-left:4px solid #00AFF0;padding:12px 16px;border-radius:0 6px 6px 0;font-size:13px;line-height:1.8;margin-bottom:1.5rem;}
-/* HTML content from AI */
-.zapis-body table{width:100%;border-collapse:collapse;font-size:13px;margin:10px 0;}
-.zapis-body th,.zapis-body td{padding:8px 12px;border:1px solid var(--border);text-align:left;vertical-align:middle;}
-.zapis-body th{background:#f8f9fb;font-weight:700;font-size:11px;text-transform:uppercase;letter-spacing:0.06em;color:#4A6080;}
-.zapis-body td:nth-child(2){text-align:center;font-weight:700;}
-.zapis-body ul{padding-left:1.4rem;margin:6px 0;}
-.zapis-body li{margin-bottom:4px;font-size:13px;line-height:1.6;}
-/* Score badge from % numbers in td */
+/* Sections */
+.zapis-section{position:relative;margin-bottom:2.5rem;border-radius:6px;transition:background 0.15s;}
+.zapis-section:hover .edit-bar{opacity:1;}
+.section-title{font-family:'DrukCondensed','Impact',sans-serif;font-size:20px;font-weight:900;color:#173767;text-transform:uppercase;letter-spacing:0.06em;padding-bottom:7px;border-bottom:2.5px solid #00AFF0;margin-bottom:16px;}
+.section-content{font-size:13px;line-height:1.7;color:#1a2533;}
+/* Edit bar */
+.edit-bar{opacity:0;transition:opacity 0.15s;display:flex;gap:6px;align-items:center;margin-bottom:8px;}
+.edit-bar button{font-size:11px;font-weight:600;font-family:'Montserrat',sans-serif;border-radius:4px;padding:4px 11px;cursor:pointer;border:1.5px solid;}
+.btn-edit{background:white;color:#173767;border-color:#c5d0de;}
+.btn-edit:hover{border-color:#173767;}
+.btn-ai{background:white;color:#00AFF0;border-color:#00AFF0;}
+.btn-ai:hover{background:#00AFF0;color:white;}
+.btn-save{background:#173767;color:white;border-color:#173767;}
+.btn-cancel-edit{background:white;color:#4A6080;border-color:#c5d0de;}
+/* Edit textarea */
+.section-editor{display:none;width:100%;min-height:120px;padding:10px 12px;border:2px solid #00AFF0;border-radius:6px;font-size:13px;font-family:'Montserrat',sans-serif;resize:vertical;line-height:1.6;}
+.section-editor.active{display:block;}
+/* AI prompt bar */
+.ai-bar{display:none;gap:8px;align-items:center;margin-top:8px;}
+.ai-bar.active{display:flex;}
+.ai-input{flex:1;padding:7px 11px;border:1.5px solid #00AFF0;border-radius:5px;font-size:12px;font-family:'Montserrat',sans-serif;}
+/* Header block */
+.zapis-header-block{background:#f0f5fb;border-left:4px solid #00AFF0;padding:13px 17px;border-radius:0 6px 6px 0;font-size:13px;line-height:1.9;margin-bottom:2rem;}
+/* HTML content */
+.section-content table{width:100%;border-collapse:collapse;font-size:13px;margin:10px 0;}
+.section-content th,.section-content td{padding:8px 12px;border:1px solid var(--border);text-align:left;vertical-align:middle;}
+.section-content th{background:#f8f9fb;font-weight:700;font-size:11px;text-transform:uppercase;letter-spacing:0.06em;color:#4A6080;}
+.section-content td:nth-child(2){text-align:center;font-weight:700;}
+.section-content ul{padding-left:1.4rem;margin:6px 0;}
+.section-content li{margin-bottom:4px;}
 .score-badge{display:inline-block;padding:2px 10px;border-radius:20px;font-size:12px;font-weight:700;color:white;}
+/* Toast */
+#toast{position:fixed;bottom:24px;right:24px;background:#173767;color:white;padding:10px 18px;border-radius:6px;font-size:13px;font-family:'Montserrat',sans-serif;font-weight:600;z-index:9999;opacity:0;transition:opacity 0.3s;pointer-events:none;}
+#toast.show{opacity:1;}
 /* Task panel */
 .task-row{display:grid;grid-template-columns:28px 1fr 180px 150px 34px;gap:8px;align-items:start;padding:10px 0;border-bottom:1px solid var(--border);}
 .task-row:last-child{border-bottom:none;}
@@ -36,9 +57,9 @@
 .modal-box{background:white;border-radius:8px;padding:28px 32px;width:500px;max-width:calc(100vw - 32px);box-shadow:0 20px 60px rgba(0,0,0,0.3);}
 .modal-title{font-family:'DrukCondensed','Impact',sans-serif;font-size:20px;font-weight:900;color:#173767;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:18px;}
 .modal-foot{display:flex;gap:10px;justify-content:flex-end;margin-top:20px;}
-.btn-cancel{padding:9px 18px;border:1.5px solid var(--border);border-radius:5px;background:white;font-size:12px;font-weight:700;cursor:pointer;font-family:'Montserrat',sans-serif;}
-.btn-save{padding:9px 20px;background:#173767;color:white;border:none;border-radius:5px;font-family:'DrukCondensed','Impact',sans-serif;font-size:14px;font-weight:900;letter-spacing:0.05em;text-transform:uppercase;cursor:pointer;}
-.btn-save:hover{background:#254f8a;}
+.btn-mcancel{padding:9px 18px;border:1.5px solid var(--border);border-radius:5px;background:white;font-size:12px;font-weight:700;cursor:pointer;font-family:'Montserrat',sans-serif;}
+.btn-msave{padding:9px 20px;background:#173767;color:white;border:none;border-radius:5px;font-family:'DrukCondensed','Impact',sans-serif;font-size:14px;font-weight:900;letter-spacing:0.05em;text-transform:uppercase;cursor:pointer;}
+.btn-msave:hover{background:#254f8a;}
 .asgn-wrap{position:relative;}
 .asgn-dd{display:none;position:absolute;top:100%;left:0;right:0;background:white;border:1.5px solid #00AFF0;border-radius:5px;z-index:200;max-height:180px;overflow-y:auto;box-shadow:0 6px 20px rgba(0,0,0,0.12);}
 .asgn-dd.open{display:block;}
@@ -52,19 +73,28 @@
 {% block content %}
 <div class="container">
 
-  <!-- Header actions -->
   <div class="card-actions" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;flex-wrap:wrap;gap:10px;">
     <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
       <h1 style="font-family:'DrukCondensed','Impact',sans-serif;font-size:30px;font-weight:900;color:#173767;text-transform:uppercase;letter-spacing:0.05em;line-height:1;">{{ zapis.title }}</h1>
       <span class="badge badge-blue">{{ template_names.get(zapis.template, zapis.template) }}</span>
+      {% if zapis.klient %}<a href="{{ url_for('klient_detail', klient_id=zapis.klient.id) }}" class="badge badge-cyan" style="text-decoration:none;">{{ zapis.klient.nazev }}</a>{% endif %}
+      {% if zapis.projekt %}<span class="badge badge-gray">{{ zapis.projekt.nazev }}</span>{% endif %}
+      {% if zapis.is_public %}<span class="badge badge-green" title="Verejny odkaz aktivni">&#x1F30D; Verejny</span>{% endif %}
     </div>
-    <div style="display:flex;gap:8px;">
-      <button id="print-btn" class="btn btn-secondary" onclick="downloadPDF()">&#x2b07; Stáhnout PDF</button>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;">
+      <button onclick="togglePublish()" id="pub-btn" class="btn {% if zapis.is_public %}btn-success{% else %}btn-secondary{% endif %} btn-sm">{% if zapis.is_public %}&#x1F30D; Zverejneno{% else %}Zverejnit{% endif %}</button>
+      <button id="print-btn" class="btn btn-secondary" onclick="downloadPDF()">&#x2b07; PDF</button>
       <a href="{{ url_for('dashboard') }}" class="btn btn-secondary">&larr; Zpet</a>
     </div>
   </div>
+  {% if zapis.is_public and zapis.public_token %}
+  <div id="pub-bar" style="background:#E2F5EE;border:1px solid #0A7A5A;border-radius:5px;padding:8px 14px;margin-bottom:1rem;font-size:12px;display:flex;align-items:center;gap:10px;">
+    <span style="color:#0A7A5A;font-weight:600;">Verejny odkaz:</span>
+    <a id="pub-link" href="{{ url_for('zapis_verejny', token=zapis.public_token, _external=True) }}" target="_blank" style="color:#0A7A5A;word-break:break-all;">{{ url_for('zapis_verejny', token=zapis.public_token, _external=True) }}</a>
+    <button onclick="copyPubLink()" class="btn btn-secondary btn-sm" style="flex-shrink:0;">Kopirovat</button>
+  </div>
+  {% endif %}
 
-  <!-- Zápis card -->
   <div class="zapis-card" id="zapis-print">
     <div class="zapis-meta">
       <div><img src="/static/logo-dark.svg" alt="Commarec" style="height:20px;width:auto;"></div>
@@ -74,8 +104,68 @@
         <div style="margin-top:4px;"><span class="badge badge-blue">{{ template_names.get(zapis.template, zapis.template) }}</span></div>
       </div>
     </div>
-    <div class="zapis-body" id="zapis-content">
-      {{ zapis.output_text | safe }}
+
+    {% if zapis.interni_prompt %}
+    <div style="background:#fff9e6;border-left:3px solid #00AFF0;padding:10px 16px;font-size:12px;color:#4A6080;border-bottom:1px solid var(--border);">
+      <strong style="color:#173767;text-transform:uppercase;font-size:10px;letter-spacing:0.08em;">Interni instrukce AI:</strong>
+      <span style="margin-left:8px;">{{ zapis.interni_prompt }}</span>
+    </div>
+    {% endif %}
+    <div class="zapis-body">
+
+      {% if zapis.output_json and zapis.output_json != '{}' %}
+        {# New structured JSON record — render each section individually #}
+        {% set s = summary %}
+
+        {# Header block #}
+        <div class="zapis-header-block" id="header-block">
+          {{ zapis.output_text | safe | truncate(600, True, '') }}
+        </div>
+
+        {% set sections = [
+          ('participants_commarec', 'Zastoupeni Commarec'),
+          ('participants_company',  'Zastoupeni klienta'),
+          ('introduction',          'Uvod'),
+          ('meeting_goal',          'Ucel navstevy'),
+          ('findings',              'Shrn. hlavnich zjisteni'),
+          ('ratings',               'Hodnoceni hlavnich oblasti'),
+          ('processes_description', 'Popis procesu a vizualni pozorovani'),
+          ('dangers',               'Klicove problemy a rizika'),
+          ('suggested_actions',     'Doporucene akcni kroky'),
+          ('expected_benefits',     'Ocekavane prinosy'),
+          ('additional_notes',      'Poznamky z terenu'),
+          ('summary',               'Shrnuti'),
+        ] %}
+
+        {% for key, title in sections %}
+          {% if s.get(key) %}
+          <div class="zapis-section" data-key="{{ key }}">
+            <div class="edit-bar">
+              <span style="font-size:10px;font-weight:700;color:#4A6080;text-transform:uppercase;letter-spacing:0.08em;flex:1;">{{ section_titles.get(key, title) }}</span>
+              <button class="btn-edit" onclick="startEdit('{{ key }}')">&#x270E; Upravit</button>
+              <button class="btn-ai" onclick="toggleAiBar('{{ key }}')">&#x2728; AI uprava</button>
+            </div>
+            <h2 class="section-title">{{ section_titles.get(key, title) | upper }}</h2>
+            <div class="section-content" id="content-{{ key }}">{{ s.get(key, '') | safe }}</div>
+            <textarea class="section-editor" id="editor-{{ key }}"></textarea>
+            <div style="display:none;gap:6px;margin-top:6px;" id="editor-btns-{{ key }}">
+              <button class="btn-save" onclick="saveSection('{{ key }}')">Ulozit</button>
+              <button class="btn-cancel-edit" onclick="cancelEdit('{{ key }}')">Zrusit</button>
+            </div>
+            <div class="ai-bar" id="ai-bar-{{ key }}">
+              <input class="ai-input" id="ai-input-{{ key }}" type="text" placeholder='Napr. "Zkrat na 3 body" nebo "Pridej vice cisel"' onkeydown="if(event.key==='Enter')runAi('{{ key }}')">
+              <button class="btn-ai" onclick="runAi('{{ key }}')" style="white-space:nowrap;">Upravit s AI</button>
+              <button class="btn-cancel-edit" onclick="toggleAiBar('{{ key }}')">&#x2715;</button>
+            </div>
+          </div>
+          {% endif %}
+        {% endfor %}
+
+      {% else %}
+        {# Old plain-text record — display as-is #}
+        <div id="zapis-formatted" style="font-size:13px;line-height:1.7;">{{ zapis.output_text }}</div>
+      {% endif %}
+
     </div>
   </div>
 
@@ -87,10 +177,9 @@
         <div style="font-family:'DrukCondensed','Impact',sans-serif;font-size:20px;font-weight:900;color:#173767;text-transform:uppercase;letter-spacing:0.06em;">Ukoly pro Freelo</div>
         <div id="task-count-label" style="font-size:10px;font-weight:600;color:#4A6080;text-transform:uppercase;letter-spacing:0.1em;margin-top:3px;">Nacitam...</div>
       </div>
-      {% if zapis.freelo_sent %}<span class="badge badge-green" style="font-size:11px;padding:5px 14px;">&#x2713; Odesláno</span>{% endif %}
+      {% if zapis.freelo_sent %}<span class="badge badge-green" style="font-size:11px;padding:5px 14px;">&#x2713; Odeslano</span>{% endif %}
     </div>
 
-    <!-- Selectors -->
     <div style="display:flex;align-items:flex-end;gap:10px;margin-bottom:1rem;flex-wrap:wrap;">
       <div style="flex:1;min-width:140px;">
         <label class="fl-lbl">Projekt</label>
@@ -112,49 +201,45 @@
       </div>
     </div>
 
-    <!-- Column headers -->
     <div style="display:grid;grid-template-columns:28px 1fr 180px 150px 34px;gap:8px;padding:0 0 6px;border-bottom:2px solid var(--border);margin-bottom:2px;">
       <div></div>
       <div style="font-size:10px;font-weight:700;color:#4A6080;text-transform:uppercase;letter-spacing:0.08em;">Ukol</div>
       <div style="font-size:10px;font-weight:700;color:#4A6080;text-transform:uppercase;letter-spacing:0.08em;">Zodpovědná osoba</div>
-      <div style="font-size:10px;font-weight:700;color:#4A6080;text-transform:uppercase;letter-spacing:0.08em;">Termín</div>
+      <div style="font-size:10px;font-weight:700;color:#4A6080;text-transform:uppercase;letter-spacing:0.08em;">Termin</div>
       <div></div>
     </div>
 
-    <!-- Task rows -->
     <div id="tasks-list-container">
       {% if tasks %}
         {% for task in tasks %}
         <div class="task-row freelo-task-row" data-idx="{{ loop.index0 }}">
-          <div style="padding-top:4px;">
-            <input type="checkbox" class="task-checkbox" data-idx="{{ loop.index0 }}" checked style="width:16px;height:16px;accent-color:#00AFF0;cursor:pointer;margin:0;">
-          </div>
+          <div style="padding-top:4px;"><input type="checkbox" class="task-checkbox" data-idx="{{ loop.index0 }}" checked style="width:16px;height:16px;accent-color:#00AFF0;cursor:pointer;margin:0;"></div>
           <div>
             <input type="text" class="task-name-input fl-in" value="{{ task.name }}" style="font-size:13px;font-weight:600;margin-bottom:4px;">
             <textarea class="task-desc-text fl-in" rows="2" placeholder="Popis ukolu..." style="font-size:11px;color:#4A6080;resize:vertical;margin-top:2px;padding:5px 8px;line-height:1.5;width:100%;">{{ task.desc if task.desc else '' }}</textarea>
           </div>
           <div class="asgn-wrap">
-            <input type="text" class="task-assignee fl-in" placeholder="Vybrat..." autocomplete="off"
-              onfocus="openAD(this)" oninput="filterAD(this)" style="cursor:pointer;">
+            <input type="text" class="task-assignee fl-in" placeholder="Vybrat..." autocomplete="off" onfocus="openAD(this)" oninput="filterAD(this)" style="cursor:pointer;">
             <div class="asgn-dd"></div>
           </div>
           <input type="date" class="task-deadline fl-in" value="{{ task.deadline if task.deadline and task.deadline not in ['dle dohody',''] else '' }}">
-          <button onclick="openDetail(this)" title="Detail" style="background:none;border:1.5px solid var(--border);border-radius:4px;width:32px;height:32px;cursor:pointer;font-size:16px;color:#4A6080;display:flex;align-items:center;justify-content:center;margin-top:1px;">...</button>
+          <button onclick="openDetail(this)" title="Detail" style="background:none;border:1.5px solid var(--border);border-radius:4px;width:32px;height:32px;cursor:pointer;font-size:14px;color:#4A6080;display:flex;align-items:center;justify-content:center;margin-top:1px;">&#x22EF;</button>
         </div>
         {% endfor %}
       {% else %}
-        <div id="no-tasks-msg" style="padding:1.5rem 0;font-size:13px;color:#4A6080;font-style:italic;text-align:center;">Zadne ukoly - pridejte je tlacitkem "+ Pridat ukol".</div>
+        <div id="no-tasks-msg" style="padding:1.5rem 0;font-size:13px;color:#4A6080;font-style:italic;text-align:center;">Zadne ukoly.</div>
       {% endif %}
     </div>
 
     <div style="margin-top:1.25rem;display:flex;gap:12px;align-items:center;flex-wrap:wrap;">
-      <button id="freelo-send-btn" onclick="odeslatDoFreela()" style="font-family:'DrukCondensed','Impact',sans-serif;font-size:15px;font-weight:900;letter-spacing:0.06em;text-transform:uppercase;background:#0A7A5A;color:white;border:none;padding:11px 24px;border-radius:5px;cursor:pointer;">Odeslat vybrané do Freela &rarr;</button>
+      <button id="freelo-send-btn" onclick="odeslatDoFreela()" style="font-family:'DrukCondensed','Impact',sans-serif;font-size:15px;font-weight:900;letter-spacing:0.06em;text-transform:uppercase;background:#0A7A5A;color:white;border:none;padding:11px 24px;border-radius:5px;cursor:pointer;">Odeslat vybrane do Freela &rarr;</button>
       <span id="freelo-status" style="font-size:12px;color:#4A6080;font-weight:500;"></span>
     </div>
     <div id="freelo-result" style="margin-top:12px;"></div>
   </div>
-
 </div>
+
+<div id="toast"></div>
 
 <!-- MODAL: Novy list -->
 <div id="modal-new-list" class="modal-bg">
@@ -163,12 +248,12 @@
     <div style="margin-bottom:4px;">
       <label class="fl-lbl" style="margin-bottom:5px;">Projekt</label>
       <select id="new-list-project" class="fl-in" style="margin-bottom:14px;cursor:pointer;padding:9px 12px;font-size:13px;"></select>
-      <label class="fl-lbl" style="margin-bottom:5px;">Název listu</label>
+      <label class="fl-lbl" style="margin-bottom:5px;">Nazev listu</label>
       <input id="new-list-name" type="text" class="fl-in" placeholder="napr. Klient - akcni kroky" style="font-size:14px;padding:10px 12px;">
     </div>
     <div class="modal-foot">
-      <button class="btn-cancel" onclick="closeModal('modal-new-list')">Zrušit</button>
-      <button class="btn-save" id="create-list-btn" onclick="createNewList()">Vytvorit</button>
+      <button class="btn-mcancel" onclick="closeModal('modal-new-list')">Zrusit</button>
+      <button class="btn-msave" id="create-list-btn" onclick="createNewList()">Vytvorit</button>
     </div>
   </div>
 </div>
@@ -179,7 +264,7 @@
     <div class="modal-title">Detail ukolu</div>
     <div style="display:grid;gap:14px;">
       <div>
-        <label class="fl-lbl" style="margin-bottom:5px;">Název ukolu</label>
+        <label class="fl-lbl" style="margin-bottom:5px;">Nazev ukolu</label>
         <input id="detail-name" type="text" class="fl-in" style="font-size:13px;font-weight:600;padding:9px 12px;">
       </div>
       <div>
@@ -189,28 +274,27 @@
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
         <div class="asgn-wrap">
           <label class="fl-lbl" style="margin-bottom:5px;">Zodpovědná osoba</label>
-          <input id="detail-assignee" type="text" class="fl-in" placeholder="Vybrat nebo napsat..."
-            autocomplete="off" onfocus="openAD(this)" oninput="filterAD(this)" style="padding:9px 12px;cursor:pointer;">
+          <input id="detail-assignee" type="text" class="fl-in" placeholder="Vybrat..." autocomplete="off" onfocus="openAD(this)" oninput="filterAD(this)" style="padding:9px 12px;cursor:pointer;">
           <div class="asgn-dd"></div>
         </div>
         <div>
-          <label class="fl-lbl" style="margin-bottom:5px;">Termín</label>
+          <label class="fl-lbl" style="margin-bottom:5px;">Termin</label>
           <input id="detail-deadline" type="date" class="fl-in" style="padding:9px 12px;">
         </div>
       </div>
     </div>
     <div class="modal-foot">
-      <button class="btn-cancel" onclick="closeModal('modal-task-detail')">Zrušit</button>
-      <button class="btn-save" onclick="saveDetail()">Uložit</button>
+      <button class="btn-mcancel" onclick="closeModal('modal-task-detail')">Zrusit</button>
+      <button class="btn-msave" onclick="saveDetail()">Ulozit</button>
     </div>
   </div>
 </div>
 
 <script>
+const ZAPIS_ID = {{ zapis.id }};
 let freeloProjects=[], freeloMembers=[], activeRow=null, nextIdx=1000;
 
 document.addEventListener('DOMContentLoaded',()=>{
-  // Apply score badges to % numbers in tables
   applyScoreBadges();
   loadProjects();
   updateCount();
@@ -224,45 +308,138 @@ document.addEventListener('DOMContentLoaded',()=>{
 
 // ---- Score badges ----
 function applyScoreBadges(){
-  document.querySelectorAll('.zapis-body td').forEach(td=>{
-    const m=td.textContent.trim().match(/^(\d+)\s*%?$/);
-    if(m&&parseInt(m[1])<=100&&td.textContent.trim().length<=4){
-      const pct=parseInt(m[1]);
+  document.querySelectorAll('.section-content td').forEach(td=>{
+    const txt=td.textContent.trim();
+    const m=txt.match(/^(\d+)\s*%?$/);
+    if(m&&parseInt(m[1])<=100&&txt.length<=4){
+      const p=parseInt(m[1]);
       let bg='#FF383C';
-      if(pct>=70)bg='#34C759'; else if(pct>=55)bg='#00AFF0'; else if(pct>=40)bg='#FF8D00';
-      td.innerHTML=`<span class="score-badge" style="background:${bg}">${pct}%</span>`;
+      if(p>=70)bg='#34C759';else if(p>=55)bg='#00AFF0';else if(p>=40)bg='#FF8D00';
+      td.innerHTML=`<span class="score-badge" style="background:${bg}">${p}%</span>`;
     }
   });
+}
+
+// ---- Toast ----
+function toast(msg,ok=true){
+  const t=document.getElementById('toast');
+  t.textContent=msg;
+  t.style.background=ok?'#173767':'#C0392B';
+  t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),2500);
 }
 
 // ---- PDF ----
 function downloadPDF(){
   const btn=document.getElementById('print-btn');
-  btn.disabled=true; btn.textContent='Generuji...';
+  btn.disabled=true;btn.textContent='Generuji...';
   const el=document.getElementById('zapis-print');
-  const fn='commarec-'+document.querySelector('h1').textContent.trim().toLowerCase()
+  const fn='commarec-'+(document.querySelector('h1')?.textContent||'zapis').trim().toLowerCase()
     .normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,'-').slice(0,40)+'.pdf';
   html2pdf().set({margin:[12,14,12,14],filename:fn,
     image:{type:'jpeg',quality:0.97},
     html2canvas:{scale:2,useCORS:true,logging:false},
     jsPDF:{unit:'mm',format:'a4',orientation:'portrait'}})
-  .from(el).save().finally(()=>{btn.disabled=false;btn.textContent='Stáhnout PDF';});
+  .from(el).save().finally(()=>{btn.disabled=false;btn.textContent='Stahnout PDF';});
 }
 
-// ---- Freelo ----
+// ─── SECTION EDITING ───────────────────────────────────
+function startEdit(key){
+  const content = document.getElementById('content-'+key);
+  const editor  = document.getElementById('editor-'+key);
+  const btns    = document.getElementById('editor-btns-'+key);
+  editor.value  = content.innerHTML;
+  content.style.display='none';
+  editor.classList.add('active');
+  btns.style.display='flex';
+  editor.focus();
+}
+
+function cancelEdit(key){
+  const content = document.getElementById('content-'+key);
+  const editor  = document.getElementById('editor-'+key);
+  const btns    = document.getElementById('editor-btns-'+key);
+  content.style.display='';
+  editor.classList.remove('active');
+  btns.style.display='none';
+}
+
+async function saveSection(key){
+  const content = document.getElementById('content-'+key);
+  const editor  = document.getElementById('editor-'+key);
+  const html    = editor.value.trim();
+  try{
+    const resp = await fetch(`/api/zapis/${ZAPIS_ID}/sekce`,{
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({key, html})
+    });
+    const data = await resp.json();
+    if(data.ok){
+      content.innerHTML = html;
+      cancelEdit(key);
+      applyScoreBadges();
+      toast('Ulozeno');
+    } else {
+      toast('Chyba: '+(data.error||'?'), false);
+    }
+  }catch(e){ toast('Chyba: '+e.message, false); }
+}
+
+function toggleAiBar(key){
+  const bar = document.getElementById('ai-bar-'+key);
+  const isOpen = bar.classList.contains('active');
+  // Close all others
+  document.querySelectorAll('.ai-bar.active').forEach(b=>b.classList.remove('active'));
+  if(!isOpen){
+    bar.classList.add('active');
+    document.getElementById('ai-input-'+key).focus();
+  }
+}
+
+async function runAi(key){
+  const input   = document.getElementById('ai-input-'+key);
+  const prompt  = input.value.trim();
+  if(!prompt){ input.focus(); return; }
+  const content = document.getElementById('content-'+key);
+  const currentHtml = content.innerHTML;
+  input.disabled=true;
+  const origPlaceholder = input.placeholder;
+  input.placeholder='Pracuji...';
+  try{
+    const resp = await fetch(`/api/zapis/${ZAPIS_ID}/ai-sekce`,{
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({key, prompt, html: currentHtml})
+    });
+    const data = await resp.json();
+    if(data.ok && data.html){
+      content.innerHTML = data.html;
+      applyScoreBadges();
+      // Auto-save
+      await fetch(`/api/zapis/${ZAPIS_ID}/sekce`,{
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({key, html: data.html})
+      });
+      input.value='';
+      toggleAiBar(key);
+      toast('AI uprava ulozena');
+    } else {
+      toast('Chyba: '+(data.error||'?'), false);
+    }
+  }catch(e){ toast('Chyba: '+e.message, false); }
+  finally{ input.disabled=false; input.placeholder=origPlaceholder; }
+}
+
+// ─── FREELO ────────────────────────────────────────────
 async function loadProjects(){
   try{
     const data=await fetch('/api/freelo/projects').then(r=>r.json());
     freeloProjects=data.projects||[];
     const sel=document.getElementById('project-select');
     const nlp=document.getElementById('new-list-project');
-    if(!freeloProjects.length){sel.innerHTML='<option value="">Žádné projekty</option>';return;}
+    if(!freeloProjects.length){sel.innerHTML='<option value="">Zadne projekty</option>';return;}
     const opts=freeloProjects.map(p=>`<option value="${p.id}">${p.name}</option>`).join('');
     sel.innerHTML=opts; nlp.innerHTML=opts;
     onProjectChange();
-    // Pre-fill new list name from client
-    const hdr=document.querySelector('.zapis-header-block');
-    if(hdr){const m=hdr.textContent.match(/Zastoupeni klienta.*\(([^)]+)\)/);if(m)document.getElementById('new-list-name').value=m[1].trim();}
     loadMembers(freeloProjects[0]?.id);
   }catch(e){document.getElementById('project-select').innerHTML='<option value="">Chyba</option>';}
   updateCount();
@@ -274,7 +451,7 @@ function onProjectChange(){
   if(!proj){sel.innerHTML='<option value="">- vyberte projekt -</option>';return;}
   sel.innerHTML=(proj.tasklists||[]).length
     ?proj.tasklists.map(tl=>`<option value="${tl.id}">${tl.name}</option>`).join('')
-    :'<option value="">Žádné listy - vytvořte nový</option>';
+    :'<option value="">Zadne listy - vytvorte novy</option>';
   loadMembers(pid);
 }
 async function loadMembers(pid){
@@ -283,10 +460,10 @@ async function loadMembers(pid){
     const data=await fetch(`/api/freelo/members/${pid}`).then(r=>r.json());
     freeloMembers=data.members||[];
     document.querySelectorAll('.task-assignee,#detail-assignee').forEach(populateAD);
-  }catch(e){console.warn('Members:',e);}
+  }catch(e){}
 }
 
-// ---- Assignee dropdown ----
+// ─── ASSIGNEE DROPDOWN ─────────────────────────────────
 function populateAD(input){
   if(!input)return;
   const wrap=input.closest('.asgn-wrap');if(!wrap)return;
@@ -299,19 +476,19 @@ function renderAD(dd,input){
   const members=freeloMembers.filter(m=>m.name.toLowerCase().includes(q)||(m.email||'').toLowerCase().includes(q));
   dd.innerHTML=members.length
     ?members.map(m=>`<div class="asgn-opt" onclick="pickAsgn(this,'${m.name.replace(/'/g,"\\'")}')"><strong>${m.name}</strong><span style="color:#4A6080;font-size:11px;margin-left:6px;">${m.email||''}</span></div>`).join('')
-    :'<div class="asgn-opt" style="color:#4A6080;font-style:italic;">Žádné výsledky</div>';
+    :'<div class="asgn-opt" style="color:#4A6080;font-style:italic;">Zadne vysledky</div>';
 }
 function openAD(input){populateAD(input);input.closest('.asgn-wrap')?.querySelector('.asgn-dd')?.classList.add('open');}
 function filterAD(input){const dd=input.closest('.asgn-wrap')?.querySelector('.asgn-dd');if(dd){renderAD(dd,input);dd.classList.add('open');}}
 function pickAsgn(opt,name){const w=opt.closest('.asgn-wrap');if(w?.querySelector('input'))w.querySelector('input').value=name;w?.querySelector('.asgn-dd')?.classList.remove('open');}
 
-// ---- Tasks ----
+// ─── TASKS ─────────────────────────────────────────────
 function selectAllTasks(v){document.querySelectorAll('.task-checkbox').forEach(cb=>cb.checked=v);updateCount();}
 function updateCount(){
   const t=document.querySelectorAll('.task-checkbox').length;
   const s=document.querySelectorAll('.task-checkbox:checked').length;
   const el=document.getElementById('task-count-label');
-  if(el)el.textContent=`${s} z ${t} úkolů vybráno`;
+  if(el)el.textContent=`${s} z ${t} ukolu vybrano`;
 }
 function addTaskRow(){
   const c=document.getElementById('tasks-list-container');
@@ -322,15 +499,15 @@ function addTaskRow(){
   row.innerHTML=`
     <div style="padding-top:4px;"><input type="checkbox" class="task-checkbox" data-idx="${idx}" checked style="width:16px;height:16px;accent-color:#00AFF0;cursor:pointer;margin:0;"></div>
     <div>
-      <input type="text" class="task-name-input fl-in" placeholder="Název úkolu..." style="font-size:13px;font-weight:600;margin-bottom:4px;">
-      <textarea class="task-desc-text fl-in" rows="2" placeholder="Popis ukolu..." style="font-size:11px;color:#4A6080;resize:vertical;margin-top:2px;padding:5px 8px;line-height:1.5;width:100%;"></textarea>
+      <input type="text" class="task-name-input fl-in" placeholder="Nazev ukolu..." style="font-size:13px;font-weight:600;margin-bottom:4px;">
+      <textarea class="task-desc-text fl-in" rows="2" placeholder="Popis..." style="font-size:11px;color:#4A6080;resize:vertical;margin-top:2px;padding:5px 8px;line-height:1.5;width:100%;"></textarea>
     </div>
     <div class="asgn-wrap">
       <input type="text" class="task-assignee fl-in" placeholder="Vybrat..." autocomplete="off" onfocus="openAD(this)" oninput="filterAD(this)" style="cursor:pointer;">
       <div class="asgn-dd"></div>
     </div>
     <input type="date" class="task-deadline fl-in">
-    <button onclick="openDetail(this)" title="Detail" style="background:none;border:1.5px solid var(--border);border-radius:4px;width:32px;height:32px;cursor:pointer;font-size:16px;color:#4A6080;display:flex;align-items:center;justify-content:center;margin-top:1px;">...</button>`;
+    <button onclick="openDetail(this)" title="Detail" style="background:none;border:1.5px solid var(--border);border-radius:4px;width:32px;height:32px;cursor:pointer;font-size:14px;color:#4A6080;display:flex;align-items:center;justify-content:center;margin-top:1px;">&#x22EF;</button>`;
   c.appendChild(row);
   row.querySelector('.task-checkbox').addEventListener('change',updateCount);
   populateAD(row.querySelector('.task-assignee'));
@@ -338,15 +515,15 @@ function addTaskRow(){
   updateCount();
 }
 
-// ---- Modals ----
+// ─── MODALS ────────────────────────────────────────────
 function closeModal(id){document.getElementById(id).classList.remove('open');if(id==='modal-task-detail')activeRow=null;}
 function openNewListModal(){document.getElementById('modal-new-list').classList.add('open');setTimeout(()=>document.getElementById('new-list-name').focus(),50);}
 async function createNewList(){
   const name=document.getElementById('new-list-name').value.trim();
   const pid=document.getElementById('new-list-project').value;
-  if(!name){alert('Zadejte název listu.');return;} if(!pid){alert('Vyberte projekt.');return;}
+  if(!name){alert('Zadejte nazev listu.');return;} if(!pid){alert('Vyberte projekt.');return;}
   const btn=document.getElementById('create-list-btn');
-  btn.disabled=true;btn.textContent='Vytvářím...';
+  btn.disabled=true;btn.textContent='Vytvarzim...';
   try{
     const data=await fetch('/api/freelo/create-tasklist',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name,project_id:pid})}).then(r=>r.json());
     if(data.id){
@@ -355,9 +532,10 @@ async function createNewList(){
       document.getElementById('project-select').value=pid;onProjectChange();
       document.getElementById('tasklist-select').value=data.id;
       closeModal('modal-new-list');
-    }else{alert('Chyba: '+(data.error||'Nepodařilo se vytvořit list'));}
-  }catch(e){alert('Chyba: '+e.message);}
-  finally{btn.disabled=false;btn.textContent='Vytvořit';}
+      toast('List vytvoren');
+    }else{toast('Chyba: '+(data.error||'?'),false);}
+  }catch(e){toast('Chyba: '+e.message,false);}
+  finally{btn.disabled=false;btn.textContent='Vytvorit';}
 }
 function openDetail(btn){
   activeRow=btn.closest('.freelo-task-row');
@@ -372,18 +550,55 @@ function openDetail(btn){
 function saveDetail(){
   if(!activeRow)return;
   const ni=activeRow.querySelector('.task-name-input');if(ni)ni.value=document.getElementById('detail-name').value;
-  const ai=activeRow.querySelector('.task-assignee');if(ai)ai.value=document.getElementById('detail-assignee').value;
+  const ai2=activeRow.querySelector('.task-assignee');if(ai2)ai2.value=document.getElementById('detail-assignee').value;
   const di=activeRow.querySelector('.task-deadline');if(di)di.value=document.getElementById('detail-deadline').value;
   let de=activeRow.querySelector('.task-desc-text');
   const dv=document.getElementById('detail-desc').value.trim();
-  if(dv){
-    if(!de){de=document.createElement('textarea');de.className='task-desc-text fl-in';de.rows=2;de.style.cssText='font-size:11px;color:#4A6080;resize:vertical;margin-top:2px;padding:5px 8px;line-height:1.5;width:100%;';const ni2=activeRow.querySelector('.task-name-input');if(ni2)ni2.insertAdjacentElement('afterend',de);}
-    if(de.tagName==='TEXTAREA')de.value=dv;else de.textContent=dv;
-  }
+  if(dv){if(!de){de=document.createElement('textarea');de.className='task-desc-text fl-in';de.rows=2;de.style.cssText='font-size:11px;color:#4A6080;resize:vertical;margin-top:2px;padding:5px 8px;line-height:1.5;width:100%;';const ni2=activeRow.querySelector('.task-name-input');if(ni2)ni2.insertAdjacentElement('afterend',de);}
+  if(de.tagName==='TEXTAREA')de.value=dv;else de.textContent=dv;}
   closeModal('modal-task-detail');
 }
 
-// ---- Send to Freelo ----
+// ─── SEND TO FREELO ────────────────────────────────────
+
+// ─── PUBLISH ──────────────────────────────────
+async function togglePublish(){
+  const btn = document.getElementById('pub-btn');
+  const isPublic = btn.classList.contains('btn-success');
+  try {
+    const data = await fetch(`/api/zapis/${ZAPIS_ID}/publikovat`,{
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({publish: !isPublic})
+    }).then(r=>r.json());
+    if(data.ok){
+      if(data.is_public){
+        btn.className='btn btn-success btn-sm';
+        btn.innerHTML='&#x1F30D; Zverejneno';
+        // Show link bar
+        let bar = document.getElementById('pub-bar');
+        if(!bar){
+          bar = document.createElement('div');
+          bar.id='pub-bar';
+          bar.style.cssText='background:#E2F5EE;border:1px solid #0A7A5A;border-radius:5px;padding:8px 14px;margin-bottom:1rem;font-size:12px;display:flex;align-items:center;gap:10px;';
+          bar.innerHTML=`<span style="color:#0A7A5A;font-weight:600;">Verejny odkaz:</span><a id="pub-link" href="${data.url}" target="_blank" style="color:#0A7A5A;word-break:break-all;">${data.url}</a><button onclick="copyPubLink()" class="btn btn-secondary btn-sm" style="flex-shrink:0;">Kopirovat</button>`;
+          document.querySelector('.card-actions').insertAdjacentElement('afterend', bar);
+        }
+        toast('Zapis je nyni verejny');
+      } else {
+        btn.className='btn btn-secondary btn-sm';
+        btn.innerHTML='Zverejnit';
+        const bar = document.getElementById('pub-bar');
+        if(bar) bar.remove();
+        toast('Zapis je nyni soukromy');
+      }
+    }
+  } catch(e){ toast('Chyba: '+e.message, false); }
+}
+function copyPubLink(){
+  const link = document.getElementById('pub-link');
+  if(link){ navigator.clipboard.writeText(link.href); toast('Odkaz zkopirovan'); }
+}
+
 async function odeslatDoFreela(){
   const btn=document.getElementById('freelo-send-btn');
   const status=document.getElementById('freelo-status');
@@ -398,21 +613,21 @@ async function odeslatDoFreela(){
       assignee:(row.querySelector('.task-assignee')?.value||'').trim(),
       deadline:(row.querySelector('.task-deadline')?.value||'').trim()});
   });
-  if(!sel.length){status.textContent='Vyberte alespoň jeden úkol.';status.style.color='#C0392B';return;}
+  if(!sel.length){status.textContent='Vyberte alespon jeden ukol.';status.style.color='#C0392B';return;}
   btn.disabled=true;
-  btn.innerHTML=`<span style="display:inline-block;width:12px;height:12px;border:2px solid rgba(255,255,255,0.3);border-top-color:white;border-radius:50%;animation:spin 0.7s linear infinite;margin-right:6px;vertical-align:middle"></span>Odesílám ${sel.length} úkolů...`;
+  btn.innerHTML=`<span style="display:inline-block;width:12px;height:12px;border:2px solid rgba(255,255,255,0.3);border-top-color:white;border-radius:50%;animation:spin 0.7s linear infinite;margin-right:6px;vertical-align:middle"></span>Odesilam ${sel.length} ukolu...`;
   status.textContent='';
   try{
-    const data=await fetch('/api/freelo/{{ zapis.id }}',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({tasks:sel,tasklist_id:tlId})}).then(r=>r.json());
+    const data=await fetch(`/api/freelo/${ZAPIS_ID}`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({tasks:sel,tasklist_id:tlId})}).then(r=>r.json());
     const result=document.getElementById('freelo-result');
     if(data.created&&data.created.length>0){
-      result.innerHTML=`<div style="background:#E2F5EE;border:1px solid #0A7A5A;border-radius:5px;padding:10px 14px;font-size:13px;color:#0A7A5A;font-weight:600;">&#x2713; Odesláno ${data.created.length} úkolů do Freela</div>`;
-      btn.style.background='#0A7A5A';btn.innerHTML='&#x2713; Odesláno';
+      result.innerHTML=`<div style="background:#E2F5EE;border:1px solid #0A7A5A;border-radius:5px;padding:10px 14px;font-size:13px;color:#0A7A5A;font-weight:600;">&#x2713; Odeslano ${data.created.length} ukolu do Freela</div>`;
+      btn.style.background='#0A7A5A';btn.innerHTML='&#x2713; Odeslano';
     }else{
-      result.innerHTML=`<div style="background:#FCEAEA;border:1px solid #C0392B;border-radius:5px;padding:10px 14px;font-size:13px;color:#C0392B;">Chyba: ${(data.errors||[]).join(', ')||data.error||'Neznámá chyba'}</div>`;
-      btn.disabled=false;btn.innerHTML='Odeslat vybrané do Freela &rarr;';
+      result.innerHTML=`<div style="background:#FCEAEA;border:1px solid #C0392B;border-radius:5px;padding:10px 14px;font-size:13px;color:#C0392B;">Chyba: ${(data.errors||[]).join(', ')||data.error||'Neznama chyba'}</div>`;
+      btn.disabled=false;btn.innerHTML='Odeslat vybrane do Freela &rarr;';
     }
-  }catch(e){status.textContent='Chyba: '+e.message;status.style.color='#C0392B';btn.disabled=false;btn.innerHTML='Odeslat vybrané do Freela &rarr;';}
+  }catch(e){status.textContent='Chyba: '+e.message;status.style.color='#C0392B';btn.disabled=false;btn.innerHTML='Odeslat vybrane do Freela &rarr;';}
 }
 </script>
 {% endblock %}

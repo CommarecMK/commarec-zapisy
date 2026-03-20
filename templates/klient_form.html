@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% block title %}{% if klient %}Upravit klienta{% else %}Novy klient{% endif %}{% endblock %}
+{% block content %}
+<div class="container">
+  <div class="page-header">
+    <h1>{% if klient %}Upravit klienta{% else %}Novy klient{% endif %}</h1>
+    <a href="{{ url_for('klienti_list') }}" class="btn btn-secondary">&larr; Zpet</a>
+  </div>
+  {% if error %}<div class="alert alert-error">{{ error }}</div>{% endif %}
+  <form method="POST" action="{{ url_for('klient_upravit', klient_id=klient.id) if klient else url_for('klient_novy') }}">
+    <div class="card">
+      <div class="form-grid" style="margin-bottom:12px;">
+        <div class="form-group" style="margin:0;">
+          <label>Nazev firmy *</label>
+          <input type="text" name="nazev" value="{{ klient.nazev if klient else '' }}" placeholder="napr. Merlin Plus s.r.o." required>
+        </div>
+        <div class="form-group" style="margin:0;">
+          <label>Hlavni kontakt</label>
+          <input type="text" name="kontakt" value="{{ klient.kontakt if klient else '' }}" placeholder="napr. Jan Novak">
+        </div>
+      </div>
+      <div class="form-grid" style="margin-bottom:12px;">
+        <div class="form-group" style="margin:0;">
+          <label>Email</label>
+          <input type="email" name="email" value="{{ klient.email if klient else '' }}" placeholder="jan@firma.cz">
+        </div>
+        <div class="form-group" style="margin:0;">
+          <label>Telefon</label>
+          <input type="text" name="telefon" value="{{ klient.telefon if klient else '' }}" placeholder="+420 ...">
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Adresa</label>
+        <input type="text" name="adresa" value="{{ klient.adresa if klient else '' }}" placeholder="Ulice, Mesto">
+      </div>
+      <div class="form-group">
+        <label>Interni poznamka</label>
+        <textarea name="poznamka" rows="3" placeholder="Interne poznamky o klientovi...">{{ klient.poznamka if klient else '' }}</textarea>
+      </div>
+      {% if klient %}
+      <div class="form-group">
+        <label>Stav</label>
+        <select name="is_active">
+          <option value="1" {% if klient.is_active %}selected{% endif %}>Aktivni</option>
+          <option value="0" {% if not klient.is_active %}selected{% endif %}>Neaktivni</option>
+        </select>
+      </div>
+      {% endif %}
+    </div>
+    <div style="margin-top:1rem;display:flex;gap:10px;">
+      <button type="submit" class="btn btn-navy" style="font-family:'DrukCondensed','Impact',sans-serif;font-size:14px;font-weight:900;letter-spacing:0.06em;text-transform:uppercase;">{% if klient %}Ulozit zmeny{% else %}Vytvorit klienta{% endif %}</button>
+      <a href="{{ url_for('klienti_list') }}" class="btn btn-secondary">Zrusit</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{{ zapis.title }} — Commarec</title>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+@font-face{font-family:'DrukCondensed';src:url('/static/DrukCondensed-Super.otf') format('opentype');font-weight:900;}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Montserrat',sans-serif;background:#F0F3F7;color:#0E213E;font-size:14px;line-height:1.6;}
+.header{background:#173767;border-bottom:3px solid #00AFF0;padding:0 2rem;height:56px;display:flex;align-items:center;justify-content:space-between;}
+.header-logo{height:26px;width:auto;}
+.header-badge{font-size:11px;font-weight:600;color:rgba(255,255,255,0.5);letter-spacing:0.1em;text-transform:uppercase;border-left:1px solid rgba(255,255,255,0.2);padding-left:10px;}
+.container{max-width:900px;margin:0 auto;padding:2rem 1.5rem;}
+.zapis-card{background:white;border:1px solid #D0DAE8;border-radius:6px;}
+.meta{display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:12px;padding:1.25rem 1.5rem;border-bottom:1px solid #D0DAE8;}
+.meta-info{text-align:right;font-size:11px;color:#4A6080;line-height:2;font-weight:500;text-transform:uppercase;letter-spacing:0.06em;}
+.zapis-body{padding:1.5rem 2rem 2rem;}
+.zapis-section{margin-bottom:2.5rem;}
+.section-title{font-family:'DrukCondensed','Impact',sans-serif;font-size:20px;font-weight:900;color:#173767;text-transform:uppercase;letter-spacing:0.06em;padding-bottom:7px;border-bottom:2.5px solid #00AFF0;margin-bottom:16px;}
+.section-content{font-size:13px;line-height:1.7;color:#1a2533;}
+.section-content table{width:100%;border-collapse:collapse;font-size:13px;margin:10px 0;}
+.section-content th,.section-content td{padding:8px 12px;border:1px solid #D0DAE8;text-align:left;vertical-align:middle;}
+.section-content th{background:#f8f9fb;font-weight:700;font-size:11px;text-transform:uppercase;letter-spacing:0.06em;color:#4A6080;}
+.section-content td:nth-child(2){text-align:center;font-weight:700;}
+.section-content ul{padding-left:1.4rem;margin:6px 0;}
+.section-content li{margin-bottom:4px;}
+.score-badge{display:inline-block;padding:2px 10px;border-radius:20px;font-size:12px;font-weight:700;color:white;}
+.zapis-header-block{background:#f0f5fb;border-left:4px solid #00AFF0;padding:13px 17px;border-radius:0 6px 6px 0;font-size:13px;line-height:1.9;margin-bottom:2rem;}
+.footer{text-align:center;padding:2rem;font-size:11px;color:#4A6080;margin-top:2rem;}
+</style>
+</head>
+<body>
+<div class="header">
+  <img src="/static/logo-white.svg" alt="Commarec" class="header-logo">
+  <span class="header-badge">Zapisy ze schuzek</span>
+</div>
+
+<div class="container">
+  <div style="margin-bottom:1rem;display:flex;justify-content:space-between;align-items:center;">
+    <div>
+      <h1 style="font-family:'DrukCondensed','Impact',sans-serif;font-size:30px;font-weight:900;color:#173767;text-transform:uppercase;letter-spacing:0.05em;line-height:1;">{{ zapis.title }}</h1>
+      <div style="margin-top:6px;"><span style="display:inline-block;font-size:10px;font-weight:700;padding:3px 8px;border-radius:3px;letter-spacing:0.06em;text-transform:uppercase;background:#e0f5fd;color:#006E8A;">{{ template_names.get(zapis.template, zapis.template) }}</span></div>
+    </div>
+  </div>
+
+  <div class="zapis-card">
+    <div class="meta">
+      <img src="/static/logo-dark.svg" alt="Commarec" style="height:20px;width:auto;">
+      <div class="meta-info">
+        <div>{{ zapis.created_at.strftime('%d. %m. %Y') }}</div>
+        <div>{{ zapis.author.name }}</div>
+      </div>
+    </div>
+    <div class="zapis-body">
+      {% if zapis.output_json and zapis.output_json != '{}' %}
+        {# New structured records — render section by section with styling #}
+        {{ zapis.output_text | safe }}
+      {% elif zapis.output_text %}
+        <pre style="white-space:pre-wrap;font-size:13px;line-height:1.7;">{{ zapis.output_text }}</pre>
+      {% else %}
+        <p style="color:#4A6080;font-style:italic;">Obsah neni dostupny.</p>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="footer">Commarec s.r.o. &mdash; Tento dokument byl sdilen prostrednictvim Commarec Zapisy.</div>
+</div>
+
+<script>
+document.querySelectorAll('.section-content td').forEach(td=>{
+  const txt=td.textContent.trim();
+  const m=txt.match(/^(\d+)\s*%?$/);
+  if(m&&parseInt(m[1])<=100&&txt.length<=4){
+    const p=parseInt(m[1]);
+    let bg='#FF383C';
+    if(p>=70)bg='#34C759';else if(p>=55)bg='#00AFF0';else if(p>=40)bg='#FF8D00';
+    td.innerHTML=`<span class="score-badge" style="background:${bg}">${p}%</span>`;
+  }
+});
+</script>
+</body>
+</html>
