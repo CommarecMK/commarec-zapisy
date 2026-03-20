@@ -105,18 +105,18 @@ TEMPLATE_NAMES = {
 }
 
 SECTION_TITLES = {
-    "participants_commarec": "Zastoupeni Commarec",
-    "participants_company":  "Zastoupeni klienta",
-    "introduction":          "Uvod",
-    "meeting_goal":          "Ucel navstevy",
-    "findings":              "Shrn. hlavnich zjisteni",
-    "ratings":               "Hodnoceni hlavnich oblasti",
+    "participants_commarec": "Zastoupení Commarec",
+    "participants_company":  "Zastoupení klienta",
+    "introduction":          "Úvod",
+    "meeting_goal":          "Účel návštěvy",
+    "findings":              "Shrn. hlavních zjištění",
+    "ratings":               "Hodnocení hlavních oblastí",
     "processes_description": "Popis procesu",
-    "dangers":               "Klicove problemy a rizika",
-    "suggested_actions":     "Doporucene akcni kroky",
-    "expected_benefits":     "Ocekavane prinosy",
-    "additional_notes":      "Poznamky z terenu",
-    "summary":               "Shrnuti",
+    "dangers":               "Klíčové problémy a rizika",
+    "suggested_actions":     "Doporučené akční kroky",
+    "expected_benefits":     "Očekávané přínosy",
+    "additional_notes":      "Poznámky z terénu",
+    "summary":               "Shrnutí",
 }
 
 # ─────────────────────────────────────────────
@@ -140,7 +140,7 @@ Pouzij PRESNE tuto strukturu (kazda sekce na novem radku za svou znackou):
 ===PARTICIPANTS_COMPANY===
 <p>Kdo byl za klienta</p>
 ===INTRODUCTION===
-<p>Uvod a kontext navstevy</p>
+<p>Úvod a kontext navstevy</p>
 ===MEETING_GOAL===
 <p>Cil a ucel schuzky</p>
 ===FINDINGS===
@@ -160,7 +160,7 @@ Pouzij PRESNE tuto strukturu (kazda sekce na novem radku za svou znackou):
 ===SUMMARY===
 <p>Strucne zavrecne shrnuti s top prioritami</p>
 ===TASKS===
-UKOL: Nazev ukolu (max 80 znaku)
+UKOL: Název úkolu (max 80 znaku)
 POPIS: Co konkretne udelat
 TERMIN: do 1 mesice
 ---
@@ -186,8 +186,8 @@ def build_system_prompt(interni_prompt="", klient_profil=None):
 def build_header_html(client_info):
     return f"""<div class="zapis-header-block">
 <strong>Datum:</strong> {client_info.get('meeting_date','')}<br>
-<strong>Zastoupeni Commarec:</strong> {client_info.get('commarec_rep','')}<br>
-<strong>Zastoupeni klienta:</strong> {client_info.get('client_contact','')} ({client_info.get('client_name','')})<br>
+<strong>Zastoupení Commarec:</strong> {client_info.get('commarec_rep','')}<br>
+<strong>Zastoupení klienta:</strong> {client_info.get('client_contact','')} ({client_info.get('client_name','')})<br>
 <strong>Misto:</strong> {client_info.get('meeting_place','')}
 </div>"""
 
@@ -345,7 +345,7 @@ def logout():
 @app.route("/dashboard")
 @login_required
 def dashboard():
-    zapisy  = Zapisy_query()
+    zapisy  = Zápisy_query()
     klienti = Klient.query.filter_by(is_active=True).order_by(Klient.nazev).all()
     stats = {
         "celkem":  Zapis.query.count(),
@@ -356,7 +356,7 @@ def dashboard():
     return render_template("dashboard.html", zapisy=zapisy, klienti=klienti,
                            stats=stats, template_names=TEMPLATE_NAMES)
 
-def Zapisy_query():
+def Zápisy_query():
     return Zapis.query.order_by(Zapis.created_at.desc()).limit(30).all()
 
 # ─────────────────────────────────────────────
@@ -399,7 +399,7 @@ def klient_novy():
     if request.method == "POST":
         nazev = request.form.get("nazev","").strip()
         if not nazev:
-            return render_template("klient_form.html", klient=None, error="Nazev je povinny")
+            return render_template("klient_form.html", klient=None, error="Název je povinný")
         slug  = slug_from_name(nazev)
         # ensure unique slug
         base, i = slug, 1
@@ -945,7 +945,7 @@ def odeslat_do_freela(zapis_id):
     data           = request.json or {}
     selected_tasks = data.get("tasks",[])
     tasklist_id    = data.get("tasklist_id")
-    if not selected_tasks: return jsonify({"error":"Zadne ukoly"}), 400
+    if not selected_tasks: return jsonify({"error":"Žádné úkoly"}), 400
     if not tasklist_id:    return jsonify({"error":"Vyberte To-Do list"}), 400
 
     project_id_for_tasks = FREELO_PROJECT_ID

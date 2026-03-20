@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}Sprava{% endblock %}
+{% block title %}Správa{% endblock %}
 {% block extra_head %}
 <style>
 .card-header h2{
@@ -24,13 +24,13 @@
 {% block content %}
 <div class="container">
   <div class="page-header">
-    <h1>Sprava</h1>
+    <h1>Správa</h1>
   </div>
 
   <div class="card" style="margin-bottom:1rem;">
     <div class="card-header"><h2>Uzivatele ({{ users|length }})</h2></div>
     <table>
-      <thead><tr><th>Jmeno</th><th>Email</th><th>Role</th><th>Stav</th><th>Zapisy</th><th></th></tr></thead>
+      <thead><tr><th>Jmeno</th><th>Email</th><th>Role</th><th>Stav</th><th>Zápisy</th><th></th></tr></thead>
       <tbody>
       {% for u in users %}
       <tr>
@@ -89,11 +89,11 @@
   <div class="card">
     <div class="card-header">
       <h2>Klienti ({{ klienti|length }})</h2>
-      <a href="{{ url_for('klienti_list') }}" class="btn btn-secondary btn-sm">Sprava klientu &rarr;</a>
+      <a href="{{ url_for('klienti_list') }}" class="btn btn-secondary btn-sm">Správa klientu &rarr;</a>
     </div>
     {% if klienti %}
     <table>
-      <thead><tr><th>Nazev</th><th>Kontakt</th><th>Projekty</th><th>Zapisy</th><th>Stav</th></tr></thead>
+      <thead><tr><th>Název</th><th>Kontakt</th><th>Projekty</th><th>Zápisy</th><th>Stav</th></tr></thead>
       <tbody>
       {% for k in klienti %}
       <tr>
@@ -127,7 +127,7 @@
         <div><label>Nove heslo <span style="color:#4A6080;font-weight:400;">(prazdne = nezmeneno)</span></label><input type="password" name="password" placeholder=""></div>
       </div>
       <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:20px;">
-        <button type="button" onclick="document.getElementById('edit-modal').style.display='none'" class="btn btn-secondary">Zrusit</button>
+        <button type="button" onclick="document.getElementById('edit-modal').style.display='none'" class="btn btn-secondary">Zrušit</button>
         <button type="submit" class="btn btn-navy" style="font-family:'DrukCondensed','Impact',sans-serif;font-size:14px;font-weight:900;letter-spacing:0.05em;text-transform:uppercase;">Ulozit</button>
       </div>
     </form>

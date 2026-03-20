@@ -124,7 +124,7 @@ h3 { font-family: var(--font-body); font-size: 11px; font-weight: 700; color: va
 button, input[type="submit"], input[type="button"] {
   font-family: "Montserrat", sans-serif !important;
 }
-/* Nav tlacitko + Novy zapis — zachovat Druk styl */
+/* Nav tlacitko + Nový zápis — zachovat Druk styl */
 .nav-link[style*="DrukCondensed"] { font-family: "DrukCondensed","Impact",sans-serif !important; }
 
 /* FORMS */
@@ -173,11 +173,11 @@ hr { border: none; border-top: 1px solid var(--border); margin: 1.5rem 0; }
   </a>
   <div class="nav-divider"></div>
   <div class="nav-links">
-    <a href="{{ url_for('dashboard') }}" class="nav-link {% if request.endpoint == 'dashboard' %}active{% endif %}">Prehled</a>
+    <a href="{{ url_for('dashboard') }}" class="nav-link {% if request.endpoint == 'dashboard' %}active{% endif %}">Přehled</a>
     <a href="{{ url_for('klienti_list') }}" class="nav-link {% if request.endpoint in ['klienti_list','klient_detail','klient_novy','klient_upravit','projekt_detail'] %}active{% endif %}">Klienti</a>
-    <a href="{{ url_for('novy_zapis') }}" class="nav-link {% if request.endpoint == 'novy_zapis' %}active{% endif %}" style="background:#00AFF0; color:#0E213E; padding:5px 14px; border-radius:4px; font-family:'DrukCondensed','Impact',sans-serif; font-weight:900; font-size:13px; letter-spacing:0.06em; text-transform:uppercase;">+ Novy zapis</a>
+    <a href="{{ url_for('novy_zapis') }}" class="nav-link {% if request.endpoint == 'novy_zapis' %}active{% endif %}" style="background:#00AFF0; color:#0E213E; padding:5px 14px; border-radius:4px; font-family:'DrukCondensed','Impact',sans-serif; font-weight:900; font-size:13px; letter-spacing:0.06em; text-transform:uppercase;">+ Nový zápis</a>
     {% if session.is_admin %}
-    <a href="{{ url_for('admin') }}" class="nav-link {% if request.endpoint == 'admin' %}active{% endif %}">Sprava</a>
+    <a href="{{ url_for('admin') }}" class="nav-link {% if request.endpoint == 'admin' %}active{% endif %}">Správa</a>
     {% endif %}
   </div>
   <div class="nav-right">

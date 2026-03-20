@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}Prehled{% endblock %}
+{% block title %}Přehled{% endblock %}
 {% block extra_head %}
 <style>
 .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:1.75rem;}
@@ -22,10 +22,10 @@
 <div class="container">
   <div class="page-header">
     <div>
-      <h1>Zapisy</h1>
-      <p style="font-size:13px;font-weight:500;color:#4A6080;margin-top:4px;">Prehled vsech zapisu ze schuzek</p>
+      <h1>Zápisy</h1>
+      <p style="font-size:13px;font-weight:500;color:#4A6080;margin-top:4px;">Přehled vsech zapisu ze schuzek</p>
     </div>
-    <a href="{{ url_for('novy_zapis') }}" class="btn btn-navy" style="font-family:'DrukCondensed','Impact',sans-serif;font-size:14px;font-weight:900;letter-spacing:0.06em;text-transform:uppercase;">+ Novy zapis</a>
+    <a href="{{ url_for('novy_zapis') }}" class="btn btn-navy" style="font-family:'DrukCondensed','Impact',sans-serif;font-size:14px;font-weight:900;letter-spacing:0.06em;text-transform:uppercase;">+ Nový zápis</a>
   </div>
 
   <div class="stats">
@@ -69,7 +69,7 @@
         <tr>
           <th>Nazev zapisu</th>
           <th>Klient / Projekt</th>
-          <th>Sablona</th>
+          <th>Šablona</th>
           <th>Autor</th>
           <th>Freelo</th>
           <th>Datum</th>
@@ -86,7 +86,7 @@
           </td>
           <td><span class="badge badge-blue">{{ template_names.get(z.template, z.template) }}</span></td>
           <td style="color:#4A6080;font-size:12px;">{{ z.author.name }}</td>
-          <td>{% if z.freelo_sent %}<span class="badge badge-green">&#x2713; Odeslano</span>{% else %}<span class="badge badge-gray">Ceka</span>{% endif %}</td>
+          <td>{% if z.freelo_sent %}<span class="badge badge-green">&#x2713; Odesláno</span>{% else %}<span class="badge badge-gray">Ceka</span>{% endif %}</td>
           <td style="color:#4A6080;font-size:12px;white-space:nowrap;">{{ z.created_at.strftime('%d. %m. %Y') }}</td>
           <td><a href="{{ url_for('detail_zapisu', zapis_id=z.id) }}" class="btn btn-secondary btn-sm">Detail &rarr;</a></td>
         </tr>
@@ -97,7 +97,7 @@
     <div class="empty">
       <div class="empty-title">Zatim zadne zapisy</div>
       <div class="empty-sub">Vytvorte prvni zapis ze schuzky — AI ho vygeneruje za vas.</div>
-      <a href="{{ url_for('novy_zapis') }}" class="btn btn-navy" style="font-family:'DrukCondensed','Impact',sans-serif;font-size:14px;font-weight:900;letter-spacing:0.06em;text-transform:uppercase;">Vytvorit prvni zapis</a>
+      <a href="{{ url_for('novy_zapis') }}" class="btn btn-navy" style="font-family:'DrukCondensed','Impact',sans-serif;font-size:14px;font-weight:900;letter-spacing:0.06em;text-transform:uppercase;">Vytvořit prvni zapis</a>
     </div>
     {% endif %}
   </div>

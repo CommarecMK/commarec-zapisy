@@ -9,8 +9,8 @@
       {% if p.popis %}<p style="font-size:13px;color:#4A6080;margin-top:4px;">{{ p.popis }}</p>{% endif %}
     </div>
     <div style="display:flex;gap:8px;">
-      <a href="{{ url_for('novy_zapis') }}?klient_id={{ p.klient_id }}&projekt_id={{ p.id }}" class="btn btn-navy" style="font-family:'DrukCondensed','Impact',sans-serif;font-size:13px;font-weight:900;letter-spacing:0.06em;text-transform:uppercase;">+ Novy zapis</a>
-      <a href="{{ url_for('klient_detail', klient_id=p.klient_id) }}" class="btn btn-secondary">&larr; Zpet</a>
+      <a href="{{ url_for('novy_zapis') }}?klient_id={{ p.klient_id }}&projekt_id={{ p.id }}" class="btn btn-navy" style="font-family:'DrukCondensed','Impact',sans-serif;font-size:13px;font-weight:900;letter-spacing:0.06em;text-transform:uppercase;">+ Nový zápis</a>
+      <a href="{{ url_for('klient_detail', klient_id=p.klient_id) }}" class="btn btn-secondary">&larr; Zpět</a>
     </div>
   </div>
 
@@ -41,7 +41,7 @@
     </details>
   </div>
 
-  <!-- Zapisy timeline -->
+  <!-- Zápisy timeline -->
   <div class="card">
     <div style="font-family:'DrukCondensed','Impact',sans-serif;font-size:16px;font-weight:900;color:#173767;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:16px;padding-bottom:10px;border-bottom:2px solid #00AFF0;">
       Timeline schuzek ({{ zapisy|length }})
