@@ -626,7 +626,7 @@ Typ schuzky: {TEMPLATE_NAMES.get(template, template)}
 
     try:
         message = ai.messages.create(
-            model="claude-sonnet-4-5", max_tokens=4000,
+            model="claude-sonnet-4-5", max_tokens=8000,
             system=system,
             messages=[
                 {"role": "user",      "content": user_message},
@@ -635,11 +635,37 @@ Typ schuzky: {TEMPLATE_NAMES.get(template, template)}
         )
         # Prepend the prefill character we started with
         raw = "{" + message.content[0].text.strip()
+        app.logger.info(f"AI response length: {len(raw)} chars, stop_reason: {message.stop_reason}")
     except Exception as e:
         return jsonify({"error": f"Chyba API: {str(e)}"}), 500
 
     # Robust JSON extraction — handles markdown fences, preamble text, partial responses
     app.logger.info(f"Raw AI response (first 300): {raw[:300]}")
+
+    def repair_truncated_json(text):
+        """Pokusi se uzavrit oriznuty JSON pridanim chybejicich zaviracich znaku."""
+        # Spocitej nezavrene { a "
+        depth = 0
+        in_string = False
+        escape_next = False
+        for ch in text:
+            if escape_next:
+                escape_next = False
+                continue
+            if ch == '\\':
+                escape_next = True
+                continue
+            if ch == '"' and not escape_next:
+                in_string = not in_string
+            if not in_string:
+                if ch == '{': depth += 1
+                elif ch == '}': depth -= 1
+        # Uzavri nezavrene retezce a objekty
+        if in_string:
+            text += '"'
+        # Uzavri vsechny otevrene objekty
+        text += '}' * max(0, depth)
+        return text
 
     def extract_json(text):
         """Try multiple strategies to extract valid JSON from AI response."""
@@ -676,9 +702,14 @@ Typ schuzky: {TEMPLATE_NAMES.get(template, template)}
 
         return None
 
+    # Pokud byl JSON oriznut (max_tokens), zkus ho uzavrit
+    if message.stop_reason == "max_tokens":
+        app.logger.warning("Response hit max_tokens — attempting JSON repair")
+        raw = repair_truncated_json(raw)
+
     summary_json = extract_json(raw)
     if summary_json is None:
-        app.logger.error(f"JSON parse failed. Raw response: {raw[:1000]}")
+        app.logger.error(f"JSON parse failed. Raw response: {raw[:500]}")
         return jsonify({"error": f"AI vratilo nevalidni JSON. Zkus znovu. (zacatek odpovedi: {raw[:200]})"}), 500
 
     tasks = []
