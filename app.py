@@ -44,8 +44,8 @@ class Klient(db.Model):
     created_at  = db.Column(db.DateTime, default=datetime.utcnow)
     # profil skladu (JSON) — automaticky extrahovan z prepisu
     profil_json = db.Column(db.Text, default="{}")
-    projekty    = db.relationship("Projekt", backref="klient", lazy=True, cascade="all, delete-orphan")
-    zapisy      = db.relationship("Zapis", lazy=True)
+    projekty    = db.relationship("Projekt", backref="klient_ref", lazy=True, cascade="all, delete-orphan")
+    zapisy      = db.relationship("Zapis", lazy=True, foreign_keys="Zapis.klient_id")
 
 class Projekt(db.Model):
     __tablename__ = "projekt"
@@ -58,8 +58,9 @@ class Projekt(db.Model):
     datum_do    = db.Column(db.Date, nullable=True)
     is_active   = db.Column(db.Boolean, default=True)
     created_at  = db.Column(db.DateTime, default=datetime.utcnow)
-    zapisy      = db.relationship("Zapis", backref="projekt", lazy=True)
-    konzultant  = db.relationship("User", backref="projekty", foreign_keys=[user_id])
+    zapisy      = db.relationship("Zapis", lazy=True, foreign_keys="Zapis.projekt_id")
+    konzultant  = db.relationship("User", backref="user_projekty", foreign_keys=[user_id])
+    klient      = db.relationship("Klient", foreign_keys=[klient_id], lazy="joined")
 
 class User(db.Model):
     id            = db.Column(db.Integer, primary_key=True)
