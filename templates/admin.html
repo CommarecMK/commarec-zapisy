@@ -127,45 +127,6 @@
     <div style="padding:1rem;color:#4A6080;font-size:13px;">Žádní klienti.</div>
     {% endif %}
   </div>
-</div>
-
-<!-- Edit user modal -->
-<div id="edit-modal" style="display:none;position:fixed;inset:0;background:rgba(14,33,62,0.65);z-index:2000;align-items:center;justify-content:center;">
-  <div style="background:white;border-radius:8px;padding:28px 32px;width:480px;max-width:calc(100vw - 32px);box-shadow:0 20px 60px rgba(0,0,0,0.3);">
-    <div style="font-family:'DrukCondensed','Impact',sans-serif;font-size:20px;font-weight:900;color:#173767;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:18px;">Upravit uživatele</div>
-    <form id="edit-form" method="POST">
-      <div style="display:grid;gap:12px;">
-        <div><label>Jméno</label><input type="text" name="name" id="edit-name" required></div>
-        <div><label>Role</label><select name="role" id="edit-role"><option value="konzultant">konzultant</option><option value="admin">admin</option><option value="superadmin">superadmin</option></select></div>
-        <div style="display:flex;gap:16px;">
-          <label style="display:flex;align-items:center;gap:6px;font-size:13px;text-transform:none;letter-spacing:0;font-weight:500;cursor:pointer;"><input type="checkbox" name="is_admin" value="1" id="edit-admin"> Administrator</label>
-          <label style="display:flex;align-items:center;gap:6px;font-size:13px;text-transform:none;letter-spacing:0;font-weight:500;cursor:pointer;"><input type="checkbox" name="is_active" value="1" id="edit-active"> Aktivní</label>
-        </div>
-        <div><label>Nove heslo <span style="color:#4A6080;font-weight:400;">(prazdne = nezmeneno)</span></label><input type="password" name="password" placeholder=""></div>
-      </div>
-      <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:20px;">
-        <button type="button" onclick="document.getElementById('edit-modal').style.display='none'" class="btn btn-secondary">Zrušit</button>
-        <button type="submit" class="btn btn-navy" style="font-family:'DrukCondensed','Impact',sans-serif;font-size:14px;font-weight:900;letter-spacing:0.05em;text-transform:uppercase;">Uložit</button>
-      </div>
-    </form>
-  </div>
-</div>
-
-<script>
-function editUser(id, name, email, role, isAdmin, isActive){
-  document.getElementById('edit-name').value = name;
-  document.getElementById('edit-role').value = role;
-  document.getElementById('edit-admin').checked = isAdmin;
-  document.getElementById('edit-active').checked = isActive;
-  document.getElementById('edit-form').action = `/admin/upravit-uzivatele/${id}`;
-  document.getElementById('edit-modal').style.display = 'flex';
-}
-document.getElementById('edit-modal').addEventListener('click', e=>{
-  if(e.target === document.getElementById('edit-modal'))
-    document.getElementById('edit-modal').style.display='none';
-});
-</script>
-
 <!-- ŠABLONY ZÁPISŮ — inline blok -->
 <div class="card" style="margin-top:1.5rem;padding:0;overflow:hidden;">
   <div class="card-header" style="display:flex;align-items:center;justify-content:space-between;">
@@ -274,6 +235,45 @@ document.getElementById('edit-modal').addEventListener('click', e=>{
     </tbody>
   </table>
 </div>
+</div>
+
+<!-- Edit user modal -->
+<div id="edit-modal" style="display:none;position:fixed;inset:0;background:rgba(14,33,62,0.65);z-index:2000;align-items:center;justify-content:center;">
+  <div style="background:white;border-radius:8px;padding:28px 32px;width:480px;max-width:calc(100vw - 32px);box-shadow:0 20px 60px rgba(0,0,0,0.3);">
+    <div style="font-family:'DrukCondensed','Impact',sans-serif;font-size:20px;font-weight:900;color:#173767;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:18px;">Upravit uživatele</div>
+    <form id="edit-form" method="POST">
+      <div style="display:grid;gap:12px;">
+        <div><label>Jméno</label><input type="text" name="name" id="edit-name" required></div>
+        <div><label>Role</label><select name="role" id="edit-role"><option value="konzultant">konzultant</option><option value="admin">admin</option><option value="superadmin">superadmin</option></select></div>
+        <div style="display:flex;gap:16px;">
+          <label style="display:flex;align-items:center;gap:6px;font-size:13px;text-transform:none;letter-spacing:0;font-weight:500;cursor:pointer;"><input type="checkbox" name="is_admin" value="1" id="edit-admin"> Administrator</label>
+          <label style="display:flex;align-items:center;gap:6px;font-size:13px;text-transform:none;letter-spacing:0;font-weight:500;cursor:pointer;"><input type="checkbox" name="is_active" value="1" id="edit-active"> Aktivní</label>
+        </div>
+        <div><label>Nove heslo <span style="color:#4A6080;font-weight:400;">(prazdne = nezmeneno)</span></label><input type="password" name="password" placeholder=""></div>
+      </div>
+      <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:20px;">
+        <button type="button" onclick="document.getElementById('edit-modal').style.display='none'" class="btn btn-secondary">Zrušit</button>
+        <button type="submit" class="btn btn-navy" style="font-family:'DrukCondensed','Impact',sans-serif;font-size:14px;font-weight:900;letter-spacing:0.05em;text-transform:uppercase;">Uložit</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+function editUser(id, name, email, role, isAdmin, isActive){
+  document.getElementById('edit-name').value = name;
+  document.getElementById('edit-role').value = role;
+  document.getElementById('edit-admin').checked = isAdmin;
+  document.getElementById('edit-active').checked = isActive;
+  document.getElementById('edit-form').action = `/admin/upravit-uzivatele/${id}`;
+  document.getElementById('edit-modal').style.display = 'flex';
+}
+document.getElementById('edit-modal').addEventListener('click', e=>{
+  if(e.target === document.getElementById('edit-modal'))
+    document.getElementById('edit-modal').style.display='none';
+});
+</script>
+
 
 <script>
 function tToggle(key) {
