@@ -110,6 +110,173 @@
 .stav-badge.prijata { background: rgba(52,199,89,0.12); color: #0A7A5A; border: 1px solid rgba(52,199,89,0.25); }
 .stav-badge.zamitnuta { background: rgba(192,57,43,0.08); color: var(--danger); border: 1px solid rgba(192,57,43,0.15); }
 
+
+/* ── FREELO PANEL ────────────────────────────── */
+.fl-panel { }
+.fl-connect {
+  text-align: center; padding: 2rem;
+  color: var(--muted); font-size: 13px;
+}
+.fl-connect select {
+  width: 100%; margin: 10px 0 8px;
+  padding: 8px 10px;
+  border: 1.5px solid var(--border);
+  border-radius: 4px; font-size: 13px;
+  font-family: var(--font-body);
+}
+.fl-header {
+  display: flex; align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px; flex-wrap: wrap; gap: 8px;
+}
+.fl-tabs { display: flex; gap: 4px; }
+.fl-tab {
+  font-size: 11px; font-weight: 700;
+  text-transform: uppercase; letter-spacing: 0.05em;
+  padding: 4px 10px; border-radius: 4px;
+  border: 1.5px solid var(--border);
+  background: white; color: var(--muted); cursor: pointer;
+}
+.fl-tab.active { background: var(--navy); color: white; border-color: var(--navy); }
+
+/* Úkol řádek */
+.fl-task {
+  border: 1px solid var(--border);
+  border-radius: 5px; margin-bottom: 8px;
+  background: white; transition: box-shadow 0.1s;
+}
+.fl-task:hover { box-shadow: 0 1px 6px rgba(23,55,103,0.07); }
+.fl-task.done { opacity: 0.6; }
+.fl-task.overdue .fl-task-name { color: var(--danger); }
+.fl-task-main {
+  display: grid;
+  grid-template-columns: 28px 1fr auto;
+  gap: 10px; align-items: center;
+  padding: 10px 12px;
+}
+.fl-checkbox {
+  width: 18px; height: 18px;
+  border-radius: 50%; border: 2px solid var(--border);
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; flex-shrink: 0;
+  transition: all 0.15s; background: white;
+}
+.fl-checkbox:hover { border-color: var(--cyan); }
+.fl-checkbox.done { background: #34C759; border-color: #34C759; }
+.fl-checkbox.done::after { content: '✓'; color: white; font-size: 11px; font-weight: 700; }
+
+.fl-task-info { min-width: 0; }
+.fl-task-name {
+  font-size: 13px; font-weight: 600; color: var(--navy);
+  margin-bottom: 3px; line-height: 1.3;
+}
+.fl-task-name.done { text-decoration: line-through; color: var(--muted); }
+.fl-task-meta { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.fl-meta-chip {
+  font-size: 10px; font-weight: 600; color: var(--muted);
+  display: flex; align-items: center; gap: 3px;
+}
+.fl-meta-chip.deadline-ok { color: #0A7A5A; }
+.fl-meta-chip.deadline-soon { color: #C06A00; font-weight: 700; }
+.fl-meta-chip.deadline-over { color: var(--danger); font-weight: 700; }
+.fl-comments-badge {
+  font-size: 10px; font-weight: 700;
+  background: var(--bg); color: var(--muted);
+  border: 1px solid var(--border); border-radius: 3px;
+  padding: 1px 5px; cursor: pointer;
+}
+.fl-comments-badge:hover { border-color: var(--navy); color: var(--navy); }
+
+.fl-task-actions {
+  display: flex; gap: 4px; flex-shrink: 0;
+}
+.fl-btn {
+  font-size: 11px; font-weight: 600;
+  padding: 4px 8px; border-radius: 4px;
+  border: 1.5px solid var(--border);
+  background: white; color: var(--muted);
+  cursor: pointer; transition: all 0.1s;
+  white-space: nowrap;
+}
+.fl-btn:hover { border-color: var(--navy); color: var(--navy); }
+.fl-btn.danger:hover { border-color: var(--danger); color: var(--danger); }
+
+/* Edit inline */
+.fl-task-edit {
+  display: none; padding: 8px 12px 12px;
+  border-top: 1px solid var(--border);
+  background: #f9fafb;
+}
+.fl-task-edit.open { display: block; }
+.fl-edit-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px; }
+.fl-edit-input {
+  width: 100%; padding: 7px 10px;
+  border: 1.5px solid var(--border); border-radius: 4px;
+  font-size: 12px; font-family: var(--font-body);
+}
+.fl-edit-input:focus { outline: none; border-color: var(--cyan); }
+.fl-edit-textarea {
+  width: 100%; padding: 7px 10px;
+  border: 1.5px solid var(--border); border-radius: 4px;
+  font-size: 12px; font-family: var(--font-body);
+  resize: vertical; min-height: 60px; line-height: 1.5;
+}
+.fl-edit-textarea:focus { outline: none; border-color: var(--cyan); }
+
+/* Komentáře */
+.fl-comments { padding: 0 12px 12px; display: none; }
+.fl-comments.open { display: block; }
+.fl-comment-item {
+  padding: 7px 0; border-bottom: 1px solid var(--border);
+  font-size: 12px;
+}
+.fl-comment-item:last-child { border-bottom: none; }
+.fl-comment-author { font-weight: 700; color: var(--navy); margin-right: 6px; }
+.fl-comment-date { font-size: 10px; color: var(--muted); }
+.fl-comment-text { color: var(--text); margin-top: 3px; line-height: 1.5; }
+.fl-comment-form {
+  display: flex; gap: 6px; margin-top: 8px;
+}
+.fl-comment-input {
+  flex: 1; padding: 6px 10px;
+  border: 1.5px solid var(--border); border-radius: 4px;
+  font-size: 12px; font-family: var(--font-body);
+}
+.fl-comment-input:focus { outline: none; border-color: var(--cyan); }
+
+/* Nový úkol form */
+.fl-new-task {
+  display: none; margin-top: 10px;
+  padding: 12px; background: #f0f5fb;
+  border-radius: 5px; border: 1px solid #c8d8ee;
+}
+.fl-new-task.open { display: block; }
+.fl-new-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px; }
+
+/* Načítání */
+.fl-loading {
+  text-align: center; padding: 2rem;
+  color: var(--muted); font-size: 13px;
+}
+.fl-spinner {
+  display: inline-block; width: 20px; height: 20px;
+  border: 2px solid var(--border); border-top-color: var(--cyan);
+  border-radius: 50%; animation: spin 0.7s linear infinite;
+  margin-bottom: 8px;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.fl-empty {
+  text-align: center; padding: 1.5rem;
+  color: var(--muted); font-size: 13px;
+}
+.fl-tasklist-info {
+  font-size: 11px; color: var(--muted);
+  margin-bottom: 10px;
+  display: flex; align-items: center; gap: 8px;
+}
+.fl-tasklist-info a { color: var(--cyan); font-size: 11px; }
+
 /* Toast */
 #toast { position: fixed; bottom: 24px; right: 24px; background: var(--navy); color: white; padding: 10px 18px; border-radius: 6px; font-size: 13px; font-weight: 600; opacity: 0; transition: opacity 0.2s; z-index: 999; pointer-events: none; }
 #toast.show { opacity: 1; }
@@ -370,6 +537,79 @@
         </div>
       </div>
 
+
+      <!-- FREELO PANEL -->
+      <div class="kd-card" id="freelo-card">
+        <div class="kd-card-head">
+          <h2>Freelo úkoly</h2>
+          <div style="display:flex;gap:6px;align-items:center;">
+            <span id="fl-count-badge" style="display:none;font-size:11px;font-weight:700;background:rgba(0,175,240,0.1);color:#0085B8;border:1px solid rgba(0,175,240,0.2);border-radius:3px;padding:2px 7px;"></span>
+            <button onclick="flNovyUkolToggle()" class="btn btn-navy btn-sm" id="fl-add-btn" style="display:none;">+ Úkol</button>
+            <button onclick="flRefresh()" class="btn btn-secondary btn-sm" id="fl-refresh-btn" style="display:none;" title="Obnovit">↻</button>
+          </div>
+        </div>
+        <div class="kd-card-body" style="padding:12px 16px;">
+
+          <!-- NEPROPOJENO -->
+          <div id="fl-not-configured">
+            <div class="fl-connect">
+              <div style="font-size:22px;margin-bottom:6px;">🔗</div>
+              <strong style="color:var(--navy);">Propoj Freelo tasklist</strong>
+              <p style="margin:6px 0 10px;font-size:12px;">Vyber tasklist patřící tomuto klientovi</p>
+              <select id="fl-tasklist-select" onchange="">
+                <option value="">Načítám tasklists…</option>
+              </select>
+              <button onclick="flNastavitTasklist()" class="btn btn-navy btn-sm" style="width:100%;">Uložit propojení</button>
+            </div>
+          </div>
+
+          <!-- PROPOJENO -->
+          <div id="fl-configured" style="display:none;">
+            <div class="fl-tasklist-info" id="fl-info-bar">
+              <span>Tasklist: <strong id="fl-tasklist-name">–</strong></span>
+              <a href="#" onclick="flOdpojit(event)">změnit</a>
+            </div>
+
+            <!-- Tabs: otevřené / hotové -->
+            <div class="fl-header">
+              <div class="fl-tabs">
+                <button class="fl-tab active" onclick="flTab('open',this)">Otevřené</button>
+                <button class="fl-tab" onclick="flTab('done',this)">Hotové</button>
+                <button class="fl-tab" onclick="flTab('all',this)">Vše</button>
+              </div>
+            </div>
+
+            <!-- Nový úkol form -->
+            <div class="fl-new-task" id="fl-new-task-form">
+              <div style="font-size:12px;font-weight:700;color:var(--navy);margin-bottom:8px;text-transform:uppercase;letter-spacing:0.05em;">Nový úkol</div>
+              <input id="fl-new-name" class="fl-edit-input" placeholder="Název úkolu *" style="margin-bottom:8px;width:100%;">
+              <div class="fl-new-row">
+                <input id="fl-new-deadline" class="fl-edit-input" type="date">
+                <input id="fl-new-desc" class="fl-edit-input" placeholder="Popis (volitelný)">
+              </div>
+              <div style="display:flex;gap:6px;">
+                <button onclick="flPridatUkol()" class="btn btn-navy btn-sm">Přidat do Freela</button>
+                <button onclick="flNovyUkolToggle()" class="btn btn-secondary btn-sm">Zrušit</button>
+              </div>
+            </div>
+
+            <!-- Loading -->
+            <div class="fl-loading" id="fl-loading">
+              <div class="fl-spinner"></div><br>Načítám z Freela…
+            </div>
+
+            <!-- Seznam úkolů -->
+            <div id="fl-tasks-list" style="display:none;"></div>
+
+            <!-- Prázdný stav -->
+            <div class="fl-empty" id="fl-empty" style="display:none;">
+              Žádné úkoly v tomto filtru.
+            </div>
+          </div>
+
+        </div>
+      </div>
+
       <!-- NABÍDKY -->
       <div class="kd-card">
         <div class="kd-card-head">
@@ -471,5 +711,375 @@ function filterTL(typ, btn) {
     item.style.display = (typ === 'vse' || item.dataset.typ === typ) ? 'grid' : 'none';
   });
 }
+
+// ════════════════════════════════════════════
+// FREELO PANEL
+// ════════════════════════════════════════════
+const FL_KLIENT_ID = {{ k.id }};
+const FL_TASKLIST_ID = {{ k.freelo_tasklist_id or 'null' }};
+let flAllTasks = [];
+let flCurrentTab = 'open';
+let flTasklistName = '';
+
+// Init
+document.addEventListener('DOMContentLoaded', () => {
+  if (FL_TASKLIST_ID) {
+    flShowConfigured();
+    flLoadTasks();
+  } else {
+    flShowNotConfigured();
+    flLoadTasklists();
+  }
+});
+
+function flShowConfigured() {
+  document.getElementById('fl-not-configured').style.display = 'none';
+  document.getElementById('fl-configured').style.display = 'block';
+  document.getElementById('fl-add-btn').style.display = '';
+  document.getElementById('fl-refresh-btn').style.display = '';
+}
+
+function flShowNotConfigured() {
+  document.getElementById('fl-not-configured').style.display = 'block';
+  document.getElementById('fl-configured').style.display = 'none';
+  document.getElementById('fl-add-btn').style.display = 'none';
+  document.getElementById('fl-refresh-btn').style.display = 'none';
+}
+
+async function flLoadTasklists() {
+  const sel = document.getElementById('fl-tasklist-select');
+  try {
+    const data = await fetch('/api/freelo/tasklists-all').then(r => r.json());
+    if (data.tasklists && data.tasklists.length) {
+      sel.innerHTML = '<option value="">— Vyberte tasklist —</option>' +
+        data.tasklists.map(tl =>
+          `<option value="${tl.id}">[${tl.project_name}] ${tl.name}</option>`
+        ).join('');
+    } else {
+      sel.innerHTML = `<option value="">${data.error || 'Žádné tasklists'}</option>`;
+    }
+  } catch(e) {
+    sel.innerHTML = '<option value="">Chyba načítání</option>';
+  }
+}
+
+async function flNastavitTasklist() {
+  const sel = document.getElementById('fl-tasklist-select');
+  const id = sel.value;
+  if (!id) { toast('Vyber tasklist', false); return; }
+  const name = sel.options[sel.selectedIndex].text;
+  try {
+    const d = await fetch(`/api/klient/${FL_KLIENT_ID}/freelo-nastavit`, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({tasklist_id: id})
+    }).then(r => r.json());
+    if (d.ok) {
+      flTasklistName = name;
+      document.getElementById('fl-tasklist-name').textContent = name.split('] ')[1] || name;
+      flShowConfigured();
+      flLoadTasks();
+      toast('Tasklist propojen ✓');
+    } else {
+      toast(d.error || 'Chyba', false);
+    }
+  } catch(e) { toast('Chyba: ' + e.message, false); }
+}
+
+async function flOdpojit(e) {
+  e.preventDefault();
+  if (!confirm('Odpojit Freelo tasklist od tohoto klienta?')) return;
+  try {
+    const d = await fetch(`/api/klient/${FL_KLIENT_ID}/freelo-nastavit`, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({tasklist_id: null})
+    }).then(r => r.json());
+    if (d.ok) {
+      flShowNotConfigured();
+      flLoadTasklists();
+      flAllTasks = [];
+      toast('Odpojeno');
+    }
+  } catch(e) { toast('Chyba', false); }
+}
+
+async function flLoadTasks() {
+  document.getElementById('fl-loading').style.display = 'block';
+  document.getElementById('fl-tasks-list').style.display = 'none';
+  document.getElementById('fl-empty').style.display = 'none';
+  try {
+    const data = await fetch(`/api/klient/${FL_KLIENT_ID}/freelo-ukoly`).then(r => r.json());
+    if (data.error) {
+      document.getElementById('fl-loading').innerHTML = `<span style="color:var(--danger);">${data.error}</span>`;
+      return;
+    }
+    flAllTasks = data.ukoly || [];
+    // Najdi název tasklist z načtených dat
+    flRenderTasks();
+    // Aktualizuj badge počtu
+    const openCount = flAllTasks.filter(t => t.state === 'open').length;
+    const badge = document.getElementById('fl-count-badge');
+    badge.textContent = `${openCount} otevřených`;
+    badge.style.display = openCount > 0 ? '' : 'none';
+  } catch(e) {
+    document.getElementById('fl-loading').innerHTML = `<span style="color:var(--danger);">Chyba: ${e.message}</span>`;
+  }
+}
+
+function flRefresh() { flLoadTasks(); }
+
+function flTab(tab, btn) {
+  document.querySelectorAll('.fl-tab').forEach(t => t.classList.remove('active'));
+  btn.classList.add('active');
+  flCurrentTab = tab;
+  flRenderTasks();
+}
+
+function flRenderTasks() {
+  const list = document.getElementById('fl-tasks-list');
+  const loading = document.getElementById('fl-loading');
+  const empty = document.getElementById('fl-empty');
+  loading.style.display = 'none';
+
+  let tasks = flAllTasks;
+  if (flCurrentTab === 'open') tasks = tasks.filter(t => t.state === 'open');
+  else if (flCurrentTab === 'done') tasks = tasks.filter(t => t.state === 'done');
+
+  if (!tasks.length) {
+    list.style.display = 'none';
+    empty.style.display = 'block';
+    return;
+  }
+  empty.style.display = 'none';
+  list.style.display = 'block';
+
+  list.innerHTML = tasks.map(t => flTaskHTML(t)).join('');
+}
+
+function flTaskHTML(t) {
+  const done = t.state === 'done';
+  const today = new Date().toISOString().slice(0,10);
+  const tomorrow = new Date(Date.now() + 86400000).toISOString().slice(0,10);
+  let deadlineClass = '';
+  let deadlineLabel = '';
+  if (t.deadline) {
+    if (t.deadline < today) { deadlineClass = 'deadline-over'; deadlineLabel = `⚠ ${t.deadline}`; }
+    else if (t.deadline <= tomorrow) { deadlineClass = 'deadline-soon'; deadlineLabel = `${t.deadline}`; }
+    else { deadlineClass = 'deadline-ok'; deadlineLabel = t.deadline; }
+  }
+
+  return `<div class="fl-task ${done ? 'done' : ''} ${t.deadline && t.deadline < today && !done ? 'overdue' : ''}" id="flt-${t.id}">
+    <div class="fl-task-main">
+      <div class="fl-checkbox ${done ? 'done' : ''}" onclick="flToggleDone(${t.id}, ${!done})" title="${done ? 'Označit jako otevřený' : 'Označit jako hotový'}"></div>
+      <div class="fl-task-info">
+        <div class="fl-task-name ${done ? 'done' : ''}">${flEsc(t.name)}</div>
+        <div class="fl-task-meta">
+          ${t.assignee ? `<span class="fl-meta-chip">👤 ${flEsc(t.assignee)}</span>` : ''}
+          ${deadlineLabel ? `<span class="fl-meta-chip ${deadlineClass}">📅 ${deadlineLabel}</span>` : ''}
+          ${t.comments_count > 0 ? `<span class="fl-comments-badge" onclick="flToggleComments(${t.id})">💬 ${t.comments_count}</span>` : ''}
+          <a href="${t.url}" target="_blank" style="font-size:10px;color:var(--cyan);text-decoration:none;">↗ Freelo</a>
+        </div>
+      </div>
+      <div class="fl-task-actions">
+        <button class="fl-btn" onclick="flToggleEdit(${t.id})" title="Upravit">✎</button>
+        <button class="fl-btn" onclick="flToggleComments(${t.id})" title="Komentáře">💬</button>
+        <button class="fl-btn danger" onclick="flSmazat(${t.id})" title="Smazat">✕</button>
+      </div>
+    </div>
+
+    <div class="fl-task-edit" id="fledit-${t.id}">
+      <input class="fl-edit-input" id="flname-${t.id}" value="${flEsc(t.name)}" placeholder="Název" style="margin-bottom:6px;width:100%;">
+      <textarea class="fl-edit-textarea" id="fldesc-${t.id}" placeholder="Popis">${flEsc(t.description || '')}</textarea>
+      <div class="fl-edit-row" style="margin-top:6px;">
+        <input class="fl-edit-input" id="fldate-${t.id}" type="date" value="${t.deadline || ''}">
+        <div style="display:flex;gap:6px;align-items:flex-end;">
+          <button onclick="flUlozitEdit(${t.id})" class="btn btn-navy btn-sm">Uložit</button>
+          <button onclick="flToggleEdit(${t.id})" class="btn btn-secondary btn-sm">Zrušit</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="fl-comments" id="flcomm-${t.id}">
+      <div id="flcomm-list-${t.id}" style="margin-bottom:8px;">
+        <div style="font-size:11px;color:var(--muted);font-style:italic;">Klikni pro načtení komentářů…</div>
+      </div>
+      <div class="fl-comment-form">
+        <input class="fl-comment-input" id="flcomm-input-${t.id}" placeholder="Napsat komentář…" onkeydown="if(event.key==='Enter'){event.preventDefault();flPridatKomentar(${t.id});}">
+        <button onclick="flPridatKomentar(${t.id})" class="btn btn-navy btn-sm">Odeslat</button>
+      </div>
+    </div>
+  </div>`;
+}
+
+function flEsc(str) {
+  if (!str) return '';
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+async function flToggleDone(taskId, done) {
+  const el = document.getElementById(`flt-${taskId}`);
+  if (el) el.style.opacity = '0.5';
+  try {
+    const d = await fetch(`/api/freelo/task/${taskId}/stav`, {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({done})
+    }).then(r => r.json());
+    if (d.ok) {
+      const task = flAllTasks.find(t => t.id === taskId);
+      if (task) task.state = done ? 'done' : 'open';
+      flRenderTasks();
+      // Aktualizuj badge
+      const openCount = flAllTasks.filter(t => t.state === 'open').length;
+      const badge = document.getElementById('fl-count-badge');
+      badge.textContent = `${openCount} otevřených`;
+      badge.style.display = openCount > 0 ? '' : 'none';
+      toast(done ? '✓ Označeno jako hotové' : 'Označeno jako otevřené');
+    } else {
+      if (el) el.style.opacity = '';
+      toast(d.error || 'Chyba', false);
+    }
+  } catch(e) {
+    if (el) el.style.opacity = '';
+    toast('Chyba: ' + e.message, false);
+  }
+}
+
+function flToggleEdit(taskId) {
+  const ed = document.getElementById(`fledit-${taskId}`);
+  ed.classList.toggle('open');
+}
+
+async function flUlozitEdit(taskId) {
+  const name = document.getElementById(`flname-${taskId}`).value.trim();
+  const desc = document.getElementById(`fldesc-${taskId}`).value;
+  const deadline = document.getElementById(`fldate-${taskId}`).value;
+  if (!name) { toast('Název je povinný', false); return; }
+  try {
+    const d = await fetch(`/api/freelo/task/${taskId}/edit`, {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({name, description: desc, deadline})
+    }).then(r => r.json());
+    if (d.ok) {
+      const task = flAllTasks.find(t => t.id === taskId);
+      if (task) { task.name = name; task.description = desc; task.deadline = deadline; }
+      flRenderTasks();
+      toast('Uloženo');
+    } else { toast(d.error || 'Chyba', false); }
+  } catch(e) { toast('Chyba: ' + e.message, false); }
+}
+
+async function flToggleComments(taskId) {
+  const panel = document.getElementById(`flcomm-${taskId}`);
+  const listEl = document.getElementById(`flcomm-list-${taskId}`);
+  panel.classList.toggle('open');
+  if (panel.classList.contains('open')) {
+    listEl.innerHTML = '<div style="font-size:11px;color:var(--muted);">Načítám…</div>';
+    const d = await fetch(`/api/freelo/task/${taskId}/komentare`).then(r => r.json());
+    if (d.ok && d.comments.length) {
+      listEl.innerHTML = d.comments.map(c => `
+        <div class="fl-comment-item">
+          <span class="fl-comment-author">${flEsc(c.author)}</span>
+          <span class="fl-comment-date">${(c.created_at||'').slice(0,10)}</span>
+          <div class="fl-comment-text">${flEsc(c.content)}</div>
+        </div>`).join('');
+    } else if (d.ok) {
+      listEl.innerHTML = '<div style="font-size:11px;color:var(--muted);font-style:italic;">Zatím žádné komentáře.</div>';
+    } else {
+      listEl.innerHTML = `<div style="font-size:11px;color:var(--danger);">${d.error || 'Chyba'}</div>`;
+    }
+  }
+}
+
+async function flPridatKomentar(taskId) {
+  const input = document.getElementById(`flcomm-input-${taskId}`);
+  const text = input.value.trim();
+  if (!text) return;
+  input.disabled = true;
+  try {
+    const d = await fetch(`/api/freelo/task/${taskId}/komentar`, {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({content: text})
+    }).then(r => r.json());
+    if (d.ok) {
+      input.value = '';
+      // Přidej do listu
+      const listEl = document.getElementById(`flcomm-list-${taskId}`);
+      const newComment = `<div class="fl-comment-item">
+        <span class="fl-comment-author">Já</span>
+        <span class="fl-comment-date">dnes</span>
+        <div class="fl-comment-text">${flEsc(text)}</div>
+      </div>`;
+      listEl.innerHTML += newComment;
+      // Aktualizuj počet
+      const task = flAllTasks.find(t => t.id === taskId);
+      if (task) task.comments_count = (task.comments_count || 0) + 1;
+      toast('Komentář přidán');
+    } else { toast(d.error || 'Chyba', false); }
+  } catch(e) { toast('Chyba', false); }
+  input.disabled = false;
+}
+
+async function flSmazat(taskId) {
+  const task = flAllTasks.find(t => t.id === taskId);
+  if (!confirm(`Smazat úkol "${task?.name || taskId}" z Freela? Tato akce je nevratná.`)) return;
+  const el = document.getElementById(`flt-${taskId}`);
+  if (el) el.style.opacity = '0.3';
+  try {
+    const d = await fetch(`/api/freelo/task/${taskId}/smazat`, {
+      method: 'POST', headers: {'Content-Type':'application/json'}
+    }).then(r => r.json());
+    if (d.ok) {
+      flAllTasks = flAllTasks.filter(t => t.id !== taskId);
+      flRenderTasks();
+      toast('Úkol smazán');
+    } else {
+      if (el) el.style.opacity = '';
+      toast(d.error || 'Chyba mazání', false);
+    }
+  } catch(e) {
+    if (el) el.style.opacity = '';
+    toast('Chyba', false);
+  }
+}
+
+function flNovyUkolToggle() {
+  const form = document.getElementById('fl-new-task-form');
+  form.classList.toggle('open');
+  if (form.classList.contains('open')) {
+    document.getElementById('fl-new-name').focus();
+  }
+}
+
+async function flPridatUkol() {
+  const name = document.getElementById('fl-new-name').value.trim();
+  const deadline = document.getElementById('fl-new-deadline').value;
+  const desc = document.getElementById('fl-new-desc').value.trim();
+  if (!name) { toast('Název je povinný', false); return; }
+  const btn = document.querySelector('#fl-new-task-form .btn-navy');
+  btn.disabled = true; btn.textContent = 'Přidávám…';
+  try {
+    const d = await fetch(`/api/klient/${FL_KLIENT_ID}/freelo-pridat-ukol`, {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({name, deadline, description: desc})
+    }).then(r => r.json());
+    if (d.ok) {
+      flAllTasks.unshift(d.task);
+      document.getElementById('fl-new-name').value = '';
+      document.getElementById('fl-new-deadline').value = '';
+      document.getElementById('fl-new-desc').value = '';
+      flNovyUkolToggle();
+      flRenderTasks();
+      // Aktualizuj badge
+      const openCount = flAllTasks.filter(t => t.state === 'open').length;
+      const badge = document.getElementById('fl-count-badge');
+      badge.textContent = `${openCount} otevřených`;
+      badge.style.display = openCount > 0 ? '' : 'none';
+      toast('Úkol přidán do Freela ✓');
+    } else { toast(d.error || 'Chyba', false); }
+  } catch(e) { toast('Chyba: ' + e.message, false); }
+  btn.disabled = false; btn.textContent = 'Přidat do Freela';
+}
+
 </script>
 {% endblock %}

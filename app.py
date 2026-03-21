@@ -57,7 +57,8 @@ class Klient(db.Model):
     is_active   = db.Column(db.Boolean, default=True)
     created_at  = db.Column(db.DateTime, default=datetime.utcnow)
     # profil skladu (JSON) — automaticky extrahovan z prepisu
-    profil_json = db.Column(db.Text, default="{}")
+    profil_json          = db.Column(db.Text, default="{}")
+    freelo_tasklist_id   = db.Column(db.Integer, nullable=True)   # Freelo tasklist ID per klient
     projekty    = db.relationship("Projekt", back_populates="klient", lazy=True, cascade="all, delete-orphan")
     zapisy      = db.relationship("Zapis", lazy=True, foreign_keys="Zapis.klient_id", viewonly=True)
 
@@ -1021,12 +1022,40 @@ def progress_report():
                             })
                     except: pass
 
+            # Freelo live hotové úkoly v období
+            freelo_splnene = []
+            if k.freelo_tasklist_id and FREELO_API_KEY and FREELO_EMAIL:
+                try:
+                    fr = freelo_get(f"/tasklists/{k.freelo_tasklist_id}/tasks")
+                    if fr.status_code == 200:
+                        tasks_raw = fr.json()
+                        if isinstance(tasks_raw, dict):
+                            tasks_raw = tasks_raw.get("data", [])
+                        for t in tasks_raw:
+                            if t.get("state") == "done":
+                                finished = t.get("finished_at", "")
+                                if finished:
+                                    try:
+                                        fin_dt = datetime.strptime(finished[:10], "%Y-%m-%d")
+                                        if od_dt <= fin_dt <= do_dt + timedelta(days=1):
+                                            freelo_splnene.append({
+                                                "name": t.get("name", ""),
+                                                "finished_at": finished[:10],
+                                                "assignee": t.get("worker", {}).get("fullname", "") if t.get("worker") else "",
+                                                "url": f"https://app.freelo.io/task/{t.get('id')}",
+                                            })
+                                    except Exception:
+                                        pass
+                except Exception:
+                    pass
+
             klient_data["projekty"].append({
                 "projekt": p,
                 "zapisy_v_obdobi": zapisy_v_obdobi,
                 "vsechny_zapisy_count": len(vsechny_zapisy),
                 "ukoly_splnene": ukoly_splnene[:10],
                 "ukoly_otevrene": ukoly_otevrene[:15],
+                "freelo_splnene": freelo_splnene,
                 "skore_list": skore_list,
                 "posledni_skore": skore_list[0]["skore"] if skore_list else None,
                 "prvni_skore": skore_list[-1]["skore"] if len(skore_list) > 1 else None,
@@ -1987,6 +2016,227 @@ def freelo_post(path, payload):
                          auth=freelo_auth(), headers={"Content-Type":"application/json"},
                          json=payload, timeout=15)
 
+def freelo_patch(path, payload):
+    """PATCH request na Freelo API."""
+    return requests.patch(f"https://api.freelo.io/v1{path}",
+                          auth=freelo_auth(), headers={"Content-Type": "application/json"},
+                          json=payload, timeout=15)
+
+def freelo_delete(path):
+    """DELETE request na Freelo API."""
+    return requests.delete(f"https://api.freelo.io/v1{path}",
+                           auth=freelo_auth(), headers={"Content-Type": "application/json"},
+                           timeout=15)
+
+# ─────────────────────────────────────────────
+# FREELO — KLIENT NAPOJENÍ A PLNÁ SPRÁVA
+# ─────────────────────────────────────────────
+
+@app.route("/api/freelo/tasklists-all", methods=["GET"])
+@login_required
+def get_freelo_tasklists_all():
+    """Načte všechny tasklists ze všech Freelo projektů."""
+    if not FREELO_API_KEY or not FREELO_EMAIL:
+        return jsonify({"tasklists": [], "error": "Chybí FREELO credentials"})
+    try:
+        resp = freelo_get("/projects")
+        if resp.status_code != 200:
+            return jsonify({"tasklists": [], "error": f"Freelo {resp.status_code}"})
+        tasklists = []
+        for p in resp.json().get("data", []):
+            for tl in p.get("tasklists", []):
+                tasklists.append({
+                    "id": tl.get("id"),
+                    "name": tl.get("name"),
+                    "project_name": p.get("name"),
+                    "project_id": p.get("id"),
+                })
+        return jsonify({"tasklists": tasklists})
+    except Exception as e:
+        return jsonify({"tasklists": [], "error": str(e)})
+
+
+@app.route("/api/klient/<int:klient_id>/freelo-nastavit", methods=["POST"])
+@login_required
+def api_klient_freelo_nastavit(klient_id):
+    """Nastaví tasklist ID pro klienta."""
+    k = Klient.query.get_or_404(klient_id)
+    data = request.get_json()
+    tasklist_id = data.get("tasklist_id")
+    k.freelo_tasklist_id = int(tasklist_id) if tasklist_id else None
+    try:
+        db.session.commit()
+        return jsonify({"ok": True, "tasklist_id": k.freelo_tasklist_id})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/klient/<int:klient_id>/freelo-ukoly", methods=["GET"])
+@login_required
+def api_klient_freelo_ukoly(klient_id):
+    """Načte úkoly z Freelo tasklist klienta."""
+    k = Klient.query.get_or_404(klient_id)
+    if not k.freelo_tasklist_id:
+        return jsonify({"ukoly": [], "not_configured": True})
+    if not FREELO_API_KEY or not FREELO_EMAIL:
+        return jsonify({"ukoly": [], "error": "Chybí FREELO credentials"})
+    try:
+        resp = freelo_get(f"/tasklists/{k.freelo_tasklist_id}/tasks")
+        if resp.status_code != 200:
+            return jsonify({"ukoly": [], "error": f"Freelo {resp.status_code}: {resp.text[:200]}"})
+        data = resp.json()
+        tasks_raw = data if isinstance(data, list) else data.get("data", [])
+        ukoly = []
+        for t in tasks_raw:
+            ukoly.append({
+                "id": t.get("id"),
+                "name": t.get("name", ""),
+                "state": t.get("state", "open"),
+                "deadline": t.get("deadline", ""),
+                "assignee": t.get("worker", {}).get("fullname", "") if t.get("worker") else "",
+                "assignee_id": t.get("worker", {}).get("id") if t.get("worker") else None,
+                "comments_count": t.get("comments_count", 0),
+                "description": t.get("description", "") or "",
+                "url": f"https://app.freelo.io/task/{t.get('id')}",
+                "finished_at": t.get("finished_at", ""),
+                "created_at": t.get("created_at", ""),
+            })
+        ukoly.sort(key=lambda x: (0 if x["state"] == "open" else 1, x.get("deadline") or "9999"))
+        return jsonify({"ukoly": ukoly, "tasklist_id": k.freelo_tasklist_id})
+    except Exception as e:
+        return jsonify({"ukoly": [], "error": str(e)})
+
+
+@app.route("/api/klient/<int:klient_id>/freelo-pridat-ukol", methods=["POST"])
+@login_required
+def api_klient_freelo_pridat_ukol(klient_id):
+    """Vytvoří nový úkol v Freelo tasklist klienta."""
+    k = Klient.query.get_or_404(klient_id)
+    if not k.freelo_tasklist_id:
+        return jsonify({"error": "Klient nemá nastavený tasklist"}), 400
+    data = request.get_json()
+    name = data.get("name", "").strip()
+    if not name:
+        return jsonify({"error": "Název je povinný"}), 400
+    try:
+        resp_p = freelo_get("/projects")
+        project_id = str(FREELO_PROJECT_ID)
+        if resp_p.status_code == 200:
+            for p in resp_p.json().get("data", []):
+                for tl in p.get("tasklists", []):
+                    if tl.get("id") == k.freelo_tasklist_id:
+                        project_id = str(p.get("id"))
+                        break
+        payload = {"name": name}
+        if data.get("description"):
+            payload["description"] = data["description"]
+        if data.get("deadline"):
+            payload["deadline"] = data["deadline"]
+        resp = freelo_post(f"/project/{project_id}/tasklist/{k.freelo_tasklist_id}/tasks", payload)
+        if resp.status_code in (200, 201):
+            task = resp.json().get("data", resp.json())
+            return jsonify({"ok": True, "task": {
+                "id": task.get("id"),
+                "name": name,
+                "state": "open",
+                "deadline": data.get("deadline", ""),
+                "assignee": "",
+                "comments_count": 0,
+                "description": data.get("description", ""),
+                "url": f"https://app.freelo.io/task/{task.get('id')}",
+            }})
+        return jsonify({"error": f"Freelo {resp.status_code}: {resp.text[:300]}"}), 400
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/freelo/task/<int:task_id>/stav", methods=["POST"])
+@login_required
+def api_freelo_task_stav(task_id):
+    """Přepne stav úkolu open/done."""
+    data = request.get_json()
+    done = data.get("done", False)
+    try:
+        resp = freelo_patch(f"/task/{task_id}", {"state": "done" if done else "open"})
+        if resp.status_code in (200, 201, 204):
+            return jsonify({"ok": True})
+        return jsonify({"error": f"Freelo {resp.status_code}: {resp.text[:200]}"}), 400
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/freelo/task/<int:task_id>/edit", methods=["POST"])
+@login_required
+def api_freelo_task_edit(task_id):
+    """Edituje úkol (název, popis, deadline)."""
+    data = request.get_json()
+    payload = {}
+    if "name" in data:
+        payload["name"] = data["name"]
+    if "description" in data:
+        payload["description"] = data["description"]
+    if "deadline" in data:
+        payload["deadline"] = data["deadline"] or None
+    try:
+        resp = freelo_patch(f"/task/{task_id}", payload)
+        if resp.status_code in (200, 201, 204):
+            return jsonify({"ok": True})
+        return jsonify({"error": f"Freelo {resp.status_code}: {resp.text[:200]}"}), 400
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/freelo/task/<int:task_id>/komentar", methods=["POST"])
+@login_required
+def api_freelo_task_komentar(task_id):
+    """Přidá komentář k úkolu."""
+    data = request.get_json()
+    text = data.get("content", "").strip()
+    if not text:
+        return jsonify({"error": "Prázdný komentář"}), 400
+    try:
+        resp = freelo_post(f"/task/{task_id}/comments", {"content": text})
+        if resp.status_code in (200, 201):
+            return jsonify({"ok": True})
+        return jsonify({"error": f"Freelo {resp.status_code}: {resp.text[:200]}"}), 400
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/freelo/task/<int:task_id>/komentare", methods=["GET"])
+@login_required
+def api_freelo_task_komentare(task_id):
+    """Načte komentáře k úkolu."""
+    try:
+        resp = freelo_get(f"/task/{task_id}/comments")
+        if resp.status_code == 200:
+            data = resp.json()
+            comments = data if isinstance(data, list) else data.get("data", [])
+            return jsonify({"ok": True, "comments": [{
+                "id": c.get("id"),
+                "content": c.get("content", ""),
+                "author": c.get("author", {}).get("fullname", "") if c.get("author") else "",
+                "created_at": c.get("created_at", ""),
+            } for c in comments]})
+        return jsonify({"ok": False, "comments": []})
+    except Exception as e:
+        return jsonify({"ok": False, "comments": [], "error": str(e)})
+
+
+@app.route("/api/freelo/task/<int:task_id>/smazat", methods=["POST"])
+@login_required
+def api_freelo_task_smazat(task_id):
+    """Smaže úkol ve Freelo."""
+    try:
+        resp = freelo_delete(f"/task/{task_id}")
+        if resp.status_code in (200, 201, 204):
+            return jsonify({"ok": True})
+        return jsonify({"error": f"Freelo {resp.status_code}: {resp.text[:200]}"}), 400
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
 # ─────────────────────────────────────────────
 # FREELO API ENDPOINTS
 # ─────────────────────────────────────────────
@@ -2563,6 +2813,8 @@ with app.app_context():
             ("user",  "is_active",      "ALTER TABLE user ADD COLUMN is_active BOOLEAN DEFAULT TRUE"),
             ("user",  "role",           "ALTER TABLE user ADD COLUMN role VARCHAR(40) DEFAULT 'konzultant'"),
             ("klient", "logo_url",       "ALTER TABLE klient ADD COLUMN logo_url VARCHAR(500) DEFAULT ''"),
+            ("klient", "poznamka",     "ALTER TABLE klient ADD COLUMN IF NOT EXISTS poznamka TEXT DEFAULT ''"),
+            ("klient", "freelo_tasklist_id", "ALTER TABLE klient ADD COLUMN IF NOT EXISTS freelo_tasklist_id INTEGER"),
         ]
         with db.engine.connect() as conn:
             for table, col, sql in migrations:
@@ -2705,11 +2957,44 @@ def api_report_generovat():
     if not zapisy_data:
         return jsonify({"error": "V zadaném období nejsou žádné zápisy pro tohoto klienta."}), 400
 
+    # Načti Freelo hotové úkoly za období
+    freelo_splnene_ai = []
+    freelo_otevrene_ai = []
+    if klient.freelo_tasklist_id and FREELO_API_KEY and FREELO_EMAIL:
+        try:
+            fr = freelo_get(f"/tasklists/{klient.freelo_tasklist_id}/tasks")
+            if fr.status_code == 200:
+                tasks_raw = fr.json()
+                if isinstance(tasks_raw, dict):
+                    tasks_raw = tasks_raw.get("data", [])
+                for t in tasks_raw:
+                    if t.get("state") == "done":
+                        finished = t.get("finished_at", "")
+                        if finished:
+                            try:
+                                fin_dt = datetime.strptime(finished[:10], "%Y-%m-%d")
+                                if od_dt <= fin_dt <= do_dt + timedelta(days=1):
+                                    freelo_splnene_ai.append(t.get("name", ""))
+                            except Exception:
+                                pass
+                    elif t.get("state") == "open":
+                        freelo_otevrene_ai.append(t.get("name", ""))
+        except Exception:
+            pass
+
     # Sestavení promptu pro Claude
     zapisy_blok = "\n\n".join(zapisy_data)
     skore_blok = ""
     if skore_history:
         skore_blok = "\n".join([f"- {s['datum']}: {s['skore']} %" for s in skore_history])
+
+    freelo_blok = ""
+    if freelo_splnene_ai:
+        freelo_blok += f"\nSPLNĚNÉ ÚKOLY Z FREELA V OBDOBÍ ({len(freelo_splnene_ai)}):\n"
+        freelo_blok += "\n".join([f"- {u}" for u in freelo_splnene_ai[:20]])
+    if freelo_otevrene_ai:
+        freelo_blok += f"\n\nOTEVŘENÉ ÚKOLY VE FREELU ({len(freelo_otevrene_ai)}):\n"
+        freelo_blok += "\n".join([f"- {u}" for u in freelo_otevrene_ai[:10]])
 
     prompt = f"""Jsi konzultant Commarec s.r.o., který píše měsíční report pro klienta.
 
@@ -2717,6 +3002,7 @@ KLIENT: {klient.nazev}
 OBDOBÍ: {od_dt.strftime('%d. %m. %Y')} — {do_dt.strftime('%d. %m. %Y')}
 POČET ZÁPISŮ V OBDOBÍ: {len(zapisy_data)}
 {'VÝVOJ SKÓRE SKLADU:\n' + skore_blok if skore_blok else ''}
+{freelo_blok if freelo_blok else ''}
 
 ZÁPISY Z OBDOBÍ:
 {zapisy_blok}

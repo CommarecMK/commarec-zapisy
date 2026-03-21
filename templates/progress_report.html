@@ -383,9 +383,29 @@
             {% endfor %}
             {% endif %}
 
-            {% if not pd.ukoly_otevrene and not pd.ukoly_splnene %}
+            {% if not pd.ukoly_otevrene and not pd.ukoly_splnene and not pd.freelo_splnene %}
             <div class="pr-col-title">Úkoly</div>
             <div class="no-data">Žádné úkoly v zápisech</div>
+            {% endif %}
+
+            {% if pd.freelo_splnene %}
+            <div class="pr-col-title" style="margin-top:{% if pd.ukoly_otevrene or pd.ukoly_splnene %}14px{% else %}0{% endif %};">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="#00AFF0"><circle cx="12" cy="12" r="10"/><path d="M9 12l2 2 4-4" stroke="white" stroke-width="2" fill="none"/></svg>
+              Freelo — splněno v období ({{ pd.freelo_splnene|length }})
+            </div>
+            {% for u in pd.freelo_splnene %}
+            <div class="ukol-row">
+              <div class="ukol-check done"></div>
+              <div style="flex:1;">
+                <div class="ukol-nazev done">{{ u.name }}</div>
+                <div style="font-size:10px;color:#8aa0b8;">
+                  {% if u.finished_at %}{{ u.finished_at }}{% endif %}
+                  {% if u.assignee %} · {{ u.assignee }}{% endif %}
+                  <a href="{{ u.url }}" target="_blank" style="color:#00AFF0;text-decoration:none;margin-left:4px;" class="no-print">↗</a>
+                </div>
+              </div>
+            </div>
+            {% endfor %}
             {% endif %}
 
             <!-- Freelo live úkoly (pokud projekt má propojení) -->
