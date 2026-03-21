@@ -2448,15 +2448,164 @@ with app.app_context():
     except Exception as e:
         print(f"DB init error: {e}")
 
-# ── Error handlery ──────────────────────────────────────────────────────────
-@app.errorhandler(404)
-def page_not_found(e):
-    return render_template('404.html'), 404
+# ─────────────────────────────────────────────
+# MĚSÍČNÍ AI REPORT
+# ─────────────────────────────────────────────
 
-@app.errorhandler(500)
-def internal_error(e):
-    db.session.rollback()
-    return render_template('500.html'), 500
+@app.route("/report/mesicni")
+@login_required
+def report_mesicni():
+    """Stránka pro výběr klienta a generování měsíčního AI reportu."""
+    klienti = Klient.query.filter_by(is_active=True).order_by(Klient.nazev).all()
+    return render_template("report_mesicni.html", klienti=klienti, now=datetime.utcnow())
+
+
+@app.route("/api/report/generovat", methods=["POST"])
+@login_required
+def api_report_generovat():
+    """Generuje měsíční AI report pro klienta z jeho zápisů."""
+    data = request.get_json()
+    klient_id = data.get("klient_id")
+    od_str = data.get("od")
+    do_str = data.get("do")
+
+    if not klient_id or not od_str or not do_str:
+        return jsonify({"error": "Chybí parametry"}), 400
+
+    try:
+        od_dt = datetime.strptime(od_str, "%Y-%m-%d")
+        do_dt = datetime.strptime(do_str, "%Y-%m-%d")
+    except:
+        return jsonify({"error": "Neplatné datum"}), 400
+
+    klient = Klient.query.get_or_404(klient_id)
+    projekty = Projekt.query.filter_by(klient_id=klient_id, is_active=True).all()
+
+    # Sbírání dat ze zápisů
+    zapisy_data = []
+    ukoly_otevrene = []
+    ukoly_splnene = []
+    skore_history = []
+    vsechny_zapisy_v_obdobi = []
+
+    for p in projekty:
+        zapisy_v_obdobi = Zapis.query.filter(
+            Zapis.projekt_id == p.id,
+            Zapis.created_at >= od_dt,
+            Zapis.created_at <= do_dt + timedelta(days=1),
+        ).order_by(Zapis.created_at.asc()).all()
+
+        vsechny_zapisy_v_obdobi.extend(zapisy_v_obdobi)
+
+        for z in zapisy_v_obdobi:
+            output = {}
+            try:
+                output = json.loads(z.output_json or "{}")
+            except:
+                pass
+
+            # Sestavení obsahu zápisu pro AI
+            zapis_text = f"--- ZÁPIS: {z.title} ({z.created_at.strftime('%d. %m. %Y')}) | Typ: {z.template} ---\n"
+            for key in ["uvod", "zjisteni", "hodnoceni", "procesy", "rizika", "kroky", "prinosy", "poznamky", "dalsi_krok"]:
+                val = output.get(key, "")
+                if val and len(val.strip()) > 10:
+                    # Zbav se HTML tagů pro čistý text
+                    import re as _re
+                    clean = _re.sub(r"<[^>]+>", " ", val).strip()
+                    if clean:
+                        zapis_text += f"[{key.upper()}]: {clean}\n"
+
+            zapisy_data.append(zapis_text)
+
+            # Úkoly
+            try:
+                tasks = json.loads(z.tasks_json or "[]")
+                for t in tasks:
+                    if isinstance(t, dict) and t.get("name"):
+                        t["zapis_nazev"] = z.title
+                        t["zapis_datum"] = z.created_at.strftime("%d. %m. %Y")
+                        if t.get("done"):
+                            ukoly_splnene.append(t)
+                        else:
+                            ukoly_otevrene.append(t)
+            except:
+                pass
+
+            # Skóre z auditů
+            if z.template == "audit" and z.output_json:
+                try:
+                    import re as _re
+                    ratings = output.get("hodnoceni", "") or output.get("ratings", "")
+                    m = _re.search(r"Celkov[eé][^0-9]*([0-9]+)\s*%", ratings)
+                    if m:
+                        skore_history.append({
+                            "skore": int(m.group(1)),
+                            "datum": z.created_at.strftime("%d. %m. %Y"),
+                        })
+                except:
+                    pass
+
+    if not zapisy_data:
+        return jsonify({"error": "V zadaném období nejsou žádné zápisy pro tohoto klienta."}), 400
+
+    # Sestavení promptu pro Claude
+    zapisy_blok = "\n\n".join(zapisy_data)
+    skore_blok = ""
+    if skore_history:
+        skore_blok = "\n".join([f"- {s['datum']}: {s['skore']} %" for s in skore_history])
+
+    prompt = f"""Jsi konzultant Commarec s.r.o., který píše měsíční report pro klienta.
+
+KLIENT: {klient.nazev}
+OBDOBÍ: {od_dt.strftime('%d. %m. %Y')} — {do_dt.strftime('%d. %m. %Y')}
+POČET ZÁPISŮ V OBDOBÍ: {len(zapisy_data)}
+{'VÝVOJ SKÓRE SKLADU:\n' + skore_blok if skore_blok else ''}
+
+ZÁPISY Z OBDOBÍ:
+{zapisy_blok}
+
+Na základě výše uvedených zápisů vytvoř strukturovaný měsíční report pro klienta.
+Report piš profesionálně, v první osobě množného čísla (my, naše doporučení), v češtině.
+Buď konkrétní — cituj čísla, termíny a fakta ze zápisů.
+
+Vrať POUZE JSON (bez markdown backticks) v tomto formátu:
+{{
+  "executive_summary": "2-3 věty shrnující co se v období hlavně dělo a jaký je celkový trend",
+  "klic_zjisteni": ["zjištění 1", "zjištění 2", "zjištění 3"],
+  "pokrok": "Odstavec o konkrétním pokroku — co se zlepšilo, jaká čísla, co bylo dokončeno",
+  "rizika": ["riziko nebo otevřená otázka 1", "riziko 2"],
+  "next_steps": ["doporučený krok 1 na příští období", "doporučený krok 2", "doporučený krok 3"],
+  "nadpis_reportu": "Stručný výstižný nadpis reportu (max 8 slov)"
+}}"""
+
+    try:
+        ai = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
+        response = ai.messages.create(
+            model="claude-sonnet-4-5",
+            max_tokens=2000,
+            messages=[{"role": "user", "content": prompt}]
+        )
+        raw = response.content[0].text.strip()
+        # Zbav se případných markdown backticks
+        import re as _re
+        raw = _re.sub(r"^```json\s*|^```\s*|\s*```$", "", raw, flags=_re.MULTILINE).strip()
+        ai_data = json.loads(raw)
+    except json.JSONDecodeError as e:
+        return jsonify({"error": f"AI vrátila neplatný JSON: {str(e)}"}), 500
+    except Exception as e:
+        return jsonify({"error": f"Chyba AI: {str(e)}"}), 500
+
+    return jsonify({
+        "ok": True,
+        "klient_nazev": klient.nazev,
+        "od": od_dt.strftime("%d. %m. %Y"),
+        "do": do_dt.strftime("%d. %m. %Y"),
+        "pocet_zapisu": len(zapisy_data),
+        "ukoly_otevrene": ukoly_otevrene[:20],
+        "ukoly_splnene": ukoly_splnene[:20],
+        "skore_history": skore_history,
+        "ai": ai_data,
+    })
 
 
 if __name__ == "__main__":

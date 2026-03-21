@@ -179,6 +179,7 @@ hr { border: none; border-top: 1px solid var(--border); margin: 1.5rem 0; }
     <a href="{{ url_for('novy_zapis') }}" class="nav-link {% if request.endpoint == 'novy_zapis' %}active{% endif %}" style="background:#00AFF0; color:#0E213E; padding:6px 16px; border-radius:4px; font-family:'Montserrat',sans-serif; font-weight:800; font-size:12px; letter-spacing:0.06em; text-transform:uppercase; white-space:nowrap;">+ Nový zápis</a>
     {% if session.is_admin %}
     <a href="{{ url_for('progress_report') }}" class="nav-link {% if request.endpoint == 'progress_report' %}active{% endif %}">Report</a>
+    <a href="{{ url_for('report_mesicni') }}" class="nav-link {% if request.endpoint == 'report_mesicni' %}active{% endif %}">AI Report</a>
         <a href="{{ url_for('admin') }}" class="nav-link {% if request.endpoint == 'admin' %}active{% endif %}">Správa</a>
     {% endif %}
   </div>

@@ -1,0 +1,644 @@
+{% extends "base.html" %}
+{% block title %}Měsíční report{% endblock %}
+
+{% block extra_head %}
+<style>
+/* ── SETUP STRÁNKA ──────────────────────────────── */
+.report-setup {
+  max-width: 680px;
+  margin: 0 auto;
+  padding: 2.5rem 1.5rem;
+}
+.setup-card {
+  background: white;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 2rem 2.5rem;
+}
+.setup-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr auto;
+  gap: 12px;
+  align-items: flex-end;
+  margin-top: 1.5rem;
+}
+.setup-row .form-group { margin: 0; }
+
+/* ── LOADING ──────────────────────────────────── */
+#loading-overlay {
+  display: none;
+  position: fixed; inset: 0;
+  background: rgba(5,11,21,0.7);
+  z-index: 999;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 1rem;
+}
+#loading-overlay.active { display: flex; }
+.loading-spinner {
+  width: 48px; height: 48px;
+  border: 4px solid rgba(0,175,240,0.2);
+  border-top-color: #00AFF0;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+.loading-text { color: white; font-size: 14px; font-weight: 600; letter-spacing: 0.05em; }
+
+/* ── REPORT ─────────────────────────────────────── */
+#report-wrap { display: none; }
+#report-wrap.active { display: block; }
+
+.report-page {
+  max-width: 860px;
+  margin: 0 auto;
+  padding: 2rem 1.5rem 4rem;
+}
+
+/* Cover */
+.report-cover {
+  background: linear-gradient(135deg, #173767 0%, #0E213E 60%, #050B15 100%);
+  border-radius: 8px;
+  padding: 3rem 3.5rem;
+  color: white;
+  margin-bottom: 2rem;
+  position: relative;
+  overflow: hidden;
+}
+.report-cover::before {
+  content: '';
+  position: absolute;
+  top: -40px; right: -40px;
+  width: 300px; height: 300px;
+  border-radius: 50%;
+  background: rgba(0,175,240,0.06);
+}
+.report-cover::after {
+  content: '';
+  position: absolute;
+  bottom: -60px; left: 40%;
+  width: 200px; height: 200px;
+  border-radius: 50%;
+  background: rgba(0,175,240,0.04);
+}
+.cover-label {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: #00AFF0;
+  margin-bottom: 1rem;
+}
+.cover-title {
+  font-family: var(--font-display);
+  font-size: 48px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  line-height: 1;
+  color: white;
+  margin-bottom: 0.5rem;
+}
+.cover-subtitle {
+  font-size: 20px;
+  font-weight: 600;
+  color: rgba(255,255,255,0.7);
+  margin-bottom: 2rem;
+}
+.cover-meta {
+  display: flex;
+  gap: 2rem;
+  font-size: 12px;
+  color: rgba(255,255,255,0.5);
+  font-weight: 500;
+}
+.cover-meta strong { color: rgba(255,255,255,0.9); }
+.cover-logo {
+  position: absolute;
+  top: 2.5rem; right: 3rem;
+  opacity: 0.6;
+}
+
+/* Sekce reportu */
+.report-section {
+  background: white;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.75rem 2rem;
+  margin-bottom: 1.25rem;
+}
+.report-section-label {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: #00AFF0;
+  margin-bottom: 0.5rem;
+}
+.report-section h2 {
+  font-family: var(--font-body);
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--navy);
+  margin-bottom: 1rem;
+}
+.executive-text {
+  font-size: 15px;
+  line-height: 1.8;
+  color: var(--text);
+  font-weight: 500;
+}
+
+/* Klíčová zjištění */
+.zjisteni-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.zjisteni-list li {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--text);
+}
+.zjisteni-list li::before {
+  content: '';
+  flex-shrink: 0;
+  margin-top: 6px;
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: #00AFF0;
+}
+
+/* Skóre */
+.skore-row {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  flex-wrap: wrap;
+  margin-bottom: 1rem;
+}
+.skore-chip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 6px 14px;
+  font-size: 13px;
+  font-weight: 600;
+}
+.skore-value {
+  font-family: var(--font-display);
+  font-size: 22px;
+  font-weight: 900;
+  letter-spacing: 0.02em;
+}
+.skore-arrow {
+  font-size: 16px;
+  margin: 0 4px;
+  color: var(--muted);
+}
+.skore-delta-pos { color: #34C759; font-weight: 700; }
+.skore-delta-neg { color: #FF383C; font-weight: 700; }
+
+/* Pokrok */
+.pokrok-text {
+  font-size: 14px;
+  line-height: 1.7;
+  color: var(--text);
+}
+
+/* Rizika */
+.rizika-list {
+  list-style: none; padding: 0; margin: 0;
+  display: flex; flex-direction: column; gap: 8px;
+}
+.rizika-list li {
+  display: flex; gap: 10px; align-items: flex-start;
+  font-size: 14px; line-height: 1.6; color: var(--text);
+}
+.rizika-list li::before {
+  content: '⚠';
+  flex-shrink: 0;
+  color: #FF8D00;
+  font-size: 14px;
+  margin-top: 1px;
+}
+
+/* Next steps */
+.steps-list {
+  list-style: none; padding: 0; margin: 0;
+  display: flex; flex-direction: column; gap: 10px;
+  counter-reset: steps;
+}
+.steps-list li {
+  display: flex; gap: 14px; align-items: flex-start;
+  font-size: 14px; line-height: 1.6; color: var(--text);
+  counter-increment: steps;
+}
+.steps-list li::before {
+  content: counter(steps);
+  flex-shrink: 0;
+  width: 24px; height: 24px;
+  background: var(--navy);
+  color: white;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 11px; font-weight: 700;
+  margin-top: 1px;
+}
+
+/* Úkoly */
+.ukoly-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+.ukoly-col h3 {
+  font-size: 11px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 0.1em; color: var(--muted); margin-bottom: 10px;
+}
+.ukol-item {
+  display: flex; gap: 10px; align-items: flex-start;
+  padding: 8px 12px;
+  border-radius: 5px;
+  margin-bottom: 6px;
+  font-size: 13px;
+}
+.ukol-item.otevreny {
+  background: #FFF8F0;
+  border: 1px solid #FFD9A0;
+}
+.ukol-item.splneny {
+  background: #F0FBF5;
+  border: 1px solid #A8E6C0;
+}
+.ukol-dot {
+  flex-shrink: 0;
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  margin-top: 4px;
+}
+.ukol-dot.otevreny { background: #FF8D00; }
+.ukol-dot.splneny  { background: #34C759; }
+.ukol-name { font-weight: 600; color: var(--navy); }
+.ukol-meta { font-size: 11px; color: var(--muted); margin-top: 2px; }
+
+/* Footer reportu */
+.report-footer {
+  text-align: center;
+  margin-top: 2rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--border);
+  color: var(--muted);
+  font-size: 12px;
+}
+
+/* Akční tlačítka nahoře */
+.report-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+}
+
+/* ── PRINT ──────────────────────────────────── */
+@media print {
+  .nav, .report-setup, #loading-overlay, .report-actions, .page-header { display: none !important; }
+  #report-wrap { display: block !important; }
+  .report-cover { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .skore-value, .skore-chip { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .report-section { break-inside: avoid; }
+  .ukoly-grid { break-inside: avoid; }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div id="loading-overlay">
+  <div class="loading-spinner"></div>
+  <div class="loading-text" id="loading-msg">Generuji report…</div>
+</div>
+
+<!-- SETUP -->
+<div id="setup-wrap" class="report-setup">
+  <div class="page-header">
+    <div>
+      <h1>Měsíční report</h1>
+      <p>AI vygeneruje report ze všech zápisů v daném období</p>
+    </div>
+  </div>
+
+  <div class="setup-card">
+    <div class="form-group">
+      <label>Klient</label>
+      <select id="sel-klient">
+        <option value="">— Vyberte klienta —</option>
+        {% for k in klienti %}
+        <option value="{{ k.id }}">{{ k.nazev }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div class="setup-row">
+      <div class="form-group">
+        <label>Od</label>
+        <input type="date" id="od" value="{{ (now - timedelta).strftime('%Y-%m-%d') if now else '' }}">
+      </div>
+      <div class="form-group">
+        <label>Do</label>
+        <input type="date" id="do" value="{{ now.strftime('%Y-%m-%d') }}">
+      </div>
+      <div></div>
+      <button class="btn btn-navy" onclick="generovat()" id="gen-btn" style="white-space:nowrap;">
+        ✨ Generovat report
+      </button>
+    </div>
+
+    <div id="setup-error" style="display:none;margin-top:1rem;" class="alert alert-error"></div>
+  </div>
+</div>
+
+<!-- REPORT OUTPUT -->
+<div id="report-wrap">
+  <div class="report-page">
+
+    <div class="report-actions">
+      <button class="btn btn-secondary btn-sm" onclick="zpet()">← Nový report</button>
+      <button class="btn btn-navy btn-sm" onclick="window.print()">🖨 Tisknout / PDF</button>
+    </div>
+
+    <!-- COVER -->
+    <div class="report-cover">
+      <img src="/static/logo-white.svg" alt="Commarec" class="cover-logo" style="height:28px;">
+      <div class="cover-label">Měsíční progress report</div>
+      <div class="cover-title" id="r-nadpis">–</div>
+      <div class="cover-subtitle" id="r-klient">–</div>
+      <div class="cover-meta">
+        <span>Období: <strong id="r-obdobi">–</strong></span>
+        <span>Zápisů: <strong id="r-pocet">–</strong></span>
+        <span>Datum generování: <strong>{{ now.strftime('%d. %m. %Y') }}</strong></span>
+      </div>
+    </div>
+
+    <!-- EXECUTIVE SUMMARY -->
+    <div class="report-section">
+      <div class="report-section-label">01 — Shrnutí</div>
+      <h2>Executive summary</h2>
+      <p class="executive-text" id="r-summary">–</p>
+    </div>
+
+    <!-- KLÍČOVÁ ZJIŠTĚNÍ -->
+    <div class="report-section">
+      <div class="report-section-label">02 — Zjištění</div>
+      <h2>Klíčová zjištění z období</h2>
+      <ul class="zjisteni-list" id="r-zjisteni"></ul>
+    </div>
+
+    <!-- POKROK + SKÓRE -->
+    <div class="report-section">
+      <div class="report-section-label">03 — Pokrok</div>
+      <h2>Pokrok a výsledky</h2>
+      <div id="r-skore-wrap" style="display:none;margin-bottom:1rem;">
+        <div class="skore-row" id="r-skore-row"></div>
+      </div>
+      <p class="pokrok-text" id="r-pokrok">–</p>
+    </div>
+
+    <!-- RIZIKA -->
+    <div class="report-section" id="r-rizika-section">
+      <div class="report-section-label">04 — Rizika</div>
+      <h2>Otevřené otázky a rizika</h2>
+      <ul class="rizika-list" id="r-rizika"></ul>
+    </div>
+
+    <!-- ÚKOLY -->
+    <div class="report-section" id="r-ukoly-section" style="display:none;">
+      <div class="report-section-label">05 — Úkoly</div>
+      <h2>Přehled úkolů</h2>
+      <div class="ukoly-grid">
+        <div class="ukoly-col">
+          <h3>✅ Splněné</h3>
+          <div id="r-ukoly-splnene"><p style="color:var(--muted);font-size:13px;">Žádné splněné úkoly</p></div>
+        </div>
+        <div class="ukoly-col">
+          <h3>🔵 Otevřené</h3>
+          <div id="r-ukoly-otevrene"><p style="color:var(--muted);font-size:13px;">Žádné otevřené úkoly</p></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- NEXT STEPS -->
+    <div class="report-section">
+      <div class="report-section-label">06 — Doporučení</div>
+      <h2>Doporučené kroky na příští období</h2>
+      <ol class="steps-list" id="r-steps"></ol>
+    </div>
+
+    <div class="report-footer">
+      Commarec s.r.o. · Varšavská 715/36, Praha 2 · commarec.cz · Důvěrný dokument
+    </div>
+
+  </div>
+</div>
+
+<script>
+// Nastav defaultní datum — poslední měsíc
+(function() {
+  const now = new Date();
+  const doEl = document.getElementById('do');
+  const odEl = document.getElementById('od');
+  if (!doEl.value) doEl.value = now.toISOString().slice(0, 10);
+  if (!odEl.value) {
+    const od = new Date(now);
+    od.setDate(od.getDate() - 30);
+    odEl.value = od.toISOString().slice(0, 10);
+  }
+})();
+
+const LOADING_MSGS = [
+  'Načítám zápisy z období…',
+  'Analyzuji klíčová zjištění…',
+  'Hodnotím pokrok a skóre…',
+  'Sestavuji doporučení…',
+  'Finalizuji report…',
+];
+
+let loadingInterval = null;
+
+function showLoading() {
+  const ov = document.getElementById('loading-overlay');
+  ov.classList.add('active');
+  let i = 0;
+  document.getElementById('loading-msg').textContent = LOADING_MSGS[0];
+  loadingInterval = setInterval(() => {
+    i = (i + 1) % LOADING_MSGS.length;
+    document.getElementById('loading-msg').textContent = LOADING_MSGS[i];
+  }, 3000);
+}
+
+function hideLoading() {
+  document.getElementById('loading-overlay').classList.remove('active');
+  if (loadingInterval) { clearInterval(loadingInterval); loadingInterval = null; }
+}
+
+async function generovat() {
+  const klientId = document.getElementById('sel-klient').value;
+  const od = document.getElementById('od').value;
+  const doo = document.getElementById('do').value;
+  const errEl = document.getElementById('setup-error');
+
+  errEl.style.display = 'none';
+
+  if (!klientId) { errEl.textContent = 'Vyberte klienta.'; errEl.style.display = 'block'; return; }
+  if (!od || !doo) { errEl.textContent = 'Vyplňte datum od a do.'; errEl.style.display = 'block'; return; }
+
+  const btn = document.getElementById('gen-btn');
+  btn.disabled = true;
+  btn.innerHTML = '<span style="display:inline-block;width:12px;height:12px;border:2px solid rgba(255,255,255,0.3);border-top-color:white;border-radius:50%;animation:spin 0.7s linear infinite;margin-right:6px;vertical-align:middle"></span> Generuji…';
+  showLoading();
+
+  try {
+    const resp = await fetch('/api/report/generovat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ klient_id: klientId, od, do: doo }),
+    });
+    const data = await resp.json();
+
+    if (!resp.ok || data.error) {
+      hideLoading();
+      errEl.textContent = data.error || 'Chyba serveru.';
+      errEl.style.display = 'block';
+      btn.disabled = false;
+      btn.innerHTML = '✨ Generovat report';
+      return;
+    }
+
+    renderReport(data);
+    hideLoading();
+    document.getElementById('setup-wrap').style.display = 'none';
+    document.getElementById('report-wrap').classList.add('active');
+    window.scrollTo(0, 0);
+
+  } catch (e) {
+    hideLoading();
+    errEl.textContent = 'Chyba: ' + e.message;
+    errEl.style.display = 'block';
+    btn.disabled = false;
+    btn.innerHTML = '✨ Generovat report';
+  }
+}
+
+function renderReport(data) {
+  const ai = data.ai || {};
+
+  // Cover
+  document.getElementById('r-nadpis').textContent = ai.nadpis_reportu || 'Měsíční report';
+  document.getElementById('r-klient').textContent = data.klient_nazev;
+  document.getElementById('r-obdobi').textContent = data.od + ' — ' + data.do;
+  document.getElementById('r-pocet').textContent = data.pocet_zapisu;
+
+  // Executive summary
+  document.getElementById('r-summary').textContent = ai.executive_summary || '–';
+
+  // Klíčová zjištění
+  const zjEl = document.getElementById('r-zjisteni');
+  zjEl.innerHTML = '';
+  (ai.klic_zjisteni || []).forEach(z => {
+    const li = document.createElement('li');
+    li.textContent = z;
+    zjEl.appendChild(li);
+  });
+
+  // Skóre
+  if (data.skore_history && data.skore_history.length > 0) {
+    const row = document.getElementById('r-skore-row');
+    row.innerHTML = '';
+    data.skore_history.forEach((s, i) => {
+      const chip = document.createElement('div');
+      chip.className = 'skore-chip';
+      let color = '#FF383C';
+      if (s.skore >= 70) color = '#34C759';
+      else if (s.skore >= 55) color = '#00AFF0';
+      else if (s.skore >= 40) color = '#FF8D00';
+      chip.innerHTML = `<span class="skore-value" style="color:${color}">${s.skore}%</span><span style="color:var(--muted);font-size:12px;">${s.datum}</span>`;
+      row.appendChild(chip);
+      if (i < data.skore_history.length - 1) {
+        const arr = document.createElement('span');
+        arr.className = 'skore-arrow';
+        arr.textContent = '→';
+        row.appendChild(arr);
+      }
+    });
+    // Delta
+    if (data.skore_history.length >= 2) {
+      const first = data.skore_history[data.skore_history.length - 1].skore;
+      const last = data.skore_history[0].skore;
+      const delta = last - first;
+      const deltaEl = document.createElement('span');
+      deltaEl.className = delta >= 0 ? 'skore-delta-pos' : 'skore-delta-neg';
+      deltaEl.textContent = (delta >= 0 ? '▲ +' : '▼ ') + delta + ' bodů';
+      row.appendChild(deltaEl);
+    }
+    document.getElementById('r-skore-wrap').style.display = 'block';
+  }
+
+  // Pokrok
+  document.getElementById('r-pokrok').textContent = ai.pokrok || '–';
+
+  // Rizika
+  const rizEl = document.getElementById('r-rizika');
+  rizEl.innerHTML = '';
+  (ai.rizika || []).forEach(r => {
+    const li = document.createElement('li');
+    li.textContent = r;
+    rizEl.appendChild(li);
+  });
+
+  // Úkoly
+  const splnene = data.ukoly_splnene || [];
+  const otevrene = data.ukoly_otevrene || [];
+  if (splnene.length > 0 || otevrene.length > 0) {
+    document.getElementById('r-ukoly-section').style.display = 'block';
+
+    const splEl = document.getElementById('r-ukoly-splnene');
+    splEl.innerHTML = splnene.length
+      ? splnene.map(u => `<div class="ukol-item splneny"><div class="ukol-dot splneny"></div><div><div class="ukol-name">${u.name}</div><div class="ukol-meta">${u.zapis_nazev || ''}</div></div></div>`).join('')
+      : '<p style="color:var(--muted);font-size:13px;">Žádné splněné úkoly</p>';
+
+    const otEl = document.getElementById('r-ukoly-otevrene');
+    otEl.innerHTML = otevrene.length
+      ? otevrene.map(u => `<div class="ukol-item otevreny"><div class="ukol-dot otevreny"></div><div><div class="ukol-name">${u.name}</div><div class="ukol-meta">${u.deadline ? 'Do: ' + u.deadline : u.zapis_nazev || ''}</div></div></div>`).join('')
+      : '<p style="color:var(--muted);font-size:13px;">Žádné otevřené úkoly</p>';
+  }
+
+  // Next steps
+  const stEl = document.getElementById('r-steps');
+  stEl.innerHTML = '';
+  (ai.next_steps || []).forEach(s => {
+    const li = document.createElement('li');
+    li.textContent = s;
+    stEl.appendChild(li);
+  });
+}
+
+function zpet() {
+  document.getElementById('setup-wrap').style.display = 'block';
+  document.getElementById('report-wrap').classList.remove('active');
+  const btn = document.getElementById('gen-btn');
+  btn.disabled = false;
+  btn.innerHTML = '✨ Generovat report';
+  document.getElementById('setup-error').style.display = 'none';
+}
+</script>
+{% endblock %}
