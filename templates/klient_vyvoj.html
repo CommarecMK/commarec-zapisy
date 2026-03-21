@@ -1,0 +1,825 @@
+{% extends "base.html" %}
+{% block title %}Vývoj — {{ k.nazev }}{% endblock %}
+{% block extra_head %}
+<style>
+/* ── BRAND: Navy #173767, Cyan #00AFF0, Dark #0E213E ── */
+
+/* HERO — gradient dle brand manuálu */
+.vyvoj-hero {
+  position: relative;
+  overflow: hidden;
+  border-radius: 10px;
+  margin-bottom: 2rem;
+  min-height: 180px;
+  display: flex;
+  align-items: flex-end;
+  padding: 2rem 2.5rem;
+  background: #0E213E;
+}
+.vyvoj-hero-bg {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse 60% 80% at 20% 50%, rgba(23,55,103,0.9) 0%, transparent 70%),
+    radial-gradient(ellipse 40% 60% at 70% 30%, rgba(0,138,189,0.25) 0%, transparent 60%),
+    radial-gradient(ellipse 30% 40% at 80% 70%, rgba(5,11,21,0.8) 0%, transparent 50%),
+    #0E213E;
+  z-index: 0;
+}
+.vyvoj-hero-content { position: relative; z-index: 1; width: 100%; }
+.vyvoj-hero-eyebrow {
+  font-family: 'Montserrat', sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  color: #00AFF0;
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  margin-bottom: 6px;
+}
+.vyvoj-hero-title {
+  font-family: 'DrukCondensed', 'Impact', sans-serif;
+  font-size: 56px;
+  font-weight: 900;
+  color: white;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  line-height: 1.0;
+  margin: 0;
+}
+.vyvoj-hero-meta {
+  display: flex;
+  gap: 24px;
+  margin-top: 14px;
+  flex-wrap: wrap;
+}
+.vyvoj-hero-meta-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-family: 'Montserrat', sans-serif;
+  font-size: 12px;
+  color: rgba(255,255,255,0.6);
+  font-weight: 500;
+}
+.vyvoj-hero-meta-item strong { color: rgba(255,255,255,0.9); font-weight: 700; }
+.hero-back-btn {
+  position: absolute;
+  top: 1.5rem;
+  right: 1.5rem;
+  z-index: 2;
+  font-family: 'Montserrat', sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  color: rgba(255,255,255,0.5);
+  text-decoration: none;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  padding: 6px 14px;
+  border: 1px solid rgba(255,255,255,0.15);
+  border-radius: 4px;
+  transition: all 0.15s;
+}
+.hero-back-btn:hover { color: white; border-color: rgba(255,255,255,0.4); }
+
+/* STAT CARDS */
+.stat-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  margin-bottom: 2rem;
+}
+.stat-card {
+  background: white;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 20px 20px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.stat-card-label {
+  font-family: 'Montserrat', sans-serif;
+  font-size: 10px;
+  font-weight: 700;
+  color: #8aa0b8;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+}
+.stat-card-value {
+  font-family: 'DrukCondensed', 'Impact', sans-serif;
+  font-size: 44px;
+  font-weight: 900;
+  color: #173767;
+  line-height: 1.0;
+  letter-spacing: 0.02em;
+}
+.stat-card-value.cyan { color: #00AFF0; }
+.stat-card-sub {
+  font-family: 'Montserrat', sans-serif;
+  font-size: 11px;
+  font-weight: 600;
+  color: #4A6080;
+  margin-top: 2px;
+}
+
+/* GRID LAYOUT */
+.vyvoj-grid {
+  display: grid;
+  grid-template-columns: 1fr 380px;
+  gap: 1.5rem;
+  align-items: start;
+}
+@media (max-width: 960px) { .vyvoj-grid { grid-template-columns: 1fr; } }
+
+/* SECTION HEADERS */
+.vyvoj-section-title {
+  font-family: 'DrukCondensed', 'Impact', sans-serif;
+  font-size: 28px;
+  font-weight: 900;
+  color: #173767;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  line-height: 1.0;
+}
+
+/* TIMELINE */
+.timeline-wrap {
+  position: relative;
+  padding-left: 28px;
+}
+.timeline-wrap::before {
+  content: '';
+  position: absolute;
+  left: 8px;
+  top: 8px;
+  bottom: 0;
+  width: 2px;
+  background: linear-gradient(to bottom, #00AFF0, rgba(0,175,240,0.1));
+}
+.timeline-item {
+  position: relative;
+  margin-bottom: 20px;
+}
+.timeline-dot {
+  position: absolute;
+  left: -24px;
+  top: 6px;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #00AFF0;
+  border: 2px solid white;
+  box-shadow: 0 0 0 2px #00AFF0;
+  z-index: 1;
+}
+.timeline-dot.audit { background: #173767; box-shadow: 0 0 0 2px #173767; }
+.timeline-dot.operativa { background: #00AFF0; box-shadow: 0 0 0 2px #00AFF0; }
+.timeline-dot.obchod { background: #00C8B3; box-shadow: 0 0 0 2px #00C8B3; }
+.timeline-card {
+  background: white;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 14px 16px;
+  transition: border-color 0.15s, box-shadow 0.15s;
+  text-decoration: none;
+  display: block;
+}
+.timeline-card:hover {
+  border-color: #00AFF0;
+  box-shadow: 0 2px 12px rgba(0,175,240,0.12);
+}
+.timeline-card-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 6px;
+}
+.timeline-card-title {
+  font-family: 'Montserrat', sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+  color: #173767;
+  line-height: 1.3;
+}
+.timeline-card-date {
+  font-family: 'Montserrat', sans-serif;
+  font-size: 11px;
+  font-weight: 600;
+  color: #8aa0b8;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.timeline-card-type {
+  font-size: 10px;
+  font-weight: 700;
+  font-family: 'Montserrat', sans-serif;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  padding: 2px 8px;
+  border-radius: 3px;
+  background: rgba(0,175,240,0.1);
+  color: #00AFF0;
+  border: 1px solid rgba(0,175,240,0.2);
+}
+.timeline-card-type.audit {
+  background: rgba(23,55,103,0.08);
+  color: #173767;
+  border-color: rgba(23,55,103,0.15);
+}
+.timeline-card-type.obchod {
+  background: rgba(0,200,179,0.1);
+  color: #00A090;
+  border-color: rgba(0,200,179,0.2);
+}
+.timeline-card-excerpt {
+  font-family: 'Montserrat', sans-serif;
+  font-size: 12px;
+  color: #4A6080;
+  line-height: 1.5;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.timeline-empty {
+  text-align: center;
+  padding: 40px 20px;
+  color: #8aa0b8;
+  font-family: 'Montserrat', sans-serif;
+  font-size: 13px;
+}
+
+/* PROJEKTY SIDEBAR */
+.projekt-card {
+  background: white;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 12px;
+  transition: border-color 0.15s;
+}
+.projekt-card:hover { border-color: #00AFF0; }
+.projekt-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.projekt-card-name {
+  font-family: 'Montserrat', sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+  color: #173767;
+}
+.projekt-card-status {
+  font-size: 10px;
+  font-weight: 700;
+  font-family: 'Montserrat', sans-serif;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 2px 8px;
+  border-radius: 3px;
+}
+.projekt-card-status.aktivni {
+  background: rgba(0,175,240,0.1);
+  color: #00AFF0;
+  border: 1px solid rgba(0,175,240,0.2);
+}
+.projekt-card-status.uzavreny {
+  background: #f0f3f7;
+  color: #8aa0b8;
+  border: 1px solid var(--border);
+}
+.projekt-meta {
+  display: flex;
+  gap: 12px;
+  font-family: 'Montserrat', sans-serif;
+  font-size: 11px;
+  color: #8aa0b8;
+  margin-bottom: 8px;
+  font-weight: 600;
+}
+.projekt-meta span { display: flex; align-items: center; gap: 4px; }
+
+/* FREELO TASKS */
+.task-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--border);
+}
+.task-item:last-child { border-bottom: none; }
+.task-check {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 2px solid #D0DAE8;
+  flex-shrink: 0;
+  margin-top: 1px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.task-check.done {
+  background: #34C759;
+  border-color: #34C759;
+}
+.task-check.done::after {
+  content: '✓';
+  color: white;
+  font-size: 10px;
+  font-weight: 900;
+  line-height: 1;
+}
+.task-name {
+  font-family: 'Montserrat', sans-serif;
+  font-size: 12px;
+  font-weight: 600;
+  color: #173767;
+  flex: 1;
+  line-height: 1.4;
+}
+.task-name.done { color: #8aa0b8; text-decoration: line-through; }
+.task-due {
+  font-family: 'Montserrat', sans-serif;
+  font-size: 10px;
+  font-weight: 700;
+  color: #8aa0b8;
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+.task-due.overdue { color: #FF383C; }
+
+/* PROGRESS BAR */
+.progress-bar-wrap {
+  background: #f0f3f7;
+  border-radius: 4px;
+  height: 6px;
+  overflow: hidden;
+  margin: 8px 0 4px;
+}
+.progress-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #00AFF0, #00C8B3);
+  border-radius: 4px;
+  transition: width 0.5s ease;
+}
+
+/* SCORE BADGE */
+.score-big {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(0,175,240,0.08);
+  border: 1.5px solid rgba(0,175,240,0.2);
+  border-radius: 6px;
+  padding: 10px 16px;
+  margin-bottom: 16px;
+}
+.score-big-num {
+  font-family: 'DrukCondensed', 'Impact', sans-serif;
+  font-size: 40px;
+  font-weight: 900;
+  color: #00AFF0;
+  line-height: 1.0;
+}
+.score-big-label {
+  font-family: 'Montserrat', sans-serif;
+  font-size: 10px;
+  font-weight: 700;
+  color: #4A6080;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+/* NOVÝ ZÁPIS CTA */
+.cta-strip {
+  background: linear-gradient(135deg, #173767, #0E213E);
+  border-radius: 8px;
+  padding: 20px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 1.5rem;
+}
+.cta-strip-text {
+  font-family: 'DrukCondensed', 'Impact', sans-serif;
+  font-size: 22px;
+  font-weight: 900;
+  color: white;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.cta-strip-sub {
+  font-family: 'Montserrat', sans-serif;
+  font-size: 12px;
+  color: rgba(255,255,255,0.5);
+  margin-top: 2px;
+}
+.btn-cyan {
+  font-family: 'DrukCondensed', 'Impact', sans-serif;
+  font-size: 16px;
+  font-weight: 900;
+  background: #00AFF0;
+  color: white;
+  border: none;
+  padding: 10px 24px;
+  border-radius: 5px;
+  text-decoration: none;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  white-space: nowrap;
+  transition: background 0.15s;
+}
+.btn-cyan:hover { background: #009DD8; color: white; }
+
+/* CARD WRAPPER */
+.vyvoj-card {
+  background: white;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+  margin-bottom: 1.5rem;
+}
+.vyvoj-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px 14px;
+  border-bottom: 1px solid var(--border);
+  gap: 12px;
+}
+.vyvoj-card-body { padding: 20px; }
+.vyvoj-card-body-sm { padding: 14px 20px; }
+
+/* ACCORDION pro projekty */
+.proj-accordion { border: none; }
+.proj-accordion-trigger {
+  width: 100%;
+  text-align: left;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 14px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  border-bottom: 1px solid var(--border);
+  transition: background 0.1s;
+}
+.proj-accordion-trigger:hover { background: #f8f9fb; }
+.proj-accordion-trigger:last-child { border-bottom: none; }
+.proj-acc-name {
+  font-family: 'Montserrat', sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+  color: #173767;
+}
+.proj-acc-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.proj-acc-icon {
+  font-size: 10px;
+  color: #8aa0b8;
+  transition: transform 0.2s;
+}
+.proj-acc-icon.open { transform: rotate(180deg); }
+.proj-accordion-body {
+  display: none;
+  padding: 16px 20px;
+  background: #f8f9fb;
+  border-bottom: 1px solid var(--border);
+}
+.proj-accordion-body.open { display: block; }
+
+/* FILTER TABS */
+.filter-tabs {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 16px;
+  background: #f0f3f7;
+  padding: 3px;
+  border-radius: 6px;
+  width: fit-content;
+}
+.filter-tab {
+  font-family: 'Montserrat', sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 5px 14px;
+  border-radius: 4px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #4A6080;
+  transition: all 0.15s;
+}
+.filter-tab.active {
+  background: white;
+  color: #173767;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+
+  <!-- HERO -->
+  <div class="vyvoj-hero">
+    <div class="vyvoj-hero-bg"></div>
+    <a href="{{ url_for('klient_detail', klient_id=k.id) }}" class="hero-back-btn">← Zpět na klienta</a>
+    <div class="vyvoj-hero-content">
+      <div class="vyvoj-hero-eyebrow">Vývoj spolupráce</div>
+      <h1 class="vyvoj-hero-title">{{ k.nazev | upper }}</h1>
+      <div class="vyvoj-hero-meta">
+        <div class="vyvoj-hero-meta-item">
+          <svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+          Klient od <strong>{{ k.created_at.strftime('%m/%Y') if k.created_at else '—' }}</strong>
+        </div>
+        <div class="vyvoj-hero-meta-item">
+          <svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/></svg>
+          <strong>{{ zapisy|length }}</strong> zápisů celkem
+        </div>
+        <div class="vyvoj-hero-meta-item">
+          <svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg>
+          <strong>{{ projekty|length }}</strong> projektů
+        </div>
+        {% if k.kontakt %}
+        <div class="vyvoj-hero-meta-item">
+          <svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+          <strong>{{ k.kontakt }}</strong>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <!-- STAT CARDS -->
+  {% set zapisy_audit = zapisy | selectattr('template', 'eq', 'audit') | list %}
+  {% set zapisy_oper = zapisy | selectattr('template', 'eq', 'operativa') | list %}
+  {% set zapisy_obchod = zapisy | selectattr('template', 'eq', 'obchod') | list %}
+  {% set aktivni_projekty = projekty | selectattr('is_active', 'equalto', true) | list %}
+
+  <div class="stat-grid">
+    <div class="stat-card">
+      <div class="stat-card-label">Zápisy celkem</div>
+      <div class="stat-card-value">{{ zapisy|length }}</div>
+      <div class="stat-card-sub">{{ zapisy_audit|length }} audit · {{ zapisy_oper|length }} operativa</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-card-label">Aktivní projekty</div>
+      <div class="stat-card-value cyan">{{ aktivni_projekty|length }}</div>
+      <div class="stat-card-sub">z celkem {{ projekty|length }} projektů</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-card-label">Poslední zápis</div>
+      <div class="stat-card-value" style="font-size:28px;padding-top:6px;">
+        {% if zapisy %}{{ zapisy[0].created_at.strftime('%d.%m.') }}{% else %}—{% endif %}
+      </div>
+      <div class="stat-card-sub">
+        {% if zapisy %}{{ zapisy[0].created_at.strftime('%Y') }}{% else %}žádný zápis{% endif %}
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-card-label">Průměrné skóre</div>
+      {% set scores = [] %}
+      {% for z in zapisy %}
+        {% if z.output_json %}
+          {% set data = z.output_json | tojson | fromjson if z.output_json else {} %}
+        {% endif %}
+      {% endfor %}
+      <div class="stat-card-value" style="font-size:28px;padding-top:6px;">–</div>
+      <div class="stat-card-sub">z auditních zápisů</div>
+    </div>
+  </div>
+
+  <!-- MAIN GRID -->
+  <div class="vyvoj-grid">
+
+    <!-- LEVÝ SLOUPEC — Timeline zápisů -->
+    <div>
+
+      <!-- CTA pro nový zápis -->
+      <div class="cta-strip">
+        <div>
+          <div class="cta-strip-text">Nový zápis ze schůzky</div>
+          <div class="cta-strip-sub">Vygeneruj profesionální report pomocí AI</div>
+        </div>
+        <a href="{{ url_for('novy_zapis') }}?klient_id={{ k.id }}" class="btn-cyan">+ Nový zápis</a>
+      </div>
+
+      <!-- TIMELINE -->
+      <div class="vyvoj-card">
+        <div class="vyvoj-card-header">
+          <div class="vyvoj-section-title">Chronologie zápisů</div>
+          <div class="filter-tabs" id="filterTabs">
+            <button class="filter-tab active" onclick="filterTimeline('vse', this)">Vše</button>
+            <button class="filter-tab" onclick="filterTimeline('audit', this)">Audit</button>
+            <button class="filter-tab" onclick="filterTimeline('operativa', this)">Operativa</button>
+            <button class="filter-tab" onclick="filterTimeline('obchod', this)">Obchod</button>
+          </div>
+        </div>
+        <div class="vyvoj-card-body">
+          {% if zapisy %}
+          <div class="timeline-wrap" id="timeline">
+            {% for z in zapisy %}
+            {% set tmpl = z.template or 'audit' %}
+            <div class="timeline-item" data-type="{{ tmpl }}">
+              <div class="timeline-dot {{ tmpl }}"></div>
+              <a href="{{ url_for('detail_zapisu', zapis_id=z.id) }}" class="timeline-card">
+                <div class="timeline-card-header">
+                  <div>
+                    <span class="timeline-card-type {{ tmpl }}">{{ template_names.get(tmpl, tmpl) }}</span>
+                  </div>
+                  <div class="timeline-card-date">{{ z.created_at.strftime('%d. %m. %Y') }}</div>
+                </div>
+                <div class="timeline-card-title">{{ z.title or z.projekt.nazev if z.projekt else k.nazev }}</div>
+
+                <div style="display:flex;align-items:center;gap:8px;margin-top:8px;">
+                  {% if z.konzultant %}
+                  <span style="font-family:'Montserrat',sans-serif;font-size:11px;font-weight:600;color:#8aa0b8;">
+                    {{ z.konzultant.name }}
+                  </span>
+                  {% endif %}
+                  {% if z.projekt %}
+                  <span style="font-family:'Montserrat',sans-serif;font-size:11px;font-weight:600;color:#00AFF0;">
+                    {{ z.projekt.nazev }}
+                  </span>
+                  {% endif %}
+                </div>
+              </a>
+            </div>
+            {% endfor %}
+          </div>
+          {% else %}
+          <div class="timeline-empty">
+            <svg width="40" height="40" fill="none" viewBox="0 0 24 24" stroke="#D0DAE8" stroke-width="1.5" style="margin:0 auto 12px;display:block;"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/></svg>
+            Zatím žádné zápisy pro tohoto klienta.<br>
+            <a href="{{ url_for('novy_zapis') }}?klient_id={{ k.id }}" style="color:#00AFF0;font-weight:700;text-decoration:none;font-size:13px;margin-top:8px;display:inline-block;">+ Přidat první zápis →</a>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+
+    </div>
+
+    <!-- PRAVÝ SLOUPEC — Projekty + Freelo -->
+    <div>
+
+      <!-- PROJEKTY -->
+      <div class="vyvoj-card">
+        <div class="vyvoj-card-header">
+          <div class="vyvoj-section-title">Projekty</div>
+          <a href="{{ url_for('projekt_novy') }}?klient_id={{ k.id }}" class="btn btn-secondary btn-sm" style="font-size:11px;">+ Přidat</a>
+        </div>
+
+        {% if projekty %}
+        <div class="proj-accordion">
+          {% for p in projekty %}
+          <div>
+            <button class="proj-accordion-trigger" onclick="toggleProjAcc({{ p.id }}, this)">
+              <div>
+                <div class="proj-acc-name">{{ p.nazev }}</div>
+                <div style="font-family:'Montserrat',sans-serif;font-size:11px;color:#8aa0b8;margin-top:2px;text-align:left;">
+                  {% if p.datum_od %}{{ p.datum_od.strftime('%m/%Y') }}{% endif %}
+                  {% if p.datum_od and p.datum_do %} – {% endif %}
+                  {% if p.datum_do %}{{ p.datum_do.strftime('%m/%Y') }}{% endif %}
+                </div>
+              </div>
+              <div class="proj-acc-meta">
+                <span class="projekt-card-status {% if p.is_active %}aktivni{% else %}uzavreny{% endif %}">
+                  {% if p.is_active %}Aktivní{% else %}Uzavřený{% endif %}
+                </span>
+                {% set proj_zapisy = zapisy | selectattr('projekt_id', 'eq', p.id) | list %}
+                <span style="font-family:'Montserrat',sans-serif;font-size:11px;color:#8aa0b8;font-weight:600;">{{ proj_zapisy|length }} zápisů</span>
+                <span class="proj-acc-icon" id="icon-{{ p.id }}">▼</span>
+              </div>
+            </button>
+
+            <div class="proj-accordion-body" id="proj-acc-{{ p.id }}">
+              {% if p.popis %}
+              <p style="font-family:'Montserrat',sans-serif;font-size:12px;color:#4A6080;line-height:1.5;margin-bottom:12px;">{{ p.popis }}</p>
+              {% endif %}
+
+              <!-- Zápisy projektu -->
+              {% set proj_zapisy = zapisy | selectattr('projekt_id', 'eq', p.id) | list %}
+              {% if proj_zapisy %}
+              <div style="margin-bottom:12px;">
+                <div style="font-family:'Montserrat',sans-serif;font-size:10px;font-weight:700;color:#8aa0b8;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:8px;">Zápisy</div>
+                {% for z in proj_zapisy[:5] %}
+                <a href="{{ url_for('detail_zapisu', zapis_id=z.id) }}" style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:6px 0;border-bottom:1px solid var(--border);text-decoration:none;">
+                  <span style="font-family:'Montserrat',sans-serif;font-size:12px;font-weight:600;color:#173767;">{{ z.title or (z.template | upper) }}</span>
+                  <span style="font-family:'Montserrat',sans-serif;font-size:11px;color:#8aa0b8;">{{ z.created_at.strftime('%d.%m.%Y') }}</span>
+                </a>
+                {% endfor %}
+              </div>
+              {% endif %}
+
+              <!-- Freelo úkoly pokud existují -->
+              {% if freelo_tasks.get(p.id) %}
+              <div>
+                <div style="font-family:'Montserrat',sans-serif;font-size:10px;font-weight:700;color:#8aa0b8;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:8px;">Freelo úkoly</div>
+                {% set tasks = freelo_tasks[p.id] %}
+                {% set done_count = tasks | selectattr('done') | list | length %}
+                <div class="progress-bar-wrap">
+                  <div class="progress-bar-fill" style="width:{{ (done_count / tasks|length * 100) | int if tasks else 0 }}%"></div>
+                </div>
+                <div style="font-family:'Montserrat',sans-serif;font-size:11px;color:#4A6080;font-weight:600;margin-bottom:8px;">{{ done_count }} / {{ tasks|length }} splněno</div>
+                {% for task in tasks[:8] %}
+                <div class="task-item">
+                  <div class="task-check {% if task.done %}done{% endif %}"></div>
+                  <a href="{{ task.url }}" target="_blank" class="task-name {% if task.done %}done{% endif %}">{{ task.name }}</a>
+                  {% if task.due %}
+                  <span class="task-due">{{ task.due }}</span>
+                  {% endif %}
+                </div>
+                {% endfor %}
+              </div>
+              {% else %}
+              <div style="text-align:center;padding:12px 0;">
+                <a href="{{ url_for('projekt_detail', projekt_id=p.id) }}" class="btn btn-secondary btn-sm" style="font-size:11px;">Otevřít projekt →</a>
+              </div>
+              {% endif %}
+
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+        {% else %}
+        <div class="vyvoj-card-body" style="text-align:center;padding:30px;">
+          <div style="font-family:'Montserrat',sans-serif;font-size:13px;color:#8aa0b8;">Žádné projekty</div>
+          <a href="{{ url_for('projekt_novy') }}?klient_id={{ k.id }}" style="color:#00AFF0;font-weight:700;text-decoration:none;font-size:13px;margin-top:8px;display:inline-block;">+ Přidat projekt →</a>
+        </div>
+        {% endif %}
+      </div>
+
+      <!-- PROFIL KLIENTA (ze zápisů) -->
+      {% if k.profil_json and k.profil_json != '{}' %}
+
+      <div class="vyvoj-card">
+        <div class="vyvoj-card-header">
+          <div class="vyvoj-section-title">Profil skladu</div>
+          <span style="font-family:'Montserrat',sans-serif;font-size:10px;color:#8aa0b8;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;">AI extrakce</span>
+        </div>
+        <div class="vyvoj-card-body-sm">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+            {% for key, val in profil.items() %}
+            {% if val %}
+            <div style="background:#f8f9fb;border:1px solid var(--border);border-radius:5px;padding:8px 10px;">
+              <div style="font-family:'Montserrat',sans-serif;font-size:10px;font-weight:700;color:#8aa0b8;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:2px;">{{ key }}</div>
+              <div style="font-family:'Montserrat',sans-serif;font-size:12px;font-weight:600;color:#173767;">{{ val }}</div>
+            </div>
+            {% endif %}
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+      {% endif %}
+
+    </div>
+  </div>
+
+</div>
+
+<script>
+// Filter timeline by type
+function filterTimeline(type, btn) {
+  document.querySelectorAll('.filter-tab').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+
+  document.querySelectorAll('.timeline-item').forEach(item => {
+    if (type === 'vse' || item.dataset.type === type) {
+      item.style.display = '';
+    } else {
+      item.style.display = 'none';
+    }
+  });
+}
+
+// Toggle project accordion
+function toggleProjAcc(id, btn) {
+  const body = document.getElementById('proj-acc-' + id);
+  const icon = document.getElementById('icon-' + id);
+  const isOpen = body.classList.contains('open');
+
+  // Zavři všechny
+  document.querySelectorAll('.proj-accordion-body').forEach(b => b.classList.remove('open'));
+  document.querySelectorAll('.proj-acc-icon').forEach(i => i.classList.remove('open'));
+
+  if (!isOpen) {
+    body.classList.add('open');
+    icon.classList.add('open');
+  }
+}
+</script>
+{% endblock %}

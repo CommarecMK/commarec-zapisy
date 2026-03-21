@@ -12,6 +12,12 @@ from email.mime.multipart import MIMEMultipart
 from werkzeug.utils import secure_filename
 
 app = Flask(__name__)
+
+# Jinja2 custom filters
+import json as _json
+app.jinja_env.filters['fromjson'] = lambda s: _json.loads(s) if s else {}
+app.jinja_env.filters['regex_replace'] = lambda s, pattern, repl: __import__('re').sub(pattern, repl, s) if s else ''
+
 app.secret_key = os.environ.get("SECRET_KEY", "change-this-in-production")
 
 database_url = os.environ.get("DATABASE_URL", "sqlite:///zapisy.db")
@@ -766,6 +772,28 @@ def klient_detail(klient_id):
     return render_template("klient_detail.html", k=k, projekty=projekty,
                            zapisy=zapisy, profil=profil,
                            konzultanti=konzultanti, template_names=TEMPLATE_NAMES)
+
+
+@app.route("/klient/<int:klient_id>/vyvoj")
+@login_required
+def klient_vyvoj(klient_id):
+    k = Klient.query.get_or_404(klient_id)
+    projekty = Projekt.query.filter_by(klient_id=klient_id).order_by(Projekt.created_at.desc()).all()
+    zapisy   = Zapis.query.filter_by(klient_id=klient_id).order_by(Zapis.created_at.desc()).all()
+
+    # Freelo úkoly — zatím prázdné, napojíme přes Freelo project ID na projektu
+    freelo_tasks = {}
+
+    try:
+        profil = json.loads(k.profil_json or "{}") if hasattr(k, 'profil_json') else {}
+    except Exception:
+        profil = {}
+
+    return render_template("klient_vyvoj.html",
+                           k=k, projekty=projekty, zapisy=zapisy,
+                           freelo_tasks=freelo_tasks,
+                           profil=profil,
+                           template_names=TEMPLATE_NAMES)
 
 @app.route("/klient/<int:klient_id>/upravit", methods=["GET", "POST"])
 @login_required
