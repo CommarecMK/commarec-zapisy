@@ -3097,5 +3097,61 @@ def test_freelo_ukoly(tasklist_id):
     return jsonify(results)
 
 
+@app.route("/api/freelo/debug-task/<int:task_id>")
+@login_required
+def debug_freelo_task(task_id):
+    """Zobrazí plnou strukturu úkolu a otestuje různé PATCH formáty."""
+    import requests as req
+    results = {}
+    
+    # 1. Načti detail úkolu
+    r = freelo_get(f"/task/{task_id}")
+    results["GET_task"] = {"status": r.status_code, "body": r.json() if r.status_code == 200 else r.text[:300]}
+    
+    # 2. Otestuj různé způsoby označení jako hotový
+    patch_variants = [
+        ("state_done", {"state": "done"}),
+        ("state_1", {"state": 1}),
+        ("finished_true", {"finished": True}),
+        ("is_done_true", {"is_done": True}),
+        ("status_done", {"status": "done"}),
+    ]
+    # Nezapišeme — jen ukážeme co by šlo
+    results["task_fields"] = list(results["GET_task"].get("body", {}).keys()) if isinstance(results["GET_task"].get("body"), dict) else []
+    
+    # 3. Načti subúkoly
+    r2 = freelo_get(f"/task/{task_id}/subtasks")
+    results["GET_subtasks"] = {"status": r2.status_code, "body": r2.text[:400]}
+    
+    r3 = freelo_get(f"/task/{task_id}")
+    if r3.status_code == 200:
+        data = r3.json()
+        results["subtasks_in_task"] = data.get("subtasks", data.get("sub_tasks", data.get("children", "NOT_FOUND")))
+        results["state_field"] = data.get("state", "NOT_FOUND")
+        results["finished_field"] = data.get("finished", "NOT_FOUND") 
+        results["is_done_field"] = data.get("is_done", "NOT_FOUND")
+        results["status_field"] = data.get("status", "NOT_FOUND")
+    
+    return jsonify(results)
+
+
+@app.route("/api/freelo/debug-tasklist/<int:tasklist_id>")  
+@login_required
+def debug_freelo_tasklist(tasklist_id):
+    """Zobrazí plnou raw odpověď tasklist včetně podúkolů."""
+    r = freelo_get(f"/tasklist/{tasklist_id}")
+    if r.status_code != 200:
+        return jsonify({"error": r.text, "status": r.status_code})
+    data = r.json()
+    # Vrať plná data prvních 2 úkolů pro analýzu struktury
+    tasks = data.get("tasks", [])
+    return jsonify({
+        "tasklist_name": data.get("name"),
+        "tasks_count": len(tasks),
+        "first_tasks_full": tasks[:2],  # plná struktura
+        "task_keys": list(tasks[0].keys()) if tasks else [],
+    })
+
+
 if __name__ == "__main__":
     app.run(debug=False, host="0.0.0.0", port=int(os.environ.get("PORT", 5000)))
