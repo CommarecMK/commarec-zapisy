@@ -23,6 +23,7 @@ app.secret_key = os.environ.get("SECRET_KEY", "change-this-in-production")
 database_url = os.environ.get("DATABASE_URL", "sqlite:///zapisy.db")
 if database_url.startswith("postgres://"):
     database_url = database_url.replace("postgres://", "postgresql://", 1)
+
 app.config["SQLALCHEMY_DATABASE_URI"] = database_url
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 app.config["JSON_AS_ASCII"] = False
@@ -661,6 +662,73 @@ def admin_required(f):
 # ROUTES — AUTH
 # ─────────────────────────────────────────────
 
+
+@app.route("/home")
+@login_required  
+def home():
+    """Nový dashboard — status overview rozcestník."""
+    now = datetime.utcnow()
+    cutoff_60 = now - timedelta(days=60)
+    cutoff_30 = now - timedelta(days=30)
+
+    klienti_all = Klient.query.filter_by(is_active=True).all()
+    
+    stats = {
+        "klienti_aktivni": len(klienti_all),
+        "projekty_aktivni": Projekt.query.filter_by(is_active=True).count(),
+        "zapisy_celkem": Zapis.query.count(),
+        "zapisy_30d": Zapis.query.filter(Zapis.created_at >= cutoff_30).count(),
+        "bez_aktivity": 0,
+        "nabidky_otevrene": Nabidka.query.filter(
+            Nabidka.stav.in_(["draft", "odeslana"])
+        ).count(),
+    }
+
+    pozor_klienti = []
+    for k in klienti_all:
+        posledni = Zapis.query.filter_by(klient_id=k.id)            .order_by(Zapis.created_at.desc()).first()
+        if not posledni or posledni.created_at < cutoff_60:
+            dni = (now - posledni.created_at).days if posledni else 999
+            if dni > 60:
+                pozor_klienti.append({"klient": k, "posledni": posledni, "dni": min(dni, 999)})
+    stats["bez_aktivity"] = len(pozor_klienti)
+    pozor_klienti = sorted(pozor_klienti, key=lambda x: -x["dni"])[:5]
+
+    aktivita = []
+    for z in Zapis.query.order_by(Zapis.created_at.desc()).limit(12).all():
+        aktivita.append({
+            "typ": z.template or "audit",
+            "typ_label": {"audit": "Audit", "operativa": "Operativa", "obchod": "Obchod"}.get(z.template, "Zápis"),
+            "title": z.title or (z.projekt.nazev if z.projekt else k.nazev if z.klient else "Zápis"),
+            "klient": z.klient.nazev if z.klient else "",
+            "projekt": z.projekt.nazev if z.projekt else "",
+            "datum": z.created_at,
+            "url": url_for("detail_zapisu", zapis_id=z.id),
+        })
+    for n in Nabidka.query.order_by(Nabidka.created_at.desc()).limit(5).all():
+        aktivita.append({
+            "typ": "nabidka",
+            "typ_label": "Nabídka",
+            "title": f"{n.cislo} — {n.nazev}",
+            "klient": n.klient.nazev if n.klient else "",
+            "projekt": n.projekt.nazev if n.projekt else "",
+            "datum": n.created_at,
+            "url": url_for("nabidka_detail", nabidka_id=n.id),
+        })
+    aktivita.sort(key=lambda x: x["datum"], reverse=True)
+    aktivita = aktivita[:15]
+
+    aktivni_projekty = Projekt.query.filter_by(is_active=True)        .order_by(db.case((Projekt.datum_do == None, 1), else_=0), Projekt.datum_do.asc())        .limit(8).all()
+
+    current_user = User.query.get(session["user_id"])
+
+    return render_template("dashboard_new.html",
+                           stats=stats, aktivita=aktivita,
+                           pozor_klienti=pozor_klienti,
+                           aktivni_projekty=aktivni_projekty,
+                           now=now,
+                           current_user=current_user)
+
 @app.route("/")
 def index():
     if "user_id" in session:
@@ -694,7 +762,7 @@ def logout():
 
 @app.route("/dashboard")
 @login_required
-def dashboard_old():
+def dashboard():
     zapisy  = Zápisy_query()
     klienti = Klient.query.filter_by(is_active=True).order_by(Klient.nazev).all()
     stats = {
@@ -999,11 +1067,9 @@ def crm_prehled():
         if filtr == "aktivni" and not projekty:
             continue
         if filtr == "bez_aktivity" and posledni_zapis:
-            from datetime import timedelta
             if posledni_zapis.created_at > datetime.utcnow() - timedelta(days=60):
                 continue
         if filtr == "tento_mesic" and posledni_zapis:
-            from datetime import timedelta
             if posledni_zapis.created_at < datetime.utcnow() - timedelta(days=30):
                 continue
 
