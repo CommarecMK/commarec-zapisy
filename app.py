@@ -2218,11 +2218,19 @@ def smazat_uzivatele(user_id):
 
 def seed_test_data():
     """Vytvoř testovací data s českou diakritikou."""
-    if Klient.query.first():
+    try:
+        if Klient.query.first():
+            return
+    except Exception:
+        db.session.rollback()
         return
     import time, random
-    time.sleep(random.uniform(0, 0.3))
-    if Klient.query.first():
+    time.sleep(random.uniform(0, 0.5))
+    try:
+        if Klient.query.first():
+            return
+    except Exception:
+        db.session.rollback()
         return
 
     print("Seeduji testovací data...")

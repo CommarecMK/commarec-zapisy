@@ -173,7 +173,7 @@ hr { border: none; border-top: 1px solid var(--border); margin: 1.5rem 0; }
   </a>
   <div class="nav-divider"></div>
   <div class="nav-links">
-    <a href="{{ url_for('home') }}" class="nav-link {% if request.endpoint in ['home','dashboard_old'] %}active{% endif %}">Přehled</a>
+    <a href="{{ url_for('home') }}" class="nav-link {% if request.endpoint in ['home','dashboard'] %}active{% endif %}">Přehled</a>
         <a href="{{ url_for('crm_prehled') }}" class="nav-link {% if request.endpoint in ['crm_prehled','klient_vyvoj','nabidka_nova','nabidka_detail'] %}active{% endif %}" style="color:#00AFF0;font-weight:700;">CRM / Vývoj</a>
     <a href="{{ url_for('klienti_list') }}" class="nav-link {% if request.endpoint in ['klienti_list','klient_detail','klient_novy','klient_upravit','projekt_detail'] %}active{% endif %}">Klienti</a>
     <a href="{{ url_for('novy_zapis') }}" class="nav-link {% if request.endpoint == 'novy_zapis' %}active{% endif %}" style="background:#00AFF0; color:#0E213E; padding:6px 16px; border-radius:4px; font-family:'Montserrat',sans-serif; font-weight:800; font-size:12px; letter-spacing:0.06em; text-transform:uppercase; white-space:nowrap;">+ Nový zápis</a>

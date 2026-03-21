@@ -4,8 +4,12 @@ from datetime import datetime, timedelta
 
 def seed_extra_data(db, Klient, Projekt, Zapis, User, TEMPLATE_SECTIONS, assemble_output_text, generate_password_hash):
     """Přidá demo data pokud ještě neexistují."""
-    if Klient.query.filter_by(slug="nabytek-centrum").first():
-        return  # Už naseedováno
+    try:
+        if Klient.query.filter_by(slug="nabytek-centrum").first():
+            return  # Už naseedováno
+    except Exception:
+        db.session.rollback()
+        return
 
     print("Seeduji extra demo data (3 klienti × různé fáze projektu)...")
 

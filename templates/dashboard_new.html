@@ -119,7 +119,7 @@
       <div class="status-label">Aktivních klientů</div>
       <div class="status-sub">{{ stats.projekty_aktivni }} projektů</div>
     </a>
-    <a href="{{ url_for('dashboard_old') }}" class="status-karta navy">
+    <a href="{{ url_for('dashboard') }}" class="status-karta navy">
       <div class="status-num">{{ stats.zapisy_30d }}</div>
       <div class="status-label">Zápisů za 30 dní</div>
       <div class="status-sub">celkem {{ stats.zapisy_celkem }}</div>
@@ -162,7 +162,7 @@
         </div>
         {% if aktivita %}
         <div style="padding:12px 20px;border-top:1px solid var(--border);background:#f7f9fb;">
-          <a href="{{ url_for('dashboard_old') }}" style="font-family:'Montserrat',sans-serif;font-size:12px;font-weight:700;color:#00AFF0;text-decoration:none;">Všechny zápisy →</a>
+          <a href="{{ url_for('dashboard') }}" style="font-family:'Montserrat',sans-serif;font-size:12px;font-weight:700;color:#00AFF0;text-decoration:none;">Všechny zápisy →</a>
         </div>
         {% endif %}
       </div>
