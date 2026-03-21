@@ -109,7 +109,7 @@
     <div class="celkem-box" style="margin-bottom:1.5rem;">
       <div>
         <div class="celkem-label">Celková cena bez DPH</div>
-        <div style="font-family:'Montserrat',sans-serif;font-size:12px;color:rgba(255,255,255,0.4);margin-top:2px;">DPH 21% na vyžádání</div>
+        <div style="font-family:'Montserrat',sans-serif;font-size:12px;color:rgba(255,255,255,0.4);margin-top:2px;">DPH závisí na každé položce</div>
       </div>
       <div style="display:flex;align-items:baseline;">
         <div class="celkem-value" id="celkemVal">0</div>
@@ -143,7 +143,7 @@ function addRow(data) {
       <input type="text" name="pol_nazev" placeholder="Název položky (např. Regál paletový 2700×2700 mm)" class="pol-input" value="${d.nazev||''}" oninput="prepocti()" required>
       <input type="text" name="pol_popis" placeholder="Volitelný popis, specifikace..." class="pol-input" value="${d.popis||''}" style="margin-top:4px;font-size:12px;color:#4A6080;">
     </td>
-    <td><input type="number" name="pol_mnozstvi" class="pol-input cislo" value="${d.mnozstvi||1}" min="0" step="0.01" oninput="prepocti()"></td>
+    <td><input type="number" name="pol_mnozstvi" class="pol-input cislo" value="${d.mnozstvi||1}" min="0" step="1" oninput="prepocti()"></td>
     <td>
       <select name="pol_jednotka" class="jednotka-sel">
         ${JEDNOTKY.map(j => `<option ${(d.jednotka||'ks')===j?'selected':''}>${j}</option>`).join('')}
