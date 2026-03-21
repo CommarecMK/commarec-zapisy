@@ -3077,5 +3077,25 @@ Vrať POUZE JSON (bez markdown backticks) v tomto formátu:
     })
 
 
+@app.route("/api/freelo/test-ukoly/<int:tasklist_id>")
+@login_required  
+def test_freelo_ukoly(tasklist_id):
+    """Otestuje různé URL formáty pro načtení úkolů z Freelo tasklist."""
+    results = {}
+    urls = [
+        f"/tasklists/{tasklist_id}/tasks",
+        f"/tasklist/{tasklist_id}/tasks", 
+        f"/tasklist/{tasklist_id}",
+        f"/tasklists/{tasklist_id}",
+    ]
+    for url in urls:
+        try:
+            r = freelo_get(url)
+            results[url] = {"status": r.status_code, "preview": r.text[:200]}
+        except Exception as e:
+            results[url] = {"error": str(e)}
+    return jsonify(results)
+
+
 if __name__ == "__main__":
     app.run(debug=False, host="0.0.0.0", port=int(os.environ.get("PORT", 5000)))
