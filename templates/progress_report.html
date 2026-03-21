@@ -1,0 +1,451 @@
+{% extends "base.html" %}
+{% block title %}Progress Report{% endblock %}
+{% block extra_head %}
+<style>
+/* ── PRINT ── */
+@media print {
+  @page { size: A4; margin: 18mm 18mm 22mm 18mm; }
+  .nav, .pr-controls, .no-print { display: none !important; }
+  body { background: white !important; font-size: 10pt; }
+  .container { max-width: 100% !important; padding: 0 !important; }
+  .pr-hero { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .pr-section { page-break-inside: avoid; }
+  .klient-blok { page-break-before: always; }
+  .klient-blok:first-child { page-break-before: avoid; }
+}
+
+/* ── HERO ── */
+.pr-hero {
+  background: #0E213E;
+  border-radius: 10px;
+  padding: 2rem 2.5rem;
+  margin-bottom: 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+.pr-hero-title {
+  font-family: 'DrukCondensed','Impact',sans-serif;
+  font-size: 48px;
+  font-weight: 900;
+  color: white;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  line-height: 1.0;
+}
+.pr-hero-period {
+  font-family: 'Montserrat',sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+  color: rgba(255,255,255,0.5);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  margin-top: 6px;
+}
+.pr-hero-period span { color: #00AFF0; }
+
+/* ── KLIENT BLOK ── */
+.klient-blok { margin-bottom: 2.5rem; }
+.klient-nadpis {
+  font-family: 'DrukCondensed','Impact',sans-serif;
+  font-size: 36px;
+  font-weight: 900;
+  color: #173767;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  line-height: 1.0;
+  padding-bottom: 8px;
+  border-bottom: 3px solid #00AFF0;
+  margin-bottom: 1rem;
+}
+
+/* ── PROJEKT ── */
+.projekt-blok {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  margin-bottom: 1rem;
+  overflow: hidden;
+}
+.projekt-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 20px;
+  border-bottom: 1px solid var(--border);
+  background: #f7f9fb;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.projekt-nazev {
+  font-family: 'Montserrat',sans-serif;
+  font-size: 15px;
+  font-weight: 700;
+  color: #173767;
+}
+.projekt-meta {
+  font-family: 'Montserrat',sans-serif;
+  font-size: 11px;
+  color: #8aa0b8;
+  font-weight: 600;
+}
+.projekt-body { display: grid; grid-template-columns: 1fr 1fr; gap: 0; }
+@media (max-width: 768px) { .projekt-body { grid-template-columns: 1fr; } }
+.pr-col { padding: 16px 20px; }
+.pr-col + .pr-col { border-left: 1px solid var(--border); }
+.pr-col-title {
+  font-family: 'Montserrat',sans-serif;
+  font-size: 10px;
+  font-weight: 700;
+  color: #8aa0b8;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* ── SKÓRE ── */
+.skore-trend {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 12px;
+}
+.skore-num {
+  font-family: 'DrukCondensed','Impact',sans-serif;
+  font-size: 52px;
+  font-weight: 900;
+  line-height: 1.0;
+}
+.skore-num.high { color: #0A7A5A; }
+.skore-num.mid  { color: #0085B8; }
+.skore-num.low  { color: #C06A00; }
+.skore-num.crit { color: #C0392B; }
+.trend-arrow {
+  font-family: 'DrukCondensed','Impact',sans-serif;
+  font-size: 24px;
+  font-weight: 900;
+}
+.trend-up   { color: #0A7A5A; }
+.trend-down { color: #C0392B; }
+.trend-same { color: #8aa0b8; }
+.skore-history { display: flex; gap: 6px; flex-wrap: wrap; }
+.skore-dot {
+  font-family: 'Montserrat',sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 4px;
+  background: #f0f3f7;
+  color: #4A6080;
+}
+
+/* ── ZÁPISY ── */
+.zapis-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 0;
+  border-bottom: 1px solid var(--border);
+  text-decoration: none;
+}
+.zapis-row:last-child { border-bottom: none; }
+.zapis-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.zapis-dot.audit { background: #173767; }
+.zapis-dot.operativa { background: #00AFF0; }
+.zapis-dot.obchod { background: #00C8B3; }
+.zapis-nazev { font-family: 'Montserrat',sans-serif; font-size: 12px; font-weight: 600; color: #173767; flex: 1; }
+.zapis-datum { font-family: 'Montserrat',sans-serif; font-size: 11px; color: #8aa0b8; }
+
+/* ── ÚKOLY ── */
+.ukol-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 5px 0;
+  border-bottom: 1px solid var(--border);
+}
+.ukol-row:last-child { border-bottom: none; }
+.ukol-check {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 2px solid #D0DAE8;
+  flex-shrink: 0;
+  margin-top: 1px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.ukol-check.done { background: #34C759; border-color: #34C759; }
+.ukol-check.done::after { content: '✓'; color: white; font-size: 9px; font-weight: 900; line-height: 1; }
+.ukol-nazev { font-family: 'Montserrat',sans-serif; font-size: 12px; font-weight: 600; color: #173767; flex: 1; }
+.ukol-nazev.done { color: #8aa0b8; text-decoration: line-through; }
+.ukol-meta { font-family: 'Montserrat',sans-serif; font-size: 10px; color: #8aa0b8; margin-top: 1px; }
+.ukol-termin { font-family: 'Montserrat',sans-serif; font-size: 10px; font-weight: 600; color: #8aa0b8; white-space: nowrap; }
+
+/* ── FREELO LIVE ── */
+.freelo-live-wrap { margin-top: 10px; }
+.freelo-progress { background: #f0f3f7; border-radius: 4px; height: 5px; overflow: hidden; margin: 6px 0 4px; }
+.freelo-progress-fill { height: 100%; background: linear-gradient(90deg, #00AFF0, #00C8B3); border-radius: 4px; }
+.freelo-loading { font-family: 'Montserrat',sans-serif; font-size: 11px; color: #8aa0b8; font-style: italic; }
+.freelo-ukol-row { display: flex; align-items: center; gap: 7px; padding: 4px 0; border-bottom: 1px solid var(--border); }
+.freelo-ukol-row:last-child { border-bottom: none; }
+.freelo-ukol-name { font-family: 'Montserrat',sans-serif; font-size: 12px; font-weight: 600; color: #173767; flex: 1; }
+.freelo-ukol-name.done { color: #8aa0b8; text-decoration: line-through; }
+.freelo-ukol-link { font-family: 'Montserrat',sans-serif; font-size: 10px; color: #00AFF0; text-decoration: none; }
+.freelo-ukol-link:hover { text-decoration: underline; }
+
+/* ── SOUHRN ── */
+.souhrn-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 1.5rem; }
+.souhrn-karta { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 14px 16px; }
+.souhrn-cislo { font-family: 'DrukCondensed','Impact',sans-serif; font-size: 36px; font-weight: 900; color: #173767; line-height: 1.0; }
+.souhrn-label { font-family: 'Montserrat',sans-serif; font-size: 10px; font-weight: 700; color: #8aa0b8; text-transform: uppercase; letter-spacing: 0.08em; margin-top: 3px; }
+.no-data { font-family: 'Montserrat',sans-serif; font-size: 12px; color: #D0DAE8; padding: 8px 0; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+
+  <!-- HERO -->
+  <div class="pr-hero no-print">
+    <div>
+      <div class="pr-hero-title">Progress Report</div>
+      <div class="pr-hero-period">
+        Období: <span>{{ od.strftime('%d. %m. %Y') }}</span> — <span>{{ do.strftime('%d. %m. %Y') }}</span>
+      </div>
+    </div>
+    <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;" class="pr-controls">
+      <form method="get" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+        <label style="font-family:'Montserrat',sans-serif;font-size:11px;font-weight:700;color:rgba(255,255,255,0.5);text-transform:uppercase;letter-spacing:0.08em;">Od</label>
+        <input type="date" name="od" value="{{ od_str }}" style="padding:6px 10px;border:1.5px solid rgba(255,255,255,0.2);border-radius:5px;background:rgba(255,255,255,0.1);color:white;font-size:13px;font-family:'Montserrat',sans-serif;">
+        <label style="font-family:'Montserrat',sans-serif;font-size:11px;font-weight:700;color:rgba(255,255,255,0.5);text-transform:uppercase;letter-spacing:0.08em;">Do</label>
+        <input type="date" name="do" value="{{ do_str }}" style="padding:6px 10px;border:1.5px solid rgba(255,255,255,0.2);border-radius:5px;background:rgba(255,255,255,0.1);color:white;font-size:13px;font-family:'Montserrat',sans-serif;">
+        <button type="submit" style="font-family:'DrukCondensed','Impact',sans-serif;font-size:14px;font-weight:900;text-transform:uppercase;letter-spacing:0.06em;background:#00AFF0;color:white;border:none;padding:7px 18px;border-radius:5px;cursor:pointer;">Zobrazit</button>
+      </form>
+      <button onclick="window.print()" style="font-family:'DrukCondensed','Impact',sans-serif;font-size:14px;font-weight:900;text-transform:uppercase;letter-spacing:0.06em;background:rgba(255,255,255,0.1);color:white;border:1.5px solid rgba(255,255,255,0.2);padding:7px 18px;border-radius:5px;cursor:pointer;">🖨 PDF</button>
+    </div>
+  </div>
+
+  <!-- SOUHRN -->
+  {% set total_zapisy = report_data | sum(attribute='projekty') | map(attribute='zapisy_v_obdobi') | map('length') | sum %}
+  {% set total_klienti = report_data | length %}
+  {% set total_projekty = report_data | sum(attribute='projekty') | list | length %}
+  <div class="souhrn-grid">
+    <div class="souhrn-karta">
+      <div class="souhrn-cislo">{{ total_klienti }}</div>
+      <div class="souhrn-label">Aktivních klientů</div>
+    </div>
+    <div class="souhrn-karta">
+      <div class="souhrn-cislo">{{ total_projekty }}</div>
+      <div class="souhrn-label">Projektů</div>
+    </div>
+    <div class="souhrn-karta">
+      <div class="souhrn-cislo" style="color:#00AFF0;">
+        {% set total_z = namespace(n=0) %}
+        {% for kd in report_data %}{% for pd in kd.projekty %}{% set total_z.n = total_z.n + pd.zapisy_v_obdobi|length %}{% endfor %}{% endfor %}
+        {{ total_z.n }}
+      </div>
+      <div class="souhrn-label">Zápisů v období</div>
+    </div>
+    <div class="souhrn-karta">
+      <div class="souhrn-cislo">
+        {% set total_ukoly = namespace(n=0) %}
+        {% for kd in report_data %}{% for pd in kd.projekty %}{% set total_ukoly.n = total_ukoly.n + pd.ukoly_splnene|length %}{% endfor %}{% endfor %}
+        {{ total_ukoly.n }}
+      </div>
+      <div class="souhrn-label">Splněných úkolů</div>
+    </div>
+  </div>
+
+  <!-- REPORT PER KLIENT -->
+  {% if report_data %}
+    {% for kd in report_data %}
+    <div class="klient-blok">
+      <div class="klient-nadpis">{{ kd.klient.nazev }}</div>
+
+      {% for pd in kd.projekty %}
+      {% set p = pd.projekt %}
+      {% set skore = pd.posledni_skore %}
+      {% set prvni = pd.prvni_skore %}
+
+      <div class="projekt-blok pr-section">
+        <!-- Projekt header -->
+        <div class="projekt-header">
+          <div>
+            <div class="projekt-nazev">{{ p.nazev }}</div>
+            <div class="projekt-meta">
+              {% if p.datum_od %}{{ p.datum_od.strftime('%d. %m. %Y') }}{% endif %}
+              {% if p.datum_od and p.datum_do %} — {% endif %}
+              {% if p.datum_do %}{{ p.datum_do.strftime('%d. %m. %Y') }}{% endif %}
+              · {{ pd.vsechny_zapisy_count }} zápisů celkem
+            </div>
+          </div>
+          <div style="display:flex;gap:8px;align-items:center;" class="no-print">
+            <a href="{{ url_for('klient_vyvoj', klient_id=kd.klient.id) }}" class="btn btn-secondary btn-sm">Vývoj klienta →</a>
+          </div>
+        </div>
+
+        <div class="projekt-body">
+
+          <!-- LEVÝ SLOUPEC: Skóre + Zápisy -->
+          <div class="pr-col">
+
+            <!-- Skóre trend -->
+            {% if pd.skore_list %}
+            <div class="pr-col-title">
+              <svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+              Hodnocení skladu
+            </div>
+            <div class="skore-trend">
+              {% if skore %}
+              <div class="skore-num {% if skore >= 70 %}high{% elif skore >= 55 %}mid{% elif skore >= 40 %}low{% else %}crit{% endif %}">{{ skore }}%</div>
+              {% if prvni and prvni != skore %}
+                {% set diff = skore - prvni %}
+                <div>
+                  <div class="trend-arrow {% if diff > 0 %}trend-up{% elif diff < 0 %}trend-down{% else %}trend-same{% endif %}">
+                    {% if diff > 0 %}▲ +{{ diff }}{% elif diff < 0 %}▼ {{ diff }}{% else %}={% endif %}
+                  </div>
+                  <div style="font-family:'Montserrat',sans-serif;font-size:11px;color:#8aa0b8;margin-top:2px;">oproti zahájení</div>
+                </div>
+              {% endif %}
+              {% endif %}
+            </div>
+            <div class="skore-history">
+              {% for s in pd.skore_list %}
+              <a href="{{ url_for('detail_zapisu', zapis_id=s.zapis_id) }}" class="skore-dot" title="{{ s.datum }}">{{ s.skore }}%</a>
+              {% endfor %}
+            </div>
+            <div style="margin-top:4px;font-family:'Montserrat',sans-serif;font-size:10px;color:#8aa0b8;">{{ pd.skore_list|length }} audit{% if pd.skore_list|length > 4 %}ů{% elif pd.skore_list|length > 1 %}y{% endif %} · klikni pro detail</div>
+            {% else %}
+            <div class="pr-col-title">Hodnocení</div>
+            <div class="no-data">Žádné audity</div>
+            {% endif %}
+
+            <!-- Zápisy v období -->
+            <div class="pr-col-title" style="margin-top:16px;">
+              <svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/></svg>
+              Zápisy v tomto období ({{ pd.zapisy_v_obdobi|length }})
+            </div>
+            {% if pd.zapisy_v_obdobi %}
+              {% for z in pd.zapisy_v_obdobi %}
+              <a href="{{ url_for('detail_zapisu', zapis_id=z.id) }}" class="zapis-row">
+                <div class="zapis-dot {{ z.template or 'audit' }}"></div>
+                <div class="zapis-nazev">{{ z.title or z.template }}</div>
+                <div class="zapis-datum">{{ z.created_at.strftime('%d. %m.') }}</div>
+              </a>
+              {% endfor %}
+            {% else %}
+              <div class="no-data">Žádné zápisy v tomto období</div>
+            {% endif %}
+
+          </div>
+
+          <!-- PRAVÝ SLOUPEC: Úkoly + Freelo live -->
+          <div class="pr-col">
+
+            <!-- Úkoly ze zápisů -->
+            {% if pd.ukoly_otevrene %}
+            <div class="pr-col-title">
+              <svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
+              Otevřené úkoly ({{ pd.ukoly_otevrene|length }})
+            </div>
+            {% for u in pd.ukoly_otevrene %}
+            <div class="ukol-row">
+              <div class="ukol-check"></div>
+              <div style="flex:1;">
+                <div class="ukol-nazev">{{ u.name }}</div>
+                {% if u.get('deadline') or u.get('desc') %}
+                <div class="ukol-meta">
+                  {% if u.get('deadline') %}do {{ u.deadline }}{% endif %}
+                  {% if u.get('desc') %} · {{ u.desc | truncate(50) }}{% endif %}
+                </div>
+                {% endif %}
+              </div>
+              <div class="ukol-termin">{{ u.zapis_datum }}</div>
+            </div>
+            {% endfor %}
+            {% endif %}
+
+            {% if pd.ukoly_splnene %}
+            <div class="pr-col-title" style="margin-top:{% if pd.ukoly_otevrene %}14px{% else %}0{% endif %};">
+              <svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+              Splněné úkoly ({{ pd.ukoly_splnene|length }})
+            </div>
+            {% for u in pd.ukoly_splnene %}
+            <div class="ukol-row">
+              <div class="ukol-check done"></div>
+              <div class="ukol-nazev done">{{ u.name }}</div>
+            </div>
+            {% endfor %}
+            {% endif %}
+
+            {% if not pd.ukoly_otevrene and not pd.ukoly_splnene %}
+            <div class="pr-col-title">Úkoly</div>
+            <div class="no-data">Žádné úkoly v zápisech</div>
+            {% endif %}
+
+            <!-- Freelo live úkoly (pokud projekt má propojení) -->
+            {% if p.freelo_tasklist_id %}
+            <div class="pr-col-title" style="margin-top:14px;">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="#00AFF0"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+              Freelo — živé úkoly
+            </div>
+            <div class="freelo-live-wrap" id="freelo-wrap-{{ p.id }}">
+              <div class="freelo-loading">Načítám z Freelo...</div>
+            </div>
+            <script>
+            (function() {
+              fetch('/api/freelo/projekt/{{ p.id }}/ukoly')
+                .then(r => r.json())
+                .then(data => {
+                  const wrap = document.getElementById('freelo-wrap-{{ p.id }}');
+                  if (data.error && !data.ukoly.length) {
+                    wrap.innerHTML = '<div class="freelo-loading">' + data.error + '</div>';
+                    return;
+                  }
+                  const done = data.done || 0;
+                  const total = data.total || 0;
+                  const pct = total ? Math.round(done/total*100) : 0;
+                  let html = `<div style="font-family:'Montserrat',sans-serif;font-size:11px;color:#4A6080;font-weight:600;">${done}/${total} splněno (${pct}%)</div>
+                    <div class="freelo-progress"><div class="freelo-progress-fill" style="width:${pct}%"></div></div>`;
+                  data.ukoly.forEach(u => {
+                    html += `<div class="freelo-ukol-row">
+                      <div class="ukol-check ${u.is_done?'done':''}"></div>
+                      <div class="freelo-ukol-name ${u.is_done?'done':''}">${u.name}</div>
+                      ${u.due_date ? `<span class="freelo-ukol-link">${u.due_date.slice(0,10)}</span>` : ''}
+                      <a href="${u.url}" target="_blank" class="freelo-ukol-link no-print">↗</a>
+                    </div>`;
+                  });
+                  wrap.innerHTML = html;
+                })
+                .catch(() => {
+                  document.getElementById('freelo-wrap-{{ p.id }}').innerHTML = '<div class="freelo-loading">Freelo nedostupný</div>';
+                });
+            })();
+            </script>
+            {% endif %}
+
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    {% endfor %}
+
+  {% else %}
+  <div style="text-align:center;padding:60px 20px;">
+    <div style="font-family:'DrukCondensed','Impact',sans-serif;font-size:36px;font-weight:900;color:#D0DAE8;text-transform:uppercase;">Žádná data</div>
+    <div style="font-family:'Montserrat',sans-serif;font-size:13px;color:#8aa0b8;margin-top:8px;">
+      Pro zvolené období nejsou žádné záznamy.<br>Zkus rozšířit rozsah dat.
+    </div>
+  </div>
+  {% endif %}
+
+</div>
+{% endblock %}

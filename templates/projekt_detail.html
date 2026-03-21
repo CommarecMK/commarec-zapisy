@@ -69,4 +69,90 @@
     {% endif %}
   </div>
 </div>
+<!-- FREELO NAPOJENÍ -->
+<div class="card" style="margin-top:1rem;">
+  <div class="card-header" style="display:flex;align-items:center;justify-content:space-between;">
+    <h2>Freelo — úkoly</h2>
+    <button onclick="document.getElementById('freelo-setup').classList.toggle('open')" class="btn btn-secondary btn-sm">
+      {% if p.freelo_tasklist_id %}⚙ Změnit{% else %}Propojit Freelo{% endif %}
+    </button>
+  </div>
+
+  <!-- Setup formulář -->
+  <div id="freelo-setup" style="display:none;padding:12px 0;border-bottom:1px solid var(--border);margin-bottom:12px;">
+    <form method="post" action="{{ url_for('projekt_nastavit_freelo', projekt_id=p.id) }}" style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;">
+      <div>
+        <label style="font-family:'Montserrat',sans-serif;font-size:10px;font-weight:700;color:#4A6080;text-transform:uppercase;letter-spacing:0.08em;display:block;margin-bottom:4px;">Freelo Project ID</label>
+        <input type="number" name="freelo_project_id" value="{{ p.freelo_project_id or '' }}" placeholder="npr. 501350" style="width:140px;padding:7px 10px;border:1.5px solid var(--border);border-radius:5px;font-size:13px;font-family:'Montserrat',sans-serif;">
+      </div>
+      <div>
+        <label style="font-family:'Montserrat',sans-serif;font-size:10px;font-weight:700;color:#4A6080;text-transform:uppercase;letter-spacing:0.08em;display:block;margin-bottom:4px;">Freelo Tasklist ID</label>
+        <input type="number" name="freelo_tasklist_id" value="{{ p.freelo_tasklist_id or '' }}" placeholder="npr. 123456" style="width:140px;padding:7px 10px;border:1.5px solid var(--border);border-radius:5px;font-size:13px;font-family:'Montserrat',sans-serif;">
+      </div>
+      <button type="submit" class="btn btn-navy" style="font-family:'DrukCondensed','Impact',sans-serif;font-size:14px;font-weight:900;text-transform:uppercase;letter-spacing:0.06em;">Uložit</button>
+    </form>
+    <p style="font-family:'Montserrat',sans-serif;font-size:11px;color:#8aa0b8;margin-top:8px;">Tasklist ID najdeš v URL u Freelo tasklist: app.freelo.io/tasklist/<strong>ID</strong>/...</p>
+  </div>
+
+  <!-- Live úkoly -->
+  {% if p.freelo_tasklist_id %}
+  <div id="freelo-live-{{ p.id }}">
+    <div style="font-family:'Montserrat',sans-serif;font-size:12px;color:#8aa0b8;font-style:italic;">Načítám úkoly z Freelo...</div>
+  </div>
+  <script>
+  fetch('/api/freelo/projekt/{{ p.id }}/ukoly')
+    .then(r => r.json())
+    .then(data => {
+      const wrap = document.getElementById('freelo-live-{{ p.id }}');
+      if (!data.ukoly || data.ukoly.length === 0) {
+        wrap.innerHTML = '<div style="font-family:Montserrat,sans-serif;font-size:12px;color:#8aa0b8;">' + (data.error || 'Žádné úkoly v Freelo') + '</div>';
+        return;
+      }
+      const done = data.done, total = data.total;
+      const pct = total ? Math.round(done/total*100) : 0;
+      let html = `
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px;">
+          <div style="flex:1;background:#f0f3f7;border-radius:4px;height:6px;overflow:hidden;">
+            <div style="width:${pct}%;height:100%;background:linear-gradient(90deg,#00AFF0,#00C8B3);border-radius:4px;"></div>
+          </div>
+          <div style="font-family:Montserrat,sans-serif;font-size:12px;font-weight:700;color:#173767;white-space:nowrap;">${done}/${total} (${pct}%)</div>
+        </div>`;
+      const open = data.ukoly.filter(u => !u.is_done);
+      const done_list = data.ukoly.filter(u => u.is_done);
+      if (open.length) {
+        html += '<div style="font-family:Montserrat,sans-serif;font-size:10px;font-weight:700;color:#8aa0b8;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:6px;">Otevřené</div>';
+        open.forEach(u => {
+          html += `<div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid var(--border);">
+            <div style="width:12px;height:12px;border-radius:50%;border:2px solid #D0DAE8;flex-shrink:0;"></div>
+            <div style="flex:1;font-family:Montserrat,sans-serif;font-size:12px;font-weight:600;color:#173767;">${u.name}</div>
+            ${u.assignee ? `<span style="font-size:10px;color:#8aa0b8;">${u.assignee}</span>` : ''}
+            ${u.due_date ? `<span style="font-size:10px;color:#8aa0b8;">${u.due_date.slice(0,10)}</span>` : ''}
+            <a href="${u.url}" target="_blank" style="font-size:11px;color:#00AFF0;text-decoration:none;">↗</a>
+          </div>`;
+        });
+      }
+      if (done_list.length) {
+        html += `<div style="font-family:Montserrat,sans-serif;font-size:10px;font-weight:700;color:#8aa0b8;text-transform:uppercase;letter-spacing:0.08em;margin:10px 0 6px;">Splněné (${done_list.length})</div>`;
+        done_list.slice(0,5).forEach(u => {
+          html += `<div style="display:flex;align-items:center;gap:8px;padding:4px 0;">
+            <div style="width:12px;height:12px;border-radius:50%;background:#34C759;border:2px solid #34C759;flex-shrink:0;display:flex;align-items:center;justify-content:center;color:white;font-size:8px;font-weight:900;">✓</div>
+            <div style="font-family:Montserrat,sans-serif;font-size:12px;font-weight:600;color:#8aa0b8;text-decoration:line-through;">${u.name}</div>
+          </div>`;
+        });
+        if (done_list.length > 5) html += `<div style="font-size:11px;color:#8aa0b8;font-family:Montserrat,sans-serif;margin-top:4px;">...a dalších ${done_list.length-5} splněných</div>`;
+      }
+      wrap.innerHTML = html;
+    })
+    .catch(() => {
+      document.getElementById('freelo-live-{{ p.id }}').innerHTML = '<div style="font-size:12px;color:#8aa0b8;font-family:Montserrat,sans-serif;">Freelo nedostupný</div>';
+    });
+  </script>
+  {% else %}
+  <div style="text-align:center;padding:20px;font-family:'Montserrat',sans-serif;font-size:13px;color:#D0DAE8;">
+    Klikni na "Propojit Freelo" a zadej Tasklist ID pro načítání živých úkolů.
+  </div>
+  {% endif %}
+</div>
+
+
 {% endblock %}

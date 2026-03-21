@@ -78,7 +78,9 @@ class Projekt(db.Model):
     datum_od    = db.Column(db.Date, nullable=True)
     datum_do    = db.Column(db.Date, nullable=True)
     is_active   = db.Column(db.Boolean, default=True)
-    created_at  = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at         = db.Column(db.DateTime, default=datetime.utcnow)
+    freelo_project_id  = db.Column(db.Integer, nullable=True)   # Freelo project ID pro sync
+    freelo_tasklist_id = db.Column(db.Integer, nullable=True)   # Freelo tasklist ID pro úkoly
     konzultant  = db.relationship("User", backref="user_projekty", foreign_keys=[user_id])
     klient      = db.relationship("Klient", foreign_keys=[klient_id], back_populates="projekty", lazy="joined")
     zapisy      = db.relationship("Zapis", lazy=True, foreign_keys="Zapis.projekt_id", viewonly=True)
@@ -800,6 +802,154 @@ def klient_novy():
         return redirect(url_for("klient_detail", klient_id=k.id))
     return render_template("klient_form.html", klient=None)
 
+
+
+# ─────────────────────────────────────────────
+# FREELO ÚKOLY — FÁZE 2
+# ─────────────────────────────────────────────
+
+@app.route("/api/freelo/projekt/<int:projekt_id>/ukoly")
+@login_required
+def freelo_projekt_ukoly(projekt_id):
+    """Načte úkoly z Freelo pro daný projekt (přes uložený tasklist_id)."""
+    p = Projekt.query.get_or_404(projekt_id)
+    if not FREELO_API_KEY or not FREELO_EMAIL:
+        return jsonify({"ukoly": [], "error": "Freelo credentials chybí"})
+    if not p.freelo_tasklist_id:
+        return jsonify({"ukoly": [], "error": "Projekt nemá propojený Freelo tasklist"})
+    try:
+        resp = freelo_get(f"/tasklists/{p.freelo_tasklist_id}/tasks")
+        if resp.status_code != 200:
+            return jsonify({"ukoly": [], "error": f"Freelo API {resp.status_code}"})
+        tasks_raw = resp.json().get("data", [])
+        ukoly = []
+        for t in tasks_raw:
+            if not isinstance(t, dict):
+                continue
+            assignees = t.get("assigned_users") or []
+            ukoly.append({
+                "id": t.get("id"),
+                "name": t.get("name", ""),
+                "is_done": t.get("is_done", False),
+                "due_date": t.get("due_date"),
+                "assignee": assignees[0].get("fullname", "") if assignees else "",
+                "url": f"https://app.freelo.io/task/{t.get('id')}",
+                "created_at": t.get("created_at"),
+                "finished_at": t.get("finished_at"),
+            })
+        done = sum(1 for u in ukoly if u["is_done"])
+        return jsonify({"ukoly": ukoly, "done": done, "total": len(ukoly)})
+    except Exception as e:
+        return jsonify({"ukoly": [], "error": str(e)})
+
+
+@app.route("/projekt/<int:projekt_id>/nastavit-freelo", methods=["POST"])
+@login_required
+def projekt_nastavit_freelo(projekt_id):
+    """Uloží Freelo project_id a tasklist_id k projektu."""
+    p = Projekt.query.get_or_404(projekt_id)
+    p.freelo_project_id = request.form.get("freelo_project_id", type=int) or None
+    p.freelo_tasklist_id = request.form.get("freelo_tasklist_id", type=int) or None
+    db.session.commit()
+    return redirect(request.referrer or url_for("projekt_detail", projekt_id=p.id))
+
+
+# ─────────────────────────────────────────────
+# PROGRESS REPORT — FÁZE 3
+# ─────────────────────────────────────────────
+
+@app.route("/progress-report")
+@login_required
+def progress_report():
+    """Progress report za zvolené období — per klient, per projekt."""
+    od_str = request.args.get("od")
+    do_str = request.args.get("do")
+
+    # Defaultně: poslední 30 dní
+    do_dt = datetime.utcnow()
+    od_dt = do_dt - timedelta(days=30)
+    if od_str:
+        try: od_dt = datetime.strptime(od_str, "%Y-%m-%d")
+        except: pass
+    if do_str:
+        try: do_dt = datetime.strptime(do_str, "%Y-%m-%d")
+        except: pass
+
+    klienti = Klient.query.filter_by(is_active=True).order_by(Klient.nazev).all()
+    report_data = []
+
+    for k in klienti:
+        projekty = Projekt.query.filter_by(klient_id=k.id, is_active=True).all()
+        if not projekty:
+            continue
+
+        klient_data = {"klient": k, "projekty": []}
+
+        for p in projekty:
+            # Zápisy v období
+            zapisy_v_obdobi = Zapis.query.filter(
+                Zapis.projekt_id == p.id,
+                Zapis.created_at >= od_dt,
+                Zapis.created_at <= do_dt,
+            ).order_by(Zapis.created_at.desc()).all()
+
+            # Všechny zápisy projektu pro kontext
+            vsechny_zapisy = Zapis.query.filter_by(projekt_id=p.id)                .order_by(Zapis.created_at.desc()).all()
+
+            # Úkoly ze zápisů (tasks_json)
+            ukoly_splnene = []
+            ukoly_otevrene = []
+            for z in vsechny_zapisy:
+                try:
+                    tasks = json.loads(z.tasks_json or "[]")
+                    for t in tasks:
+                        if isinstance(t, dict) and t.get("name"):
+                            # Přidej timestamp zápisu
+                            t["zapis_datum"] = z.created_at.strftime("%d. %m. %Y")
+                            t["zapis_id"] = z.id
+                            if t.get("done"):
+                                ukoly_splnene.append(t)
+                            else:
+                                ukoly_otevrene.append(t)
+                except: pass
+
+            # Skóre z auditů
+            skore_list = []
+            for z in vsechny_zapisy:
+                if z.template == "audit" and z.output_json:
+                    try:
+                        import re as _re
+                        data = json.loads(z.output_json)
+                        ratings = data.get("ratings", "")
+                        m = _re.search(r"Celkov[eé][^0-9]*([0-9]+) *%", ratings)
+                        if m:
+                            skore_list.append({
+                                "skore": int(m.group(1)),
+                                "datum": z.created_at.strftime("%d. %m. %Y"),
+                                "zapis_id": z.id,
+                            })
+                    except: pass
+
+            klient_data["projekty"].append({
+                "projekt": p,
+                "zapisy_v_obdobi": zapisy_v_obdobi,
+                "vsechny_zapisy_count": len(vsechny_zapisy),
+                "ukoly_splnene": ukoly_splnene[:10],
+                "ukoly_otevrene": ukoly_otevrene[:15],
+                "skore_list": skore_list,
+                "posledni_skore": skore_list[0]["skore"] if skore_list else None,
+                "prvni_skore": skore_list[-1]["skore"] if len(skore_list) > 1 else None,
+            })
+
+        if any(pd["zapisy_v_obdobi"] or pd["skore_list"] for pd in klient_data["projekty"]):
+            report_data.append(klient_data)
+
+    return render_template("progress_report.html",
+                           report_data=report_data,
+                           od=od_dt, do=do_dt,
+                           od_str=od_dt.strftime("%Y-%m-%d"),
+                           do_str=do_dt.strftime("%Y-%m-%d"),
+                           now=datetime.utcnow())
 
 # ─────────────────────────────────────────────
 # CRM PŘEHLED
@@ -2144,6 +2294,8 @@ with app.app_context():
         db.create_all()  # skips existing tables — safe to run repeatedly (vytvoří i template_config)
         # Auto-migrate new columns
         migrations = [
+            ("projekt", "freelo_project_id",  "ALTER TABLE projekt ADD COLUMN IF NOT EXISTS freelo_project_id INTEGER"),
+            ("projekt", "freelo_tasklist_id", "ALTER TABLE projekt ADD COLUMN IF NOT EXISTS freelo_tasklist_id INTEGER"),
             ("zapis", "output_json",    "ALTER TABLE zapis ADD COLUMN output_json TEXT DEFAULT '{}'"),
             ("zapis", "notes_json",     "ALTER TABLE zapis ADD COLUMN notes_json TEXT DEFAULT '[]'"),
             ("zapis", "interni_prompt", "ALTER TABLE zapis ADD COLUMN interni_prompt TEXT DEFAULT ''"),
