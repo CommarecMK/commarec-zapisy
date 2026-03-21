@@ -910,7 +910,7 @@ def freelo_projekt_ukoly(projekt_id):
     if not p.freelo_tasklist_id:
         return jsonify({"ukoly": [], "error": "Projekt nemá propojený Freelo tasklist"})
     try:
-        resp = freelo_get(f"/tasklists/{p.freelo_tasklist_id}/tasks")
+        resp = freelo_get(f"/tasklist/{p.freelo_tasklist_id}")
         if resp.status_code != 200:
             return jsonify({"ukoly": [], "error": f"Freelo API {resp.status_code}"})
         tasks_raw = resp.json().get("data", [])
@@ -1026,13 +1026,13 @@ def progress_report():
             freelo_splnene = []
             if k.freelo_tasklist_id and FREELO_API_KEY and FREELO_EMAIL:
                 try:
-                    fr = freelo_get(f"/tasklists/{k.freelo_tasklist_id}/tasks")
+                    fr = freelo_get(f"/tasklist/{k.freelo_tasklist_id}")
                     if fr.status_code == 200:
                         raw_fr = fr.json()
                         if isinstance(raw_fr, list):
                             tasks_raw = raw_fr
                         elif isinstance(raw_fr, dict):
-                            tasks_raw = raw_fr.get("data", raw_fr.get("tasks", []))
+                            tasks_raw = raw_fr.get("tasks", raw_fr.get("data", []))
                         else:
                             tasks_raw = []
                         for t in tasks_raw:
@@ -2090,15 +2090,15 @@ def api_klient_freelo_ukoly(klient_id):
     if not FREELO_API_KEY or not FREELO_EMAIL:
         return jsonify({"ukoly": [], "error": "Chybí FREELO credentials"})
     try:
-        resp = freelo_get(f"/tasklists/{k.freelo_tasklist_id}/tasks")
+        resp = freelo_get(f"/tasklist/{k.freelo_tasklist_id}")
         if resp.status_code != 200:
             return jsonify({"ukoly": [], "error": f"Freelo {resp.status_code}: {resp.text[:200]}"})
         raw2 = resp.json()
-        # Freelo vrací úkoly různě — list nebo {"data": [...]}
+        # Freelo: GET /tasklist/{id} vrací {"id":..., "tasks":[...]}
         if isinstance(raw2, list):
             tasks_raw = raw2
         elif isinstance(raw2, dict):
-            tasks_raw = raw2.get("data", raw2.get("tasks", []))
+            tasks_raw = raw2.get("tasks", raw2.get("data", []))
         else:
             tasks_raw = []
         ukoly = []
@@ -2982,13 +2982,13 @@ def api_report_generovat():
     freelo_otevrene_ai = []
     if klient.freelo_tasklist_id and FREELO_API_KEY and FREELO_EMAIL:
         try:
-            fr = freelo_get(f"/tasklists/{klient.freelo_tasklist_id}/tasks")
+            fr = freelo_get(f"/tasklist/{klient.freelo_tasklist_id}")
             if fr.status_code == 200:
                 raw_ai = fr.json()
                 if isinstance(raw_ai, list):
                     tasks_raw = raw_ai
                 elif isinstance(raw_ai, dict):
-                    tasks_raw = raw_ai.get("data", raw_ai.get("tasks", []))
+                    tasks_raw = raw_ai.get("tasks", raw_ai.get("data", []))
                 else:
                     tasks_raw = []
                 for t in tasks_raw:
