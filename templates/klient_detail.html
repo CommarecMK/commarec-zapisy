@@ -772,8 +772,24 @@ let flProjects = [];
 let flMembers = [];
 
 async function flLoadMembers() {
+  // Pokud neznáme project_id, zjisti ho z tasklist přes projects endpoint
+  if (!flCurrentProjectId) {
+    try {
+      const pd = await fetch('/api/freelo/projects').then(r => r.json());
+      for (const p of (pd.projects || [])) {
+        for (const tl of (p.tasklists || [])) {
+          if (tl.id === FL_TASKLIST_ID) {
+            flCurrentProjectId = p.id;
+            break;
+          }
+        }
+        if (flCurrentProjectId) break;
+      }
+    } catch(e) {}
+  }
+  if (!flCurrentProjectId) return;
   try {
-    const d = await fetch(`/api/klient/${FL_KLIENT_ID}/freelo-members`).then(r => r.json());
+    const d = await fetch(`/api/freelo/members/${flCurrentProjectId}`).then(r => r.json());
     flMembers = d.members || [];
   } catch(e) { flMembers = []; }
 }
@@ -796,10 +812,13 @@ async function flLoadTasklists() {
   }
 }
 
+let flCurrentProjectId = null;
+
 function flOnProjectChange() {
   const projSel = document.getElementById('fl-project-select');
   const tlSel = document.getElementById('fl-tasklist-select');
   const pid = parseInt(projSel.value);
+  flCurrentProjectId = pid || null;
   const proj = flProjects.find(p => p.id === pid);
   if (!proj) {
     tlSel.innerHTML = '<option value="">— nejdřív vyber projekt —</option>';
@@ -850,12 +869,14 @@ async function flVytvoritTasklist() {
 
 async function flNastavitTasklist() {
   const sel = document.getElementById('fl-tasklist-select');
-  const projSel = document.getElementById('fl-project-select');
+  const projSelEl = document.getElementById('fl-project-select');
   const id = sel.value;
   if (!id) { toast('Vyber tasklist', false); return; }
   const tlName = sel.options[sel.selectedIndex].text;
-  const projName = projSel ? projSel.options[projSel.selectedIndex]?.text || '' : '';
+  const projName = projSelEl ? (projSelEl.options[projSelEl.selectedIndex]?.text || '') : '';
   const name = projName ? `${projName} / ${tlName}` : tlName;
+  // Ulož project_id pro načtení členů
+  if (projSelEl && projSelEl.value) flCurrentProjectId = parseInt(projSelEl.value);
   try {
     const d = await fetch(`/api/klient/${FL_KLIENT_ID}/freelo-nastavit`, {
       method: 'POST',
