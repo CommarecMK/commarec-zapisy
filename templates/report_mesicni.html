@@ -352,11 +352,11 @@
     <div class="setup-row">
       <div class="form-group">
         <label>Od</label>
-        <input type="date" id="od" value="{{ (now - timedelta).strftime('%Y-%m-%d') if now else '' }}">
+        <input type="date" id="od" value="{{ od_default }}">
       </div>
       <div class="form-group">
         <label>Do</label>
-        <input type="date" id="do" value="{{ now.strftime('%Y-%m-%d') }}">
+        <input type="date" id="do" value="{{ do_default }}">
       </div>
       <div></div>
       <button class="btn btn-navy" onclick="generovat()" id="gen-btn" style="white-space:nowrap;">

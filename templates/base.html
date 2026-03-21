@@ -167,20 +167,17 @@ hr { border: none; border-top: 1px solid var(--border); margin: 1.5rem 0; }
 <body>
 {% if session.user_id %}
 <nav class="nav">
-  <a href="{{ url_for('home') }}" class="nav-logo" style="display:flex;align-items:center;gap:10px;text-decoration:none;">
+  <a href="{{ url_for('prehled') }}" class="nav-logo" style="display:flex;align-items:center;gap:10px;text-decoration:none;">
     <img src="/static/logo-white.svg" alt="Commarec" style="height:26px;width:auto;display:block;">
     <span style="color:rgba(255,255,255,0.4);font-size:11px;font-weight:600;letter-spacing:0.12em;text-transform:uppercase;border-left:1px solid rgba(255,255,255,0.2);padding-left:10px;">Zápisy</span>
   </a>
   <div class="nav-divider"></div>
   <div class="nav-links">
-    <a href="{{ url_for('home') }}" class="nav-link {% if request.endpoint in ['home','dashboard'] %}active{% endif %}">Přehled</a>
-        <a href="{{ url_for('crm_prehled') }}" class="nav-link {% if request.endpoint in ['crm_prehled','klient_vyvoj','nabidka_nova','nabidka_detail'] %}active{% endif %}" style="color:#00AFF0;">CRM / Vývoj</a>
-    <a href="{{ url_for('klienti_list') }}" class="nav-link {% if request.endpoint in ['klienti_list','klient_detail','klient_novy','klient_upravit','projekt_detail'] %}active{% endif %}">Klienti</a>
+    <a href="{{ url_for('prehled') }}" class="nav-link {% if request.endpoint in ['prehled','home','dashboard','crm_prehled','klient_detail','klient_vyvoj','klient_novy','klient_upravit','projekt_detail','klienti_list'] %}active{% endif %}">Přehled</a>
     <a href="{{ url_for('novy_zapis') }}" class="nav-link {% if request.endpoint == 'novy_zapis' %}active{% endif %}" style="background:#00AFF0; color:#0E213E; padding:6px 16px; border-radius:4px; font-family:'Montserrat',sans-serif; font-weight:800; font-size:12px; letter-spacing:0.06em; text-transform:uppercase; white-space:nowrap;">+ Nový zápis</a>
     {% if session.is_admin %}
-    <a href="{{ url_for('progress_report') }}" class="nav-link {% if request.endpoint == 'progress_report' %}active{% endif %}">Report</a>
-    <a href="{{ url_for('report_mesicni') }}" class="nav-link {% if request.endpoint == 'report_mesicni' %}active{% endif %}">AI Report</a>
-        <a href="{{ url_for('admin') }}" class="nav-link {% if request.endpoint == 'admin' %}active{% endif %}">Správa</a>
+    <a href="{{ url_for('report_mesicni') }}" class="nav-link {% if request.endpoint in ['report_mesicni','progress_report'] %}active{% endif %}">AI Report</a>
+    <a href="{{ url_for('admin') }}" class="nav-link {% if request.endpoint in ['admin','admin_templates'] %}active{% endif %}">Správa</a>
     {% endif %}
   </div>
   <div class="nav-right">

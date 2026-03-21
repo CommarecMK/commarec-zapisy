@@ -732,7 +732,7 @@ def home():
 @app.route("/")
 def index():
     if "user_id" in session:
-        return redirect(url_for("home"))
+        return redirect(url_for("prehled"))
     return redirect(url_for("login"))
 
 @app.route("/login", methods=["GET", "POST"])
@@ -1043,6 +1043,91 @@ def progress_report():
                            now=datetime.utcnow())
 
 # ─────────────────────────────────────────────
+# HLAVNÍ PŘEHLED (nová hlavní stránka)
+# ─────────────────────────────────────────────
+
+@app.route("/prehled")
+@login_required
+def prehled():
+    """Hlavní stránka — přehled všech klientů s filtry, skóre a poslední aktivitou."""
+    now = datetime.utcnow()
+    filtr = request.args.get("filtr", "vse")
+    hledat = request.args.get("q", "").strip()
+
+    klienti_all = Klient.query.filter_by(is_active=True).order_by(Klient.nazev).all()
+    cutoff_60 = now - timedelta(days=60)
+    cutoff_30 = now - timedelta(days=30)
+
+    prehled_data = []
+    for k in klienti_all:
+        if hledat and hledat.lower() not in k.nazev.lower() and hledat.lower() not in (k.kontakt or "").lower():
+            continue
+        zapisy = Zapis.query.filter_by(klient_id=k.id).order_by(Zapis.created_at.desc()).all()
+        projekty = Projekt.query.filter_by(klient_id=k.id, is_active=True).all()
+        nabidky = Nabidka.query.filter_by(klient_id=k.id).order_by(Nabidka.created_at.desc()).limit(3).all()
+        posledni_zapis = zapisy[0] if zapisy else None
+
+        # Filtry
+        if filtr == "aktivni" and not projekty:
+            continue
+        if filtr == "bez_aktivity":
+            if posledni_zapis and posledni_zapis.created_at > cutoff_60:
+                continue
+        if filtr == "tento_mesic":
+            if not posledni_zapis or posledni_zapis.created_at < cutoff_30:
+                continue
+
+        # Skóre z auditů — vezmi první i poslední pro delta
+        skore_list = []
+        for z in zapisy:
+            if z.template == "audit" and z.output_json and z.output_json != "{}":
+                try:
+                    import re as _re
+                    data = json.loads(z.output_json)
+                    ratings = data.get("ratings", "") or data.get("hodnoceni", "")
+                    m = _re.search(r"Celkov[eé][^0-9]*([0-9]+)\s*%", ratings)
+                    if m:
+                        skore_list.append({"skore": int(m.group(1)), "datum": z.created_at})
+                except Exception:
+                    pass
+
+        posledni_skore = skore_list[0]["skore"] if skore_list else None
+        prvni_skore = skore_list[-1]["skore"] if len(skore_list) > 1 else None
+        delta = (posledni_skore - prvni_skore) if (posledni_skore is not None and prvni_skore is not None) else None
+
+        # Otevřené úkoly
+        ukoly_otevrene = 0
+        for z in zapisy[:5]:
+            try:
+                tasks = json.loads(z.tasks_json or "[]")
+                ukoly_otevrene += sum(1 for t in tasks if isinstance(t, dict) and t.get("name") and not t.get("done"))
+            except Exception:
+                pass
+
+        prehled_data.append({
+            "klient": k,
+            "zapisy_count": len(zapisy),
+            "projekty": projekty,
+            "posledni_zapis": posledni_zapis,
+            "nabidky": nabidky,
+            "skore": posledni_skore,
+            "delta": delta,
+            "ukoly_otevrene": ukoly_otevrene,
+        })
+
+    stats = {
+        "klienti": len(prehled_data),
+        "zapisy_30d": Zapis.query.filter(Zapis.created_at >= cutoff_30).count(),
+        "nabidky_otevrene": Nabidka.query.filter(Nabidka.stav.in_(["draft", "odeslana"])).count(),
+        "projekty": Projekt.query.filter_by(is_active=True).count(),
+    }
+
+    return render_template("prehled.html",
+                           prehled_data=prehled_data, filtr=filtr, hledat=hledat,
+                           stats=stats, template_names=TEMPLATE_NAMES, now=now)
+
+
+# ─────────────────────────────────────────────
 # CRM PŘEHLED
 # ─────────────────────────────────────────────
 
@@ -1261,14 +1346,45 @@ def klient_detail(klient_id):
     k = Klient.query.get_or_404(klient_id)
     projekty = Projekt.query.filter_by(klient_id=klient_id).order_by(Projekt.created_at.desc()).all()
     zapisy   = Zapis.query.filter_by(klient_id=klient_id).order_by(Zapis.created_at.desc()).all()
+    nabidky  = Nabidka.query.filter_by(klient_id=klient_id).order_by(Nabidka.created_at.desc()).all()
     konzultanti = User.query.filter_by(is_active=True).all()
     try:
         profil = json.loads(k.profil_json or "{}")
     except Exception:
         profil = {}
+
+    # Skóre history
+    import re as _re
+    skore_list = []
+    for z in zapisy:
+        if z.template == "audit" and z.output_json and z.output_json != "{}":
+            try:
+                data = json.loads(z.output_json)
+                ratings = data.get("ratings", "") or data.get("hodnoceni", "")
+                m = _re.search(r"Celkov[eé][^0-9]*([0-9]+)\s*%", ratings)
+                if m:
+                    skore_list.append({"skore": int(m.group(1)), "datum": z.created_at, "zapis_id": z.id})
+            except Exception:
+                pass
+
+    # Otevřené úkoly napříč zápisy
+    ukoly_otevrene = []
+    for z in zapisy:
+        try:
+            tasks = json.loads(z.tasks_json or "[]")
+            for t in tasks:
+                if isinstance(t, dict) and t.get("name") and not t.get("done"):
+                    t["zapis_id"] = z.id
+                    t["zapis_title"] = z.title
+                    ukoly_otevrene.append(t)
+        except Exception:
+            pass
+
     return render_template("klient_detail.html", k=k, projekty=projekty,
-                           zapisy=zapisy, profil=profil,
-                           konzultanti=konzultanti, template_names=TEMPLATE_NAMES)
+                           zapisy=zapisy, nabidky=nabidky, profil=profil,
+                           skore_list=skore_list, ukoly_otevrene=ukoly_otevrene,
+                           konzultanti=konzultanti, template_names=TEMPLATE_NAMES,
+                           now=datetime.utcnow())
 
 
 @app.route("/klient/<int:klient_id>/vyvoj")
@@ -1332,6 +1448,43 @@ def klient_profil_update(klient_id):
 # ─────────────────────────────────────────────
 # ROUTES — PROJEKTY
 # ─────────────────────────────────────────────
+
+@app.route("/api/klient/<int:klient_id>/poznamky", methods=["POST"])
+@login_required
+def api_klient_poznamky(klient_id):
+    """Uloží interní poznámky ke klientovi."""
+    k = Klient.query.get_or_404(klient_id)
+    data = request.get_json()
+    k.poznamka = data.get("poznamka", "")
+    try:
+        db.session.commit()
+        return jsonify({"ok": True})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/klient/<int:klient_id>/upravit", methods=["POST"])
+@login_required
+def api_klient_upravit(klient_id):
+    """Inline editace klienta přes JSON API."""
+    k = Klient.query.get_or_404(klient_id)
+    data = request.get_json()
+    k.nazev   = data.get("nazev", k.nazev).strip()
+    k.kontakt = data.get("kontakt", k.kontakt or "").strip()
+    k.email   = data.get("email", k.email or "").strip()
+    k.telefon = data.get("telefon", k.telefon or "").strip()
+    k.adresa  = data.get("adresa", k.adresa or "").strip()
+    k.sidlo   = data.get("sidlo", k.sidlo or "").strip()
+    k.ic      = data.get("ic", k.ic or "").strip()
+    k.dic     = data.get("dic", k.dic or "").strip()
+    try:
+        db.session.commit()
+        return jsonify({"ok": True})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"error": str(e)}), 500
+
 
 @app.route("/projekt/novy", methods=["POST"])
 @login_required
@@ -2457,7 +2610,11 @@ with app.app_context():
 def report_mesicni():
     """Stránka pro výběr klienta a generování měsíčního AI reportu."""
     klienti = Klient.query.filter_by(is_active=True).order_by(Klient.nazev).all()
-    return render_template("report_mesicni.html", klienti=klienti, now=datetime.utcnow())
+    now = datetime.utcnow()
+    od_default = (now - timedelta(days=30)).strftime("%Y-%m-%d")
+    do_default = now.strftime("%Y-%m-%d")
+    return render_template("report_mesicni.html", klienti=klienti, now=now,
+                           od_default=od_default, do_default=do_default)
 
 
 @app.route("/api/report/generovat", methods=["POST"])

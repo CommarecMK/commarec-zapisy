@@ -1,0 +1,395 @@
+{% extends "base.html" %}
+{% block title %}Přehled klientů{% endblock %}
+
+{% block extra_head %}
+<style>
+/* ── STATS BAR ─────────────────────────────── */
+.stats-bar {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  margin-bottom: 1.5rem;
+}
+.stat-box {
+  background: white;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 14px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.stat-box-num {
+  font-family: var(--font-display);
+  font-size: 36px;
+  font-weight: 900;
+  color: var(--navy);
+  line-height: 1;
+  letter-spacing: 0.02em;
+}
+.stat-box-label {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+}
+
+/* ── FILTRY ───────────────────────────────── */
+.filtr-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 1.25rem;
+  flex-wrap: wrap;
+}
+.filtr-tabs {
+  display: flex;
+  gap: 3px;
+  background: #f0f3f7;
+  padding: 3px;
+  border-radius: 6px;
+}
+.filtr-tab {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 5px 14px;
+  border-radius: 4px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--muted);
+  text-decoration: none;
+}
+.filtr-tab.active {
+  background: white;
+  color: var(--navy);
+  box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+}
+.search-form {
+  flex: 1;
+  max-width: 300px;
+  display: flex;
+  gap: 6px;
+}
+.search-form input {
+  flex: 1;
+  padding: 6px 11px;
+  border: 1.5px solid var(--border);
+  border-radius: 5px;
+  font-size: 13px;
+  font-family: var(--font-body);
+}
+.search-form input:focus { outline: none; border-color: var(--cyan); }
+
+/* ── KLIENT KARTA ─────────────────────────── */
+.klient-karta {
+  background: white;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  margin-bottom: 10px;
+  display: grid;
+  grid-template-columns: 4px 1fr auto;
+  overflow: hidden;
+  transition: box-shadow 0.15s, border-color 0.15s;
+}
+.klient-karta:hover {
+  box-shadow: 0 2px 14px rgba(23,55,103,0.08);
+  border-color: #b8c8dc;
+}
+.kk-bar { background: var(--cyan); }
+.kk-bar.zadny { background: var(--border); }
+
+.kk-body {
+  padding: 16px 20px;
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  gap: 20px;
+  align-items: center;
+}
+.kk-info {}
+.kk-nazev {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--navy);
+  margin-bottom: 3px;
+}
+.kk-sub {
+  font-size: 12px;
+  color: var(--muted);
+  margin-bottom: 8px;
+}
+.kk-tags { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+.kk-tag {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 2px 8px;
+  border-radius: 3px;
+  background: #f0f3f7;
+  color: var(--muted);
+}
+.kk-tag.audit { background: rgba(23,55,103,0.08); color: var(--navy); }
+.kk-tag.operativa { background: rgba(0,175,240,0.1); color: #0085B8; }
+.kk-tag.obchod { background: rgba(0,160,144,0.1); color: #00806e; }
+.kk-when {
+  font-size: 11px;
+  color: var(--muted);
+  font-weight: 500;
+}
+.kk-when.warn { color: #C06A00; font-weight: 700; }
+.kk-when.danger { color: var(--danger); font-weight: 700; }
+
+/* Skóre */
+.kk-skore { text-align: center; min-width: 72px; }
+.skore-num {
+  font-family: var(--font-display);
+  font-size: 32px;
+  font-weight: 900;
+  line-height: 1;
+  letter-spacing: 0.02em;
+}
+.skore-num.high { color: #0A7A5A; }
+.skore-num.mid  { color: #0085B8; }
+.skore-num.low  { color: #C06A00; }
+.skore-num.crit { color: var(--danger); }
+.skore-num.none { color: var(--border); }
+.skore-delta {
+  font-size: 11px;
+  font-weight: 700;
+  margin-top: 2px;
+}
+.skore-delta.pos { color: #0A7A5A; }
+.skore-delta.neg { color: var(--danger); }
+.skore-sub { font-size: 10px; color: var(--muted); margin-top: 1px; text-transform: uppercase; letter-spacing: 0.06em; }
+
+/* Meta info */
+.kk-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 160px;
+}
+.kk-meta-row {
+  font-size: 12px;
+  color: var(--muted);
+}
+.kk-meta-row strong {
+  color: var(--navy);
+  font-weight: 600;
+}
+.kk-ukoly-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  font-weight: 700;
+  color: #C06A00;
+  background: rgba(255,141,0,0.1);
+  border: 1px solid rgba(255,141,0,0.2);
+  border-radius: 3px;
+  padding: 2px 7px;
+}
+
+/* Akce */
+.kk-akce {
+  padding: 12px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  border-left: 1px solid var(--border);
+  min-width: 130px;
+}
+.btn-kk {
+  font-family: var(--font-body);
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  text-decoration: none;
+  padding: 7px 14px;
+  border-radius: 5px;
+  text-align: center;
+  white-space: nowrap;
+  border: none;
+  cursor: pointer;
+  display: block;
+}
+.btn-kk.navy { background: var(--navy); color: white; }
+.btn-kk.navy:hover { background: #254f8a; color: white; text-decoration: none; }
+.btn-kk.outline { background: #f0f3f7; color: var(--navy); border: 1.5px solid var(--border); }
+.btn-kk.outline:hover { border-color: var(--navy); background: white; text-decoration: none; }
+.btn-kk.orange { background: #FF8D00; color: white; }
+.btn-kk.orange:hover { background: #E07800; color: white; text-decoration: none; }
+
+/* Empty */
+.empty-state {
+  text-align: center;
+  padding: 60px 20px;
+  color: var(--muted);
+  background: white;
+  border: 1px dashed var(--border);
+  border-radius: var(--radius);
+  font-size: 14px;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+
+  <!-- HEADER -->
+  <div class="page-header">
+    <div>
+      <h1>Přehled klientů</h1>
+      <p>{{ prehled_data|length }} klientů · {{ stats.zapisy_30d }} zápisů za 30 dní · {{ stats.nabidky_otevrene }} otevřených nabídek</p>
+    </div>
+    <div style="display:flex;gap:8px;">
+      <a href="{{ url_for('nabidka_nova') }}" class="btn btn-sm" style="background:#FF8D00;color:white;border-color:#FF8D00;font-weight:900;text-transform:uppercase;letter-spacing:0.04em;">+ Nabídka</a>
+      <a href="{{ url_for('novy_zapis') }}" class="btn btn-navy">+ Nový zápis</a>
+    </div>
+  </div>
+
+  <!-- STATS -->
+  <div class="stats-bar">
+    <div class="stat-box">
+      <div class="stat-box-num" style="color:var(--cyan);">{{ stats.klienti }}</div>
+      <div class="stat-box-label">Aktivních klientů</div>
+    </div>
+    <div class="stat-box">
+      <div class="stat-box-num">{{ stats.projekty }}</div>
+      <div class="stat-box-label">Aktivních projektů</div>
+    </div>
+    <div class="stat-box">
+      <div class="stat-box-num">{{ stats.zapisy_30d }}</div>
+      <div class="stat-box-label">Zápisů za 30 dní</div>
+    </div>
+    <div class="stat-box">
+      <div class="stat-box-num" style="color:#FF8D00;">{{ stats.nabidky_otevrene }}</div>
+      <div class="stat-box-label">Otevřených nabídek</div>
+    </div>
+  </div>
+
+  <!-- FILTRY -->
+  <div class="filtr-bar">
+    <div class="filtr-tabs">
+      <a href="?filtr=vse&q={{ hledat }}" class="filtr-tab {% if filtr=='vse' %}active{% endif %}">Všichni</a>
+      <a href="?filtr=aktivni&q={{ hledat }}" class="filtr-tab {% if filtr=='aktivni' %}active{% endif %}">Aktivní projekt</a>
+      <a href="?filtr=bez_aktivity&q={{ hledat }}" class="filtr-tab {% if filtr=='bez_aktivity' %}active{% endif %}">Bez aktivity 60d</a>
+      <a href="?filtr=tento_mesic&q={{ hledat }}" class="filtr-tab {% if filtr=='tento_mesic' %}active{% endif %}">Tento měsíc</a>
+    </div>
+    <form method="get" class="search-form">
+      <input type="hidden" name="filtr" value="{{ filtr }}">
+      <input type="text" name="q" value="{{ hledat }}" placeholder="Hledat klienta nebo kontakt…">
+      {% if hledat %}<a href="?filtr={{ filtr }}" class="btn btn-secondary btn-sm">✕</a>{% endif %}
+    </form>
+  </div>
+
+  <!-- KLIENTSKÉ KARTY -->
+  {% if prehled_data %}
+    {% for d in prehled_data %}
+    {% set k = d.klient %}
+    {% set pz = d.posledni_zapis %}
+    {% set diff = (now - pz.created_at).days if pz else 999 %}
+
+    <div class="klient-karta">
+      <div class="kk-bar {% if not d.projekty %}zadny{% endif %}"></div>
+
+      <div class="kk-body">
+        <!-- INFO -->
+        <div class="kk-info">
+          <div class="kk-nazev">{{ k.nazev }}</div>
+          <div class="kk-sub">
+            {% if k.kontakt %}{{ k.kontakt }}{% endif %}
+            {% if k.adresa %} · {{ k.adresa | truncate(45) }}{% endif %}
+          </div>
+          <div class="kk-tags">
+            {% for p in d.projekty %}
+              <span class="kk-tag">{{ p.nazev | truncate(28) }}</span>
+            {% endfor %}
+            {% if not d.projekty %}
+              <span class="kk-tag" style="color:#D0DAE8;">Bez projektu</span>
+            {% endif %}
+            {% if d.zapisy_count %}
+              <span style="font-size:11px;color:var(--muted);">{{ d.zapisy_count }} zápisů</span>
+            {% endif %}
+            {% if d.ukoly_otevrene %}
+              <span class="kk-ukoly-badge">{{ d.ukoly_otevrene }} úkolů</span>
+            {% endif %}
+            {% if pz %}
+              <span class="kk-tag {{ pz.template }}">{{ template_names.get(pz.template, pz.template) }}</span>
+            {% endif %}
+          </div>
+        </div>
+
+        <!-- SKÓRE -->
+        <div class="kk-skore">
+          {% if d.skore is not none %}
+            {% if d.skore >= 70 %}
+              <div class="skore-num high">{{ d.skore }}%</div>
+            {% elif d.skore >= 55 %}
+              <div class="skore-num mid">{{ d.skore }}%</div>
+            {% elif d.skore >= 40 %}
+              <div class="skore-num low">{{ d.skore }}%</div>
+            {% else %}
+              <div class="skore-num crit">{{ d.skore }}%</div>
+            {% endif %}
+            {% if d.delta is not none %}
+              <div class="skore-delta {% if d.delta >= 0 %}pos{% else %}neg{% endif %}">
+                {% if d.delta >= 0 %}▲ +{{ d.delta }}{% else %}▼ {{ d.delta }}{% endif %}
+              </div>
+            {% endif %}
+            <div class="skore-sub">skóre</div>
+          {% else %}
+            <div class="skore-num none">–</div>
+            <div class="skore-sub">bez auditu</div>
+          {% endif %}
+        </div>
+
+        <!-- META -->
+        <div class="kk-meta">
+          {% if pz %}
+            <div class="kk-meta-row">
+              <strong>{{ pz.created_at.strftime('%d. %m.') }}</strong>
+              <span class="kk-when {% if diff > 60 %}danger{% elif diff > 30 %}warn{% endif %}">
+                — {% if diff == 0 %}dnes{% elif diff == 1 %}včera{% else %}{{ diff }}d{% endif %}
+              </span>
+            </div>
+            <div class="kk-meta-row" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:160px;">
+              {{ pz.title | truncate(32) if pz.title else '–' }}
+            </div>
+          {% else %}
+            <div class="kk-meta-row" style="color:#D0DAE8;">Žádné zápisy</div>
+          {% endif %}
+          {% for n in d.nabidky[:1] %}
+            <div class="kk-meta-row">
+              <span style="font-size:10px;font-weight:700;background:rgba(255,141,0,0.12);color:#C06A00;padding:1px 6px;border-radius:3px;text-transform:uppercase;letter-spacing:0.04em;">
+                {{ n.cislo }}
+                {% if n.stav == 'prijata' %} ✓{% elif n.stav == 'draft' %} ●{% endif %}
+              </span>
+            </div>
+          {% endfor %}
+        </div>
+      </div>
+
+      <!-- AKCE -->
+      <div class="kk-akce">
+        <a href="{{ url_for('klient_detail', klient_id=k.id) }}" class="btn-kk navy">Detail →</a>
+        <a href="{{ url_for('novy_zapis') }}?klient_id={{ k.id }}" class="btn-kk outline">+ Zápis</a>
+        <a href="{{ url_for('nabidka_nova') }}?klient_id={{ k.id }}" class="btn-kk orange">+ Nabídka</a>
+      </div>
+    </div>
+    {% endfor %}
+
+  {% else %}
+    <div class="empty-state">
+      Žádní klienti nenalezeni{% if hledat %} pro „{{ hledat }}"{% endif %}.<br>
+      <a href="?filtr=vse" style="color:var(--cyan);font-weight:700;text-decoration:none;">Zobrazit všechny →</a>
+    </div>
+  {% endif %}
+
+</div>
+{% endblock %}
