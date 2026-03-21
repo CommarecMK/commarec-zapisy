@@ -555,11 +555,31 @@
             <div class="fl-connect">
               <div style="font-size:22px;margin-bottom:6px;">🔗</div>
               <strong style="color:var(--navy);">Propoj Freelo tasklist</strong>
-              <p style="margin:6px 0 10px;font-size:12px;">Vyber tasklist patřící tomuto klientovi</p>
-              <select id="fl-tasklist-select" onchange="">
-                <option value="">Načítám tasklists…</option>
+              <p style="margin:6px 0 12px;font-size:12px;">Vyber projekt a tasklist patřící tomuto klientovi</p>
+
+              <label style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted);display:block;margin-bottom:4px;text-align:left;">Freelo projekt</label>
+              <select id="fl-project-select" onchange="flOnProjectChange()" style="margin-bottom:10px;">
+                <option value="">Načítám projekty…</option>
               </select>
-              <button onclick="flNastavitTasklist()" class="btn btn-navy btn-sm" style="width:100%;">Uložit propojení</button>
+
+              <label style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted);display:block;margin-bottom:4px;text-align:left;">Tasklist</label>
+              <select id="fl-tasklist-select" style="margin-bottom:8px;">
+                <option value="">— nejdřív vyber projekt —</option>
+              </select>
+
+              <div style="display:flex;gap:6px;">
+                <button onclick="flNastavitTasklist()" class="btn btn-navy btn-sm" style="flex:1;">Uložit propojení</button>
+                <button onclick="flNovyTasklist()" class="btn btn-secondary btn-sm" title="Vytvořit nový tasklist ve Freelu">+ Nový tasklist</button>
+              </div>
+
+              <div id="fl-new-tl-form" style="display:none;margin-top:10px;padding:10px;background:#f0f5fb;border-radius:5px;border:1px solid #c8d8ee;">
+                <label style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted);display:block;margin-bottom:4px;">Název nového tasklist</label>
+                <input id="fl-new-tl-name" class="fl-edit-input" placeholder="Např. Nábytek Centrum — 2026" style="margin-bottom:8px;">
+                <div style="display:flex;gap:6px;">
+                  <button onclick="flVytvoritTasklist()" class="btn btn-navy btn-sm" style="flex:1;">Vytvořit ve Freelu</button>
+                  <button onclick="document.getElementById('fl-new-tl-form').style.display='none';" class="btn btn-secondary btn-sm">Zrušit</button>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -746,28 +766,87 @@ function flShowNotConfigured() {
   document.getElementById('fl-refresh-btn').style.display = 'none';
 }
 
+// Uloží načtené projekty pro kaskádu
+let flProjects = [];
+
 async function flLoadTasklists() {
-  const sel = document.getElementById('fl-tasklist-select');
+  const projSel = document.getElementById('fl-project-select');
+  if (!projSel) return;
+  projSel.innerHTML = '<option value="">Načítám projekty…</option>';
   try {
-    const data = await fetch('/api/freelo/tasklists-all').then(r => r.json());
-    if (data.tasklists && data.tasklists.length) {
-      sel.innerHTML = '<option value="">— Vyberte tasklist —</option>' +
-        data.tasklists.map(tl =>
-          `<option value="${tl.id}">[${tl.project_name}] ${tl.name}</option>`
-        ).join('');
+    const data = await fetch('/api/freelo/projects').then(r => r.json());
+    flProjects = data.projects || [];
+    if (flProjects.length) {
+      projSel.innerHTML = '<option value="">— Vyberte projekt —</option>' +
+        flProjects.map(p => `<option value="${p.id}">${p.name}</option>`).join('');
     } else {
-      sel.innerHTML = `<option value="">${data.error || 'Žádné tasklists'}</option>`;
+      projSel.innerHTML = `<option value="">${data.error || 'Žádné projekty'}</option>`;
     }
   } catch(e) {
-    sel.innerHTML = '<option value="">Chyba načítání</option>';
+    projSel.innerHTML = '<option value="">Chyba načítání</option>';
   }
+}
+
+function flOnProjectChange() {
+  const projSel = document.getElementById('fl-project-select');
+  const tlSel = document.getElementById('fl-tasklist-select');
+  const pid = parseInt(projSel.value);
+  const proj = flProjects.find(p => p.id === pid);
+  if (!proj) {
+    tlSel.innerHTML = '<option value="">— nejdřív vyber projekt —</option>';
+    return;
+  }
+  const tasklists = proj.tasklists || [];
+  tlSel.innerHTML = '<option value="">— Vyberte tasklist —</option>' +
+    tasklists.map(tl => `<option value="${tl.id}">${tl.name}</option>`).join('');
+}
+
+function flNovyTasklist() {
+  const projSel = document.getElementById('fl-project-select');
+  if (!projSel.value) { toast('Nejdřív vyber projekt', false); return; }
+  document.getElementById('fl-new-tl-form').style.display = 'block';
+  document.getElementById('fl-new-tl-name').focus();
+}
+
+async function flVytvoritTasklist() {
+  const projSel = document.getElementById('fl-project-select');
+  const name = document.getElementById('fl-new-tl-name').value.trim();
+  if (!name) { toast('Zadej název tasklist', false); return; }
+  if (!projSel.value) { toast('Vyber projekt', false); return; }
+  const btn = document.querySelector('#fl-new-tl-form .btn-navy');
+  btn.disabled = true; btn.textContent = 'Vytvářím…';
+  try {
+    const d = await fetch('/api/freelo/create-tasklist', {
+      method: 'POST', headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({name, project_id: projSel.value})
+    }).then(r => r.json());
+    if (d.id) {
+      // Přidej do lokálního cache a selectu
+      const proj = flProjects.find(p => p.id === parseInt(projSel.value));
+      if (proj) {
+        proj.tasklists = proj.tasklists || [];
+        proj.tasklists.push({id: d.id, name: d.name || name});
+      }
+      flOnProjectChange();
+      document.getElementById('fl-tasklist-select').value = d.id;
+      document.getElementById('fl-new-tl-form').style.display = 'none';
+      document.getElementById('fl-new-tl-name').value = '';
+      toast(`Tasklist "${name}" vytvořen ✓`);
+    } else {
+      toast(d.error || 'Chyba vytvoření', false);
+    }
+  } catch(e) { toast('Chyba: ' + e.message, false); }
+  btn.disabled = false; btn.textContent = 'Vytvořit ve Freelu';
 }
 
 async function flNastavitTasklist() {
   const sel = document.getElementById('fl-tasklist-select');
+  const projSel = document.getElementById('fl-project-select');
   const id = sel.value;
   if (!id) { toast('Vyber tasklist', false); return; }
-  const name = sel.options[sel.selectedIndex].text;
+  const tlName = sel.options[sel.selectedIndex].text;
+  const projName = projSel ? projSel.options[projSel.selectedIndex]?.text || '' : '';
+  const name = projName ? `${projName} / ${tlName}` : tlName;
   try {
     const d = await fetch(`/api/klient/${FL_KLIENT_ID}/freelo-nastavit`, {
       method: 'POST',

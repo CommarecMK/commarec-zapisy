@@ -1028,10 +1028,16 @@ def progress_report():
                 try:
                     fr = freelo_get(f"/tasklists/{k.freelo_tasklist_id}/tasks")
                     if fr.status_code == 200:
-                        tasks_raw = fr.json()
-                        if isinstance(tasks_raw, dict):
-                            tasks_raw = tasks_raw.get("data", [])
+                        raw_fr = fr.json()
+                        if isinstance(raw_fr, list):
+                            tasks_raw = raw_fr
+                        elif isinstance(raw_fr, dict):
+                            tasks_raw = raw_fr.get("data", raw_fr.get("tasks", []))
+                        else:
+                            tasks_raw = []
                         for t in tasks_raw:
+                            if not isinstance(t, dict):
+                                continue
                             if t.get("state") == "done":
                                 finished = t.get("finished_at", "")
                                 if finished:
@@ -2042,8 +2048,10 @@ def get_freelo_tasklists_all():
         resp = freelo_get("/projects")
         if resp.status_code != 200:
             return jsonify({"tasklists": [], "error": f"Freelo {resp.status_code}"})
+        raw = resp.json()
+        projects = raw if isinstance(raw, list) else raw.get("data", [])
         tasklists = []
-        for p in resp.json().get("data", []):
+        for p in projects:
             for tl in p.get("tasklists", []):
                 tasklists.append({
                     "id": tl.get("id"),
@@ -2085,10 +2093,18 @@ def api_klient_freelo_ukoly(klient_id):
         resp = freelo_get(f"/tasklists/{k.freelo_tasklist_id}/tasks")
         if resp.status_code != 200:
             return jsonify({"ukoly": [], "error": f"Freelo {resp.status_code}: {resp.text[:200]}"})
-        data = resp.json()
-        tasks_raw = data if isinstance(data, list) else data.get("data", [])
+        raw2 = resp.json()
+        # Freelo vrací úkoly různě — list nebo {"data": [...]}
+        if isinstance(raw2, list):
+            tasks_raw = raw2
+        elif isinstance(raw2, dict):
+            tasks_raw = raw2.get("data", raw2.get("tasks", []))
+        else:
+            tasks_raw = []
         ukoly = []
         for t in tasks_raw:
+            if not isinstance(t, dict):
+                continue
             ukoly.append({
                 "id": t.get("id"),
                 "name": t.get("name", ""),
@@ -2123,7 +2139,11 @@ def api_klient_freelo_pridat_ukol(klient_id):
         resp_p = freelo_get("/projects")
         project_id = str(FREELO_PROJECT_ID)
         if resp_p.status_code == 200:
-            for p in resp_p.json().get("data", []):
+            raw_p = resp_p.json()
+            projects_list = raw_p if isinstance(raw_p, list) else raw_p.get("data", raw_p.get("projects", []))
+            for p in projects_list:
+                if not isinstance(p, dict):
+                    continue
                 for tl in p.get("tasklists", []):
                     if tl.get("id") == k.freelo_tasklist_id:
                         project_id = str(p.get("id"))
@@ -2964,10 +2984,16 @@ def api_report_generovat():
         try:
             fr = freelo_get(f"/tasklists/{klient.freelo_tasklist_id}/tasks")
             if fr.status_code == 200:
-                tasks_raw = fr.json()
-                if isinstance(tasks_raw, dict):
-                    tasks_raw = tasks_raw.get("data", [])
+                raw_ai = fr.json()
+                if isinstance(raw_ai, list):
+                    tasks_raw = raw_ai
+                elif isinstance(raw_ai, dict):
+                    tasks_raw = raw_ai.get("data", raw_ai.get("tasks", []))
+                else:
+                    tasks_raw = []
                 for t in tasks_raw:
+                    if not isinstance(t, dict):
+                        continue
                     if t.get("state") == "done":
                         finished = t.get("finished_at", "")
                         if finished:
