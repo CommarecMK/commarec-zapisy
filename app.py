@@ -2215,13 +2215,17 @@ def api_freelo_task_edit(task_id):
 
     if put_payload:
         try:
-            resp = requests.put(
-                f"https://api.freelo.io/v1/task/{task_id}",
-                auth=freelo_auth(),
-                headers={"Content-Type": "application/json"},
-                json=put_payload,
-                timeout=15
-            )
+            # Zkus POST, pak PUT dle Freelo API verze
+            resp = freelo_post(f"/task/{task_id}", put_payload)
+            if resp.status_code not in (200, 201, 204):
+                # Fallback na PUT
+                resp = requests.put(
+                    f"https://api.freelo.io/v1/task/{task_id}",
+                    auth=freelo_auth(),
+                    headers={"Content-Type": "application/json"},
+                    json=put_payload,
+                    timeout=15
+                )
             if resp.status_code not in (200, 201, 204):
                 errors.append(f"Úkol: {resp.status_code} {resp.text[:150]}")
         except Exception as e:
@@ -2304,17 +2308,21 @@ def api_freelo_task_podukoly(task_id):
                 else:
                     is_done = False
                 is_done = is_done or bool(t.get("date_finished"))
+                # Podúkol má "id" (subtask record ID) a "task_id" (skutečné Freelo task ID)
+                # Pro finish/activate/edit musíme použít task_id
+                actual_task_id = t.get("task_id") or t.get("id")
                 result.append({
-                    "id": t.get("id"),
+                    "id": actual_task_id,          # Používáme task_id pro API volání
+                    "subtask_record_id": t.get("id"),  # Původní subtask id
                     "name": t.get("name", ""),
                     "state": "done" if is_done else "open",
                     "deadline": t.get("due_date", "") or "",
                     "assignee": t.get("worker", {}).get("fullname", "") if t.get("worker") else "",
                     "assignee_id": t.get("worker", {}).get("id") if t.get("worker") else None,
-                    "comments_count": t.get("comments_count", 0),
-                    "count_subtasks": 0,
+                    "comments_count": t.get("count_comments", 0),
+                    "count_subtasks": t.get("count_subtasks", 0),
                     "description": "",
-                    "url": f"https://app.freelo.io/task/{t.get('id')}",
+                    "url": f"https://app.freelo.io/task/{actual_task_id}",
                     "finished_at": t.get("date_finished", ""),
                     "is_subtask": True,
                     "parent_task_id": task_id,
@@ -3458,6 +3466,64 @@ def api_klient_freelo_members(klient_id):
         return jsonify({"members": members})
     except Exception as e:
         return jsonify({"members": [], "error": str(e)})
+
+
+@app.route("/api/freelo/debug-edit/<int:task_id>")
+@login_required
+def debug_freelo_edit(task_id):
+    """Testuje různé endpointy pro editaci úkolu."""
+    results = {}
+    test_name = "TEST_EDIT_SMAZAT"
+    
+    methods = [
+        ("POST_task", lambda: freelo_post(f"/task/{task_id}", {"name": test_name})),
+        ("PATCH_task", lambda: freelo_patch(f"/task/{task_id}", {"name": test_name})),
+        ("PUT_task", lambda: requests.put(f"https://api.freelo.io/v1/task/{task_id}",
+            auth=freelo_auth(), headers={"Content-Type":"application/json"},
+            json={"name": test_name}, timeout=10)),
+        ("POST_task_edit", lambda: freelo_post(f"/task/{task_id}/edit", {"name": test_name})),
+    ]
+    for name, fn in methods:
+        try:
+            r = fn()
+            results[name] = {"status": r.status_code, "body": r.text[:200]}
+            if r.status_code in (200, 201, 204):
+                results[name]["SUCCESS"] = True
+                # Vrať zpět původní název
+                freelo_post(f"/task/{task_id}", {"name": "Navrh batch picking procesu"})
+                break
+        except Exception as e:
+            results[name] = {"error": str(e)}
+    return jsonify(results)
+
+
+@app.route("/api/freelo/task/<int:task_id>/detail", methods=["GET"])
+@login_required
+def api_freelo_task_detail(task_id):
+    """Načte detail úkolu včetně description (z komentáře is_description=true)."""
+    try:
+        resp = freelo_get(f"/task/{task_id}")
+        if resp.status_code != 200:
+            return jsonify({"ok": False, "error": f"Freelo {resp.status_code}"})
+        t = resp.json()
+        # Description je komentář s is_description=true
+        description = ""
+        for c in t.get("comments", []):
+            if c.get("is_description"):
+                # Zbav se HTML tagů
+                import re as _re
+                description = _re.sub(r'<[^>]+>', '', c.get("content", "")).strip()
+                break
+        return jsonify({
+            "ok": True,
+            "description": description,
+            "worker_id": t.get("worker", {}).get("id") if t.get("worker") else None,
+            "worker_name": t.get("worker", {}).get("fullname", "") if t.get("worker") else "",
+            "deadline": t.get("due_date", "") or "",
+            "state": "done" if t.get("date_finished") else "open",
+        })
+    except Exception as e:
+        return jsonify({"ok": False, "error": str(e)})
 
 
 if __name__ == "__main__":

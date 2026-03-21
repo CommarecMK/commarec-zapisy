@@ -1068,9 +1068,30 @@ async function flToggleDone(taskId, done) {
   }
 }
 
-function flToggleEdit(taskId) {
+async function flToggleEdit(taskId) {
   const ed = document.getElementById(`fledit-${taskId}`);
-  ed.classList.toggle('open');
+  const isOpen = ed.classList.contains('open');
+  if (isOpen) {
+    ed.classList.remove('open');
+    return;
+  }
+  ed.classList.add('open');
+  // Lazy načtení description pokud ještě není
+  const descEl = document.getElementById(`fldesc-${taskId}`);
+  if (descEl && !descEl.dataset.loaded) {
+    descEl.placeholder = 'Načítám popis…';
+    try {
+      const d = await fetch(`/api/freelo/task/${taskId}/detail`).then(r => r.json());
+      if (d.ok) {
+        descEl.value = d.description || '';
+        // Aktualizuj i v cache
+        const task = flAllTasks.find(t => t.id === taskId);
+        if (task) task.description = d.description || '';
+      }
+    } catch(e) {}
+    descEl.dataset.loaded = '1';
+    descEl.placeholder = 'Popis úkolu';
+  }
 }
 
 async function flUlozitEdit(taskId) {
