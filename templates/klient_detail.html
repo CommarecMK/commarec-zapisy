@@ -746,6 +746,7 @@ document.addEventListener('DOMContentLoaded', () => {
   if (FL_TASKLIST_ID) {
     flShowConfigured();
     flLoadTasks();
+    flLoadMembers();
   } else {
     flShowNotConfigured();
     flLoadTasklists();
@@ -768,6 +769,14 @@ function flShowNotConfigured() {
 
 // Uloží načtené projekty pro kaskádu
 let flProjects = [];
+let flMembers = [];
+
+async function flLoadMembers() {
+  try {
+    const d = await fetch(`/api/klient/${FL_KLIENT_ID}/freelo-members`).then(r => r.json());
+    flMembers = d.members || [];
+  } catch(e) { flMembers = []; }
+}
 
 async function flLoadTasklists() {
   const projSel = document.getElementById('fl-project-select');
@@ -858,6 +867,7 @@ async function flNastavitTasklist() {
       document.getElementById('fl-tasklist-name').textContent = name.split('] ')[1] || name;
       flShowConfigured();
       flLoadTasks();
+      flLoadMembers();
       toast('Tasklist propojen ✓');
     } else {
       toast(d.error || 'Chyba', false);
@@ -941,15 +951,14 @@ function flTaskHTML(t, indent) {
   const done = t.state === 'done';
   const today = new Date().toISOString().slice(0,10);
   const tomorrow = new Date(Date.now() + 86400000).toISOString().slice(0,10);
-  let deadlineClass = '';
-  let deadlineLabel = '';
+  let deadlineClass = '', deadlineLabel = '';
   if (t.deadline) {
     const d = t.deadline.slice(0,10);
     if (d < today) { deadlineClass = 'deadline-over'; deadlineLabel = `⚠ ${d}`; }
     else if (d <= tomorrow) { deadlineClass = 'deadline-soon'; deadlineLabel = d; }
     else { deadlineClass = 'deadline-ok'; deadlineLabel = d; }
   }
-  const indentStyle = indent > 0 ? `margin-left:${indent*20}px;border-left:2px solid var(--border);` : '';
+  const indentStyle = indent > 0 ? `margin-left:${indent*18}px;border-left:2px solid #e8eef4;border-radius:0 5px 5px 0;` : '';
 
   return `<div class="fl-task ${done ? 'done' : ''} ${t.deadline && t.deadline.slice(0,10) < today && !done ? 'overdue' : ''}" id="flt-${t.id}" style="${indentStyle}">
     <div class="fl-task-main">
@@ -957,11 +966,14 @@ function flTaskHTML(t, indent) {
       <div class="fl-task-info">
         <div class="fl-task-name ${done ? 'done' : ''}">${flEsc(t.name)}</div>
         <div class="fl-task-meta">
-          ${t.assignee ? `<span class="fl-meta-chip">👤 ${flEsc(t.assignee)}</span>` : ''}
+          ${t.assignee
+            ? `<span class="fl-meta-chip" style="cursor:pointer;" onclick="flToggleEdit(${t.id})" title="Změnit zodpovědnou osobu">👤 ${flEsc(t.assignee)}</span>`
+            : `<span class="fl-meta-chip" style="cursor:pointer;color:var(--muted);" onclick="flToggleEdit(${t.id})" title="Přiřadit osobu">👤 nepřiřazeno</span>`
+          }
           ${deadlineLabel ? `<span class="fl-meta-chip ${deadlineClass}">📅 ${deadlineLabel}</span>` : ''}
-          ${t.count_subtasks > 0 ? `<span class="fl-meta-chip" style="cursor:pointer;color:var(--navy);" onclick="flToggleSubtasks(${t.id})">⊞ ${t.count_subtasks} podúkolů</span>` : ''}
+          ${!indent && t.count_subtasks > 0 ? `<span class="fl-meta-chip" style="cursor:pointer;color:var(--navy);" onclick="flToggleSubtasks(${t.id})">⊞ ${t.count_subtasks} podúkolů</span>` : ''}
           ${t.comments_count > 0 ? `<span class="fl-comments-badge" onclick="flToggleComments(${t.id})">💬 ${t.comments_count}</span>` : ''}
-          <a href="${t.url}" target="_blank" style="font-size:10px;color:var(--cyan);text-decoration:none;">↗</a>
+          <a href="${t.url}" target="_blank" style="font-size:10px;color:var(--cyan);text-decoration:none;" title="Otevřít ve Freelu">↗</a>
         </div>
       </div>
       <div class="fl-task-actions">
@@ -973,22 +985,24 @@ function flTaskHTML(t, indent) {
 
     <div class="fl-task-edit" id="fledit-${t.id}">
       <input class="fl-edit-input" id="flname-${t.id}" value="${flEsc(t.name)}" placeholder="Název" style="margin-bottom:6px;width:100%;">
-      <textarea class="fl-edit-textarea" id="fldesc-${t.id}" placeholder="Popis úkolu (description)">${flEsc(t.description || '')}</textarea>
+      <textarea class="fl-edit-textarea" id="fldesc-${t.id}" placeholder="Popis úkolu">${flEsc(t.description || '')}</textarea>
       <div class="fl-edit-row" style="margin-top:6px;">
-        <input class="fl-edit-input" id="fldate-${t.id}" type="date" value="${(t.deadline||'').slice(0,10)}">
-        <div style="display:flex;gap:6px;align-items:flex-end;">
-          <button onclick="flUlozitEdit(${t.id})" class="btn btn-navy btn-sm">Uložit</button>
-          <button onclick="flToggleEdit(${t.id})" class="btn btn-secondary btn-sm">Zrušit</button>
-        </div>
+        <input class="fl-edit-input" id="fldate-${t.id}" type="date" value="${(t.deadline||'').slice(0,10)}" title="Deadline">
+        <select class="fl-edit-input" id="flworker-${t.id}" style="font-size:12px;">
+          <option value="">— Zodpovědná osoba —</option>
+          ${(flMembers||[]).map(m => `<option value="${m.id}" ${t.assignee_id == m.id ? 'selected' : ''}>${flEsc(m.name)}</option>`).join('')}
+        </select>
       </div>
-      ${indent === 0 ? `<div style="margin-top:8px;border-top:1px solid var(--border);padding-top:8px;">
-        <button onclick="flNovyPodukol(${t.id})" class="btn btn-secondary btn-sm" style="font-size:11px;">+ Přidat podúkol</button>
-      </div>` : ''}
+      <div style="display:flex;gap:6px;margin-top:6px;align-items:center;">
+        <button onclick="flUlozitEdit(${t.id})" class="btn btn-navy btn-sm">Uložit</button>
+        <button onclick="flToggleEdit(${t.id})" class="btn btn-secondary btn-sm">Zrušit</button>
+        ${!indent ? `<button onclick="flNovyPodukol(${t.id})" class="btn btn-secondary btn-sm" style="margin-left:auto;font-size:11px;">+ Podúkol</button>` : ''}
+      </div>
     </div>
 
     <div class="fl-comments" id="flcomm-${t.id}">
       <div id="flcomm-list-${t.id}" style="margin-bottom:8px;">
-        <div style="font-size:11px;color:var(--muted);font-style:italic;">Načítám komentáře…</div>
+        <div style="font-size:11px;color:var(--muted);padding:4px 0;">Načítám komentáře…</div>
       </div>
       <div class="fl-comment-form">
         <input class="fl-comment-input" id="flcomm-input-${t.id}" placeholder="Napsat komentář…" onkeydown="if(event.key==='Enter'){event.preventDefault();flPridatKomentar(${t.id});}">
@@ -1039,20 +1053,41 @@ function flToggleEdit(taskId) {
 }
 
 async function flUlozitEdit(taskId) {
-  const name = document.getElementById(`flname-${taskId}`).value.trim();
-  const desc = document.getElementById(`fldesc-${taskId}`).value;
-  const deadline = document.getElementById(`fldate-${taskId}`).value;
+  const nameEl = document.getElementById(`flname-${taskId}`);
+  const descEl = document.getElementById(`fldesc-${taskId}`);
+  const dateEl = document.getElementById(`fldate-${taskId}`);
+  const workerEl = document.getElementById(`flworker-${taskId}`);
+  const name = nameEl?.value.trim() || '';
+  const desc = descEl?.value || '';
+  const deadline = dateEl?.value || '';
+  const worker_id = workerEl?.value ? parseInt(workerEl.value) : null;
   if (!name) { toast('Název je povinný', false); return; }
+
+  const payload = {name, description: desc, deadline};
+  if (workerEl) payload.worker_id = worker_id;
+
   try {
     const d = await fetch(`/api/freelo/task/${taskId}/edit`, {
       method: 'POST', headers: {'Content-Type':'application/json'},
-      body: JSON.stringify({name, description: desc, deadline})
+      body: JSON.stringify(payload)
     }).then(r => r.json());
     if (d.ok) {
-      const task = flAllTasks.find(t => t.id === taskId);
-      if (task) { task.name = name; task.description = desc; task.deadline = deadline; }
+      const workerName = worker_id ? (flMembers.find(m => m.id === worker_id)?.name || '') : '';
+      // Aktualizuj v lokálním cache (hledej i v podúkolech)
+      const updateTask = (tasks) => {
+        for (const t of tasks) {
+          if (t.id === taskId) {
+            t.name = name; t.description = desc; t.deadline = deadline;
+            t.assignee = workerName; t.assignee_id = worker_id;
+            return true;
+          }
+        }
+        return false;
+      };
+      updateTask(flAllTasks);
       flRenderTasks();
-      toast('Uloženo');
+      flToggleEdit(taskId);
+      toast('Uloženo ✓');
     } else { toast(d.error || 'Chyba', false); }
   } catch(e) { toast('Chyba: ' + e.message, false); }
 }
