@@ -1879,8 +1879,10 @@ def seed_test_data():
     z2.output_text = assemble_output_text(client_info2, summary2, all_blocks)
     db.session.add(z2)
 
+
+
     db.session.commit()
-    print("Seed data vytvořena: 2 klienti, 2 projekty, 2 zápisy")
+    print("Seed data vytvořena: 5 klientů, 5 projektů, 10+ zápisů")
 
 with app.app_context():
     try:
@@ -1921,6 +1923,17 @@ with app.app_context():
             seed_test_data()
         except Exception as e:
             print(f"Seed error: {e}")
+        # Extra demo data (3 klienti — 1M, 3M, 6M projekty)
+        try:
+            import importlib.util, os as _os
+            _spec = importlib.util.spec_from_file_location("seed_extra",
+                _os.path.join(_os.path.dirname(__file__), "seed_extra.py"))
+            _mod = importlib.util.module_from_spec(_spec)
+            _spec.loader.exec_module(_mod)
+            _mod.seed_extra_data(db, Klient, Projekt, Zapis, User,
+                TEMPLATE_SECTIONS, assemble_output_text, generate_password_hash)
+        except Exception as e:
+            print(f"Extra seed error: {e}")
     except Exception as e:
         print(f"DB init error: {e}")
 
