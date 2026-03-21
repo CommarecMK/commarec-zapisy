@@ -38,7 +38,7 @@
 .stav-opt{display:block;width:100%;text-align:left;padding:8px 14px;font-size:13px;font-family:'Montserrat',sans-serif;background:none;border:none;cursor:pointer;border-radius:5px;font-weight:600;}
 .stav-opt:hover{background:#f0f3f7;}
 /* CRM BUTTONS */
-.btn-crm-action{font-family:'DrukCondensed','Impact',sans-serif;font-size:14px;font-weight:900;text-transform:uppercase;letter-spacing:0.08em;padding:9px 20px;border-radius:6px;border:none;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;gap:6px;}
+.btn-crm-action{font-family:'Montserrat',sans-serif;font-size:12px;font-weight:900;text-transform:uppercase;letter-spacing:0.04em;padding:9px 20px;border-radius:6px;border:none;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;gap:6px;}
 .btn-navy-solid{background:#173767;color:white;}
 .btn-navy-solid:hover{background:#254f8a;color:white;}
 .btn-orange{background:#FF8D00;color:white;}
@@ -72,7 +72,7 @@
       </div>
     </div>
     <div style="text-align:right;">
-      <div style="font-family:'DrukCondensed','Impact',sans-serif;font-size:20pt;font-weight:900;color:#173767;text-transform:uppercase;letter-spacing:0.06em;">Cenová nabídka</div>
+      <div style="font-family:'Montserrat',sans-serif;font-size:20pt;font-weight:900;color:#173767;text-transform:uppercase;letter-spacing:0.06em;">Cenová nabídka</div>
       <div style="font-family:'Montserrat',sans-serif;font-size:10pt;color:#4A6080;font-weight:700;">{{ n.cislo }}</div>
       <div style="font-family:'Montserrat',sans-serif;font-size:9pt;color:#4A6080;">{{ n.created_at.strftime('%d. %m. %Y') }}</div>
       {% if n.platnost_do %}<div style="font-size:9pt;color:#4A6080;">Platnost do: {{ n.platnost_do.strftime('%d. %m. %Y') }}</div>{% endif %}
@@ -95,7 +95,7 @@
       <div style="font-size:9pt;color:#4A6080;margin-top:4pt;">www.commarec.cz · info@commarec.cz</div>
     </div>
   </div>
-  <div style="font-family:'DrukCondensed','Impact',sans-serif;font-size:14pt;font-weight:900;color:#173767;text-transform:uppercase;letter-spacing:0.04em;margin-bottom:4pt;">{{ n.nazev }}</div>
+  <div style="font-family:'Montserrat',sans-serif;font-size:14pt;font-weight:900;color:#173767;text-transform:uppercase;letter-spacing:0.04em;margin-bottom:4pt;">{{ n.nazev }}</div>
   {% if n.poznamka %}<div style="font-size:9pt;color:#4A6080;font-family:'Montserrat',sans-serif;margin-bottom:10pt;line-height:1.5;">{{ n.poznamka }}</div>{% endif %}
 </div>
 
@@ -133,7 +133,7 @@
     <div style="display:grid;grid-template-columns:2fr 1fr 1fr;gap:16px;">
       <div>
         <div style="font-family:'Montserrat',sans-serif;font-size:10px;font-weight:700;color:#8aa0b8;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:4px;">Název nabídky</div>
-        <div style="font-family:'DrukCondensed','Impact',sans-serif;font-size:24px;font-weight:900;color:#173767;text-transform:uppercase;letter-spacing:0.04em;">{{ n.nazev }}</div>
+        <div style="font-family:'Montserrat',sans-serif;font-size:24px;font-weight:900;color:#173767;text-transform:uppercase;letter-spacing:0.04em;">{{ n.nazev }}</div>
         <div style="font-family:'Montserrat',sans-serif;font-size:12px;color:#8aa0b8;margin-top:4px;">{{ n.cislo }} · {{ n.klient.nazev }}{% if n.klient.ic %} · IČ {{ n.klient.ic }}{% endif %}{% if n.projekt %} · {{ n.projekt.nazev }}{% endif %}</div>
         {% if n.klient.sidlo or n.klient.adresa %}
         <div style="font-family:'Montserrat',sans-serif;font-size:11px;color:#4A6080;margin-top:3px;">{{ n.klient.sidlo or n.klient.adresa }}</div>

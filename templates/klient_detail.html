@@ -25,9 +25,9 @@
       {% if not k.is_active %}<span class="badge badge-gray">Neaktivní</span>{% endif %}
     </div>
     <div style="display:flex;gap:8px;">
-      <a href="{{ url_for('nabidka_nova') }}?klient_id={{ k.id }}" class="btn btn-secondary" style="font-family:'DrukCondensed','Impact',sans-serif;font-size:13px;font-weight:900;letter-spacing:0.06em;text-transform:uppercase;">📋 Nabídka</a>
-      <a href="{{ url_for('klient_vyvoj', klient_id=k.id) }}" class="btn btn-secondary" style="font-family:'DrukCondensed','Impact',sans-serif;font-size:13px;font-weight:900;letter-spacing:0.06em;text-transform:uppercase;">📈 Vývoj</a>
-      <a href="{{ url_for('novy_zapis') }}?klient_id={{ k.id }}" class="btn btn-navy" style="font-family:'DrukCondensed','Impact',sans-serif;font-size:13px;font-weight:900;letter-spacing:0.06em;text-transform:uppercase;">+ Nový zápis</a>
+      <a href="{{ url_for('nabidka_nova') }}?klient_id={{ k.id }}" class="btn btn-secondary" style="font-family:'Montserrat',sans-serif;font-size:13px;font-weight:900;letter-spacing:0.04em;text-transform:uppercase;">📋 Nabídka</a>
+      <a href="{{ url_for('klient_vyvoj', klient_id=k.id) }}" class="btn btn-secondary" style="font-family:'Montserrat',sans-serif;font-size:13px;font-weight:900;letter-spacing:0.04em;text-transform:uppercase;">📈 Vývoj</a>
+      <a href="{{ url_for('novy_zapis') }}?klient_id={{ k.id }}" class="btn btn-navy" style="font-family:'Montserrat',sans-serif;font-size:13px;font-weight:900;letter-spacing:0.04em;text-transform:uppercase;">+ Nový zápis</a>
       <a href="{{ url_for('klient_upravit', klient_id=k.id) }}" class="btn btn-secondary">Upravit</a>
       <a href="{{ url_for('klienti_list') }}" class="btn btn-secondary">&larr; Zpět</a>
     </div>
@@ -64,7 +64,7 @@
           <div><label style="font-size:10px;font-weight:700;color:#4A6080;text-transform:uppercase;letter-spacing:0.08em;display:block;margin-bottom:3px;">Název projektu *</label><input type="text" name="nazev" placeholder="Např. Optimalizace skladu 2025" required style="padding:8px 10px;border:1.5px solid var(--border);border-radius:5px;font-size:13px;width:100%;font-family:'Montserrat',sans-serif;"></div>
           <div><label style="font-size:10px;font-weight:700;color:#4A6080;text-transform:uppercase;letter-spacing:0.08em;display:block;margin-bottom:3px;">Konzultant</label><select name="user_id" style="padding:8px 10px;border:1.5px solid var(--border);border-radius:5px;font-size:13px;width:100%;font-family:'Montserrat',sans-serif;"><option value="">— nevybráno —</option>{% for u in konzultanti %}<option value="{{ u.id }}">{{ u.name }}</option>{% endfor %}</select></div>
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;"><div><label style="font-size:10px;font-weight:700;color:#4A6080;text-transform:uppercase;letter-spacing:0.08em;display:block;margin-bottom:3px;">Od</label><input type="date" name="datum_od" style="padding:8px 10px;border:1.5px solid var(--border);border-radius:5px;font-size:12px;width:100%;font-family:'Montserrat',sans-serif;"></div><div><label style="font-size:10px;font-weight:700;color:#4A6080;text-transform:uppercase;letter-spacing:0.08em;display:block;margin-bottom:3px;">Do</label><input type="date" name="datum_do" style="padding:8px 10px;border:1.5px solid var(--border);border-radius:5px;font-size:12px;width:100%;font-family:'Montserrat',sans-serif;"></div></div>
-          <button type="submit" class="btn btn-navy btn-sm" style="font-family:'DrukCondensed','Impact',sans-serif;font-weight:900;letter-spacing:0.06em;text-transform:uppercase;white-space:nowrap;">Vytvořit</button>
+          <button type="submit" class="btn btn-navy btn-sm" style="font-family:'Montserrat',sans-serif;font-weight:900;letter-spacing:0.04em;text-transform:uppercase;white-space:nowrap;">Vytvořit</button>
         </div>
         <div style="margin-top:8px;"><label style="font-size:10px;font-weight:700;color:#4A6080;text-transform:uppercase;letter-spacing:0.08em;display:block;margin-bottom:3px;">Popis</label><input type="text" name="popis" placeholder="Volitelný popis projektu..." style="padding:8px 10px;border:1.5px solid var(--border);border-radius:5px;font-size:13px;width:100%;font-family:'Montserrat',sans-serif;"></div>
       </form>
@@ -125,7 +125,7 @@
     <div class="card">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
         <div>
-          <div style="font-family:'DrukCondensed','Impact',sans-serif;font-size:16px;font-weight:900;color:#173767;text-transform:uppercase;letter-spacing:0.06em;">Profil skladu klienta</div>
+          <div style="font-family:'Montserrat',sans-serif;font-size:16px;font-weight:900;color:#173767;text-transform:uppercase;letter-spacing:0.06em;">Profil skladu klienta</div>
           <div style="font-size:11px;color:#4A6080;margin-top:2px;">Automaticky aktualizováno z přepisu schůzek. Editovatelné ručně.</div>
         </div>
         <button onclick="saveProf()" class="btn btn-secondary btn-sm">Uložit změny</button>

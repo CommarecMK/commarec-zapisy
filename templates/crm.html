@@ -16,7 +16,7 @@
 .crm-tag.operativa{background:rgba(0,175,240,0.1);color:#00AFF0;}
 .crm-tag.obchod{background:rgba(0,200,179,0.1);color:#00A090;}
 .crm-tag.nabidka{background:rgba(52,199,89,0.1);color:#0A7A5A;}
-.skore-badge{display:inline-flex;align-items:center;justify-content:center;padding:6px 14px;border-radius:6px;font-family:'DrukCondensed','Impact',sans-serif;font-size:22px;font-weight:900;line-height:1;}
+.skore-badge{display:inline-flex;align-items:center;justify-content:center;padding:6px 14px;border-radius:6px;font-family:'Montserrat',sans-serif;font-size:22px;font-weight:900;line-height:1;}
 .skore-high{background:rgba(52,199,89,0.12);color:#0A7A5A;border:1px solid rgba(52,199,89,0.25);}
 .skore-mid{background:rgba(0,175,240,0.1);color:#0085B8;border:1px solid rgba(0,175,240,0.2);}
 .skore-low{background:rgba(255,141,0,0.1);color:#C06A00;border:1px solid rgba(255,141,0,0.2);}
@@ -26,7 +26,7 @@
 .posl-zapis-label{font-family:'Montserrat',sans-serif;font-size:10px;font-weight:700;color:#8aa0b8;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:4px;}
 .posl-zapis-nazev{font-family:'Montserrat',sans-serif;font-size:12px;font-weight:700;color:#173767;margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:160px;}
 .posl-zapis-datum{font-family:'Montserrat',sans-serif;font-size:11px;color:#8aa0b8;}
-.btn-crm{font-family:'DrukCondensed','Impact',sans-serif;font-size:15px;font-weight:900;text-transform:uppercase;letter-spacing:0.1em;text-decoration:none;padding:8px 16px;border-radius:6px;text-align:center;white-space:nowrap;border:none;cursor:pointer;display:block;line-height:1.2;}
+.btn-crm{font-family:'Montserrat',sans-serif;font-size:12px;font-weight:900;text-transform:uppercase;letter-spacing:0.04em;text-decoration:none;padding:8px 16px;border-radius:6px;text-align:center;white-space:nowrap;border:none;cursor:pointer;display:block;line-height:1.2;}
 .btn-crm-navy{background:#173767;color:white !important;}
 .btn-crm-navy:hover{background:#254f8a;color:white !important;}
 .btn-crm-outline{background:#f0f3f7;color:#173767 !important;border:2px solid #D0DAE8;}
@@ -52,8 +52,8 @@
       <p style="color:#4A6080;font-size:13px;margin-top:4px;">{{ crm_data|length }} klientů · progress report · nabídky</p>
     </div>
     <div style="display:flex;gap:8px;">
-      <a href="{{ url_for('nabidka_nova') }}" style="font-family:'DrukCondensed','Impact',sans-serif;font-size:15px;font-weight:900;text-transform:uppercase;letter-spacing:0.08em;background:#FF8D00;color:white;padding:8px 20px;border-radius:6px;text-decoration:none;border:none;">+ Nová nabídka</a>
-      <a href="{{ url_for('novy_zapis') }}" class="btn btn-navy" style="font-family:'DrukCondensed','Impact',sans-serif;font-size:13px;font-weight:900;letter-spacing:0.06em;text-transform:uppercase;">+ Nový zápis</a>
+      <a href="{{ url_for('nabidka_nova') }}" style="font-family:'Montserrat',sans-serif;font-size:15px;font-weight:900;text-transform:uppercase;letter-spacing:0.08em;background:#FF8D00;color:white;padding:8px 20px;border-radius:6px;text-decoration:none;border:none;">+ Nová nabídka</a>
+      <a href="{{ url_for('novy_zapis') }}" class="btn btn-navy" style="font-family:'Montserrat',sans-serif;font-size:13px;font-weight:900;letter-spacing:0.04em;text-transform:uppercase;">+ Nový zápis</a>
     </div>
   </div>
 

@@ -5,13 +5,13 @@
 .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:1.75rem;}
 .stat{background:#173767;border-radius:8px;padding:1.1rem 1.25rem;position:relative;overflow:hidden;border:1px solid rgba(255,255,255,0.06);}
 .stat-label{font-size:10px;font-weight:400;color:rgba(255,255,255,0.4);text-transform:uppercase;letter-spacing:0.12em;margin-bottom:6px;}
-.stat-value{font-family:'DrukCondensed','Impact',sans-serif;font-size:42px;font-weight:900;color:white;line-height:1;}
+.stat-value{font-family:'Montserrat',sans-serif;font-size:42px;font-weight:900;color:white;line-height:1;}
 .stat-sub{font-size:11px;color:rgba(255,255,255,0.3);margin-top:4px;}
 .stat-cyan{background:#0E213E;border-top:3px solid #00AFF0;}.stat-cyan .stat-value{color:#00AFF0;}
 .stat-dark{background:#0E213E;}
 .td-title{font-weight:700;color:#173767;font-size:13px;}.td-title:hover{color:#00AFF0;text-decoration:none;}
 .empty{text-align:center;padding:3rem 2rem;}
-.empty-title{font-family:'DrukCondensed','Impact',sans-serif;font-size:22px;font-weight:900;color:#173767;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:8px;}
+.empty-title{font-family:'Montserrat',sans-serif;font-size:22px;font-weight:900;color:#173767;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:8px;}
 .empty-sub{color:#4A6080;font-size:13px;margin-bottom:1.5rem;}
 .filter-bar{display:flex;gap:8px;margin-bottom:1rem;flex-wrap:wrap;align-items:center;}
 .filter-bar select,.filter-bar input{padding:7px 10px;border:1.5px solid var(--border);border-radius:5px;font-size:12px;font-family:'Montserrat',sans-serif;color:#173767;background:white;}
@@ -25,7 +25,7 @@
       <h1>Zápisy</h1>
       <p style="font-size:13px;font-weight:500;color:#4A6080;margin-top:4px;">Přehled vsech zapisu ze schuzek</p>
     </div>
-    <a href="{{ url_for('novy_zapis') }}" class="btn btn-navy" style="font-family:'DrukCondensed','Impact',sans-serif;font-size:14px;font-weight:900;letter-spacing:0.06em;text-transform:uppercase;">+ Nový zápis</a>
+    <a href="{{ url_for('novy_zapis') }}" class="btn btn-navy" style="font-family:'Montserrat',sans-serif;font-size:12px;font-weight:900;letter-spacing:0.04em;text-transform:uppercase;">+ Nový zápis</a>
   </div>
 
   <div class="stats">
@@ -97,7 +97,7 @@
     <div class="empty">
       <div class="empty-title">Zatim zadne zapisy</div>
       <div class="empty-sub">Vytvořte první zápis ze schůzky — AI ho vygeneruje za vas.</div>
-      <a href="{{ url_for('novy_zapis') }}" class="btn btn-navy" style="font-family:'DrukCondensed','Impact',sans-serif;font-size:14px;font-weight:900;letter-spacing:0.06em;text-transform:uppercase;">Vytvořit první zápis</a>
+      <a href="{{ url_for('novy_zapis') }}" class="btn btn-navy" style="font-family:'Montserrat',sans-serif;font-size:12px;font-weight:900;letter-spacing:0.04em;text-transform:uppercase;">Vytvořit první zápis</a>
     </div>
     {% endif %}
   </div>
