@@ -233,32 +233,30 @@
   </div>
 
   <!-- SOUHRN -->
-  {% set total_zapisy = report_data | sum(attribute='projekty') | map(attribute='zapisy_v_obdobi') | map('length') | sum %}
-  {% set total_klienti = report_data | length %}
-  {% set total_projekty = report_data | sum(attribute='projekty') | list | length %}
+  {% set ns = namespace(total_z=0, total_p=0) %}
+  {% for kd in report_data %}
+    {% for pd in kd.projekty %}
+      {% set ns.total_z = ns.total_z + pd.zapisy_v_obdobi|length %}
+      {% set ns.total_p = ns.total_p + 1 %}
+    {% endfor %}
+  {% endfor %}
   <div class="souhrn-grid">
     <div class="souhrn-karta">
-      <div class="souhrn-cislo">{{ total_klienti }}</div>
+      <div class="souhrn-cislo">{{ report_data|length }}</div>
       <div class="souhrn-label">Aktivních klientů</div>
     </div>
     <div class="souhrn-karta">
-      <div class="souhrn-cislo">{{ total_projekty }}</div>
+      <div class="souhrn-cislo">{{ ns.total_p }}</div>
       <div class="souhrn-label">Projektů</div>
     </div>
     <div class="souhrn-karta">
-      <div class="souhrn-cislo" style="color:#00AFF0;">
-        {% set total_z = namespace(n=0) %}
-        {% for kd in report_data %}{% for pd in kd.projekty %}{% set total_z.n = total_z.n + pd.zapisy_v_obdobi|length %}{% endfor %}{% endfor %}
-        {{ total_z.n }}
-      </div>
+      <div class="souhrn-cislo" style="color:#00AFF0;">{{ ns.total_z }}</div>
       <div class="souhrn-label">Zápisů v období</div>
     </div>
     <div class="souhrn-karta">
-      <div class="souhrn-cislo">
-        {% set total_ukoly = namespace(n=0) %}
-        {% for kd in report_data %}{% for pd in kd.projekty %}{% set total_ukoly.n = total_ukoly.n + pd.ukoly_splnene|length %}{% endfor %}{% endfor %}
-        {{ total_ukoly.n }}
-      </div>
+      {% set ns2 = namespace(u=0) %}
+      {% for kd in report_data %}{% for pd in kd.projekty %}{% set ns2.u = ns2.u + pd.ukoly_splnene|length %}{% endfor %}{% endfor %}
+      <div class="souhrn-cislo">{{ ns2.u }}</div>
       <div class="souhrn-label">Splněných úkolů</div>
     </div>
   </div>
