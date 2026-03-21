@@ -180,18 +180,18 @@
     {% set sections = tmpl_sections.get(key, []) %}
     {% set current_prompt = cfg.system_prompt if cfg and cfg.system_prompt else '' %}
     <tr>
-      <td>
-        <div style="font-family:'DrukCondensed','Impact',sans-serif;font-size:20px;font-weight:900;color:#173767;text-transform:uppercase;letter-spacing:0.04em;">{{ name }}</div>
-        <div style="font-size:11px;color:#8aa0b8;margin-top:2px;font-weight:600;letter-spacing:0.05em;text-transform:uppercase;">{{ key }}</div>
+      <td style="padding:16px 20px 12px;">
+        <div style="font-family:'DrukCondensed','Impact',sans-serif;font-size:60px;font-weight:900;color:#173767;text-transform:uppercase;letter-spacing:0.04em;line-height:1.0;">{{ name }}</div>
+        <div style="font-size:11px;color:#8aa0b8;margin-top:4px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;">{{ key }}</div>
       </td>
-      <td>
+      <td style="padding:16px 20px;vertical-align:middle;">
         {% if current_prompt %}
-          <span class="badge badge-green">Vlastní</span>
+          <span class="badge badge-green" style="font-size:11px;padding:4px 10px;">Vlastní</span>
         {% else %}
-          <span class="badge badge-gray">Výchozí</span>
+          <span class="badge badge-gray" style="font-size:11px;padding:4px 10px;">Výchozí</span>
         {% endif %}
       </td>
-      <td style="text-align:right;">
+      <td style="text-align:right;padding:16px 20px;vertical-align:middle;">
         <button class="tmpl-expand-btn" id="tbtn-{{ key }}" onclick="tToggle('{{ key }}')">Upravit</button>
       </td>
     </tr>
