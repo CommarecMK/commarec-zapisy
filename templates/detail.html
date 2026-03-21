@@ -1,11 +1,4 @@
 {% extends "base.html" %} {% block title %}{{ zapis.title }}{% endblock %} {% block extra_head %} <style>
-    @font-face {
-      font-family: 'DrukCondensed';
-      src: url('/static/DrukCondensed-Super.woff2') format('woff2'),
-           url('/static/DrukCondensed-Super.otf') format('opentype');
-      font-weight: 900;
-      font-style: normal;
-    }
  @media print {
   /* ── Skryj UI ── */
   .nav, .card-actions, .tasks-section, .edit-bar, .ai-bar,
@@ -205,11 +198,11 @@
 /* Tmavý hero blok s nadpisem */
 .meta-hero{padding:2rem 2.5rem 2.5rem;position:relative;flex:1;}
 .meta-hero::after{content:"";position:absolute;inset:0;background:radial-gradient(ellipse at 85% 50%,rgba(0,175,240,0.08) 0%,transparent 60%);pointer-events:none;}
-.zapis-meta-title{font-family:"Montserrat",sans-serif;font-weight:700;font-size:80px;font-weight:900;color:white;text-transform:uppercase;letter-spacing:0.03em;line-height:0.9;margin-bottom:16px;position:relative;z-index:1;}
+.zapis-meta-title{font-family:"Montserrat",sans-serif;font-weight:800;font-size:28px;color:white;letter-spacing:0.01em;line-height:1.2;margin-bottom:12px;position:relative;z-index:1;}
 .zapis-meta-subtitle{font-family:"Montserrat",sans-serif;font-size:12px;font-weight:700;color:#00AFF0;text-transform:uppercase;letter-spacing:0.15em;position:relative;z-index:1;}
 .zapis-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;} .meta-row{font-size:11px;color:rgba(255,255,255,0.5);font-weight:500;line-height:2.2;} .meta-row strong{color:white;} .meta-badge{display:inline-block;font-size:10px;font-weight:700;padding:3px 10px;border-radius:3px;letter-spacing:0.06em;text-transform:uppercase;background:rgba(0,175,240,0.2);color:#00AFF0;border:1px solid rgba(0,175,240,0.3);margin-top:6px;} /* HEADER INFO */ .zapis-header-block{background:#f7f9fb;border-bottom:2px solid var(--border);padding:0;display:grid;grid-template-columns:repeat(4,1fr);} .hb-item{padding:14px 20px;border-right:1px solid var(--border);} .hb-item:last-child{border-right:none;} .hb-lbl{font-size:9px;font-weight:700;color:#8aa0b8;text-transform:uppercase;letter-spacing:0.12em;display:block;margin-bottom:3px;} .hb-val{font-size:13px;font-weight:700;color:#173767;display:flex;align-items:center;gap:6px;} /* BODY */ .zapis-body{padding:2rem;} /* SECTIONS */ .zapis-section{margin-bottom:3rem;padding-top:4px;} .section-header{display:flex;align-items:center;justify-content:space-between;padding-bottom:10px;border-bottom:3px solid #00AFF0;margin-bottom:20px;margin-top:8px;} .section-title{
   font-family:'Montserrat',sans-serif;
-  font-size:60px;
+  font-size:18px;
   font-weight:900;
   color:#173767;
   text-transform:uppercase;

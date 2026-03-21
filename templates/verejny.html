@@ -1,11 +1,4 @@
 <!DOCTYPE html> <html lang="cs"> <head> <meta charset="UTF-8"> <meta name="viewport" content="width=device-width, initial-scale=1.0"> <title>{{ zapis.title }} &mdash; Commarec</title> <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet"> <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script> <style>
-    @font-face {
-      font-family: 'DrukCondensed';
-      src: url('/static/DrukCondensed-Super.woff2') format('woff2'),
-           url('/static/DrukCondensed-Super.otf') format('opentype');
-      font-weight: 900;
-      font-style: normal;
-    }
      @media print{.no-print{display:none !important;}.zapis-meta{background:#173767 !important;-webkit-print-color-adjust:exact;print-color-adjust:exact;}} *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;} body{font-family:"Montserrat",sans-serif;background:#F0F3F7;color:#0E213E;font-size:14px;line-height:1.6;} .top-bar{background:#173767;border-bottom:3px solid #00AFF0;padding:0 2rem;height:52px;display:flex;align-items:center;justify-content:space-between;} .top-logo{height:26px;width:auto;filter:brightness(0) invert(1);} .top-badge{font-size:11px;font-weight:600;color:rgba(255,255,255,0.5);letter-spacing:0.1em;text-transform:uppercase;border-left:1px solid rgba(255,255,255,0.2);padding-left:10px;} .container{max-width:900px;margin:0 auto;padding:2rem 1.5rem;} .zapis-card{background:white;border:1px solid #D0DAE8;border-radius:6px;overflow:hidden;margin-bottom:2rem;} /* === HEADER — Figma vzor === */
 .zapis-meta{background:linear-gradient(135deg,#0E213E 0%,#173767 60%,#1a4a8a 100%);padding:0;display:flex;flex-direction:column;position:relative;overflow:hidden;}
 .meta-logo-bar{background:white;padding:0 2.5rem;height:56px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;}
@@ -17,7 +10,7 @@
 .meta-bar-right{font-family:"Montserrat",sans-serif;font-size:10px;font-weight:600;color:#8aa0b8;letter-spacing:0.12em;text-transform:uppercase;white-space:nowrap;}
 .meta-hero{padding:2rem 2.5rem 2.5rem;position:relative;flex:1;}
 .meta-hero::after{content:"";position:absolute;inset:0;background:radial-gradient(ellipse at 85% 50%,rgba(0,175,240,0.08) 0%,transparent 60%);pointer-events:none;}
-.meta-title{font-family:"DrukCondensed","Impact",sans-serif;font-size:80px;font-weight:900;color:white;text-transform:uppercase;letter-spacing:0.03em;line-height:0.9;margin-bottom:16px;position:relative;z-index:1;}
+.meta-title{font-family:'Montserrat',sans-serif;font-size:36px;font-weight:900;color:white;text-transform:uppercase;letter-spacing:0.03em;line-height:0.9;margin-bottom:16px;position:relative;z-index:1;}
 .meta-subtitle{font-family:"Montserrat",sans-serif;font-size:12px;font-weight:700;color:#00AFF0;text-transform:uppercase;letter-spacing:0.15em;position:relative;z-index:1;}
 .header-info{background:#f7f9fb;border-bottom:2px solid #D0DAE8;display:grid;grid-template-columns:repeat(4,1fr);}.header-info>div{padding:14px 20px;border-right:1px solid #D0DAE8;}.header-info>div:last-child{border-right:none;} .hb-lbl{font-size:9px;font-weight:700;color:#8aa0b8;text-transform:uppercase;letter-spacing:0.12em;display:block;margin-bottom:3px;} .hb-val{font-size:13px;font-weight:700;color:#173767;} .zapis-body{padding:2rem;} .zapis-section{margin-bottom:3rem;padding-top:4px;} .section-header{display:flex;align-items:center;padding-bottom:8px;border-bottom:2.5px solid #00AFF0;margin-bottom:18px;} .section-title{
   font-family:'Montserrat',sans-serif;
