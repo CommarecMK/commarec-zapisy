@@ -936,28 +936,32 @@ function flRenderTasks() {
   list.innerHTML = tasks.map(t => flTaskHTML(t)).join('');
 }
 
-function flTaskHTML(t) {
+function flTaskHTML(t, indent) {
+  indent = indent || 0;
   const done = t.state === 'done';
   const today = new Date().toISOString().slice(0,10);
   const tomorrow = new Date(Date.now() + 86400000).toISOString().slice(0,10);
   let deadlineClass = '';
   let deadlineLabel = '';
   if (t.deadline) {
-    if (t.deadline < today) { deadlineClass = 'deadline-over'; deadlineLabel = `⚠ ${t.deadline}`; }
-    else if (t.deadline <= tomorrow) { deadlineClass = 'deadline-soon'; deadlineLabel = `${t.deadline}`; }
-    else { deadlineClass = 'deadline-ok'; deadlineLabel = t.deadline; }
+    const d = t.deadline.slice(0,10);
+    if (d < today) { deadlineClass = 'deadline-over'; deadlineLabel = `⚠ ${d}`; }
+    else if (d <= tomorrow) { deadlineClass = 'deadline-soon'; deadlineLabel = d; }
+    else { deadlineClass = 'deadline-ok'; deadlineLabel = d; }
   }
+  const indentStyle = indent > 0 ? `margin-left:${indent*20}px;border-left:2px solid var(--border);` : '';
 
-  return `<div class="fl-task ${done ? 'done' : ''} ${t.deadline && t.deadline < today && !done ? 'overdue' : ''}" id="flt-${t.id}">
+  return `<div class="fl-task ${done ? 'done' : ''} ${t.deadline && t.deadline.slice(0,10) < today && !done ? 'overdue' : ''}" id="flt-${t.id}" style="${indentStyle}">
     <div class="fl-task-main">
-      <div class="fl-checkbox ${done ? 'done' : ''}" onclick="flToggleDone(${t.id}, ${!done})" title="${done ? 'Označit jako otevřený' : 'Označit jako hotový'}"></div>
+      <div class="fl-checkbox ${done ? 'done' : ''}" onclick="flToggleDone(${t.id}, ${!done})" title="${done ? 'Znovu otevřít' : 'Označit jako hotový'}"></div>
       <div class="fl-task-info">
         <div class="fl-task-name ${done ? 'done' : ''}">${flEsc(t.name)}</div>
         <div class="fl-task-meta">
           ${t.assignee ? `<span class="fl-meta-chip">👤 ${flEsc(t.assignee)}</span>` : ''}
           ${deadlineLabel ? `<span class="fl-meta-chip ${deadlineClass}">📅 ${deadlineLabel}</span>` : ''}
+          ${t.count_subtasks > 0 ? `<span class="fl-meta-chip" style="cursor:pointer;color:var(--navy);" onclick="flToggleSubtasks(${t.id})">⊞ ${t.count_subtasks} podúkolů</span>` : ''}
           ${t.comments_count > 0 ? `<span class="fl-comments-badge" onclick="flToggleComments(${t.id})">💬 ${t.comments_count}</span>` : ''}
-          <a href="${t.url}" target="_blank" style="font-size:10px;color:var(--cyan);text-decoration:none;">↗ Freelo</a>
+          <a href="${t.url}" target="_blank" style="font-size:10px;color:var(--cyan);text-decoration:none;">↗</a>
         </div>
       </div>
       <div class="fl-task-actions">
@@ -969,25 +973,30 @@ function flTaskHTML(t) {
 
     <div class="fl-task-edit" id="fledit-${t.id}">
       <input class="fl-edit-input" id="flname-${t.id}" value="${flEsc(t.name)}" placeholder="Název" style="margin-bottom:6px;width:100%;">
-      <textarea class="fl-edit-textarea" id="fldesc-${t.id}" placeholder="Popis">${flEsc(t.description || '')}</textarea>
+      <textarea class="fl-edit-textarea" id="fldesc-${t.id}" placeholder="Popis úkolu (description)">${flEsc(t.description || '')}</textarea>
       <div class="fl-edit-row" style="margin-top:6px;">
-        <input class="fl-edit-input" id="fldate-${t.id}" type="date" value="${t.deadline || ''}">
+        <input class="fl-edit-input" id="fldate-${t.id}" type="date" value="${(t.deadline||'').slice(0,10)}">
         <div style="display:flex;gap:6px;align-items:flex-end;">
           <button onclick="flUlozitEdit(${t.id})" class="btn btn-navy btn-sm">Uložit</button>
           <button onclick="flToggleEdit(${t.id})" class="btn btn-secondary btn-sm">Zrušit</button>
         </div>
       </div>
+      ${indent === 0 ? `<div style="margin-top:8px;border-top:1px solid var(--border);padding-top:8px;">
+        <button onclick="flNovyPodukol(${t.id})" class="btn btn-secondary btn-sm" style="font-size:11px;">+ Přidat podúkol</button>
+      </div>` : ''}
     </div>
 
     <div class="fl-comments" id="flcomm-${t.id}">
       <div id="flcomm-list-${t.id}" style="margin-bottom:8px;">
-        <div style="font-size:11px;color:var(--muted);font-style:italic;">Klikni pro načtení komentářů…</div>
+        <div style="font-size:11px;color:var(--muted);font-style:italic;">Načítám komentáře…</div>
       </div>
       <div class="fl-comment-form">
         <input class="fl-comment-input" id="flcomm-input-${t.id}" placeholder="Napsat komentář…" onkeydown="if(event.key==='Enter'){event.preventDefault();flPridatKomentar(${t.id});}">
         <button onclick="flPridatKomentar(${t.id})" class="btn btn-navy btn-sm">Odeslat</button>
       </div>
     </div>
+
+    <div id="flsub-${t.id}" style="display:none;"></div>
   </div>`;
 }
 
@@ -1053,7 +1062,7 @@ async function flToggleComments(taskId) {
   const listEl = document.getElementById(`flcomm-list-${taskId}`);
   panel.classList.toggle('open');
   if (panel.classList.contains('open')) {
-    listEl.innerHTML = '<div style="font-size:11px;color:var(--muted);">Načítám…</div>';
+    listEl.innerHTML = '<div style="font-size:11px;color:var(--muted);padding:4px 0;">Načítám komentáře…</div>';
     const d = await fetch(`/api/freelo/task/${taskId}/komentare`).then(r => r.json());
     if (d.ok && d.comments.length) {
       listEl.innerHTML = d.comments.map(c => `
@@ -1120,6 +1129,48 @@ async function flSmazat(taskId) {
     if (el) el.style.opacity = '';
     toast('Chyba', false);
   }
+}
+
+async function flToggleSubtasks(taskId) {
+  const container = document.getElementById(`flsub-${taskId}`);
+  if (container.style.display !== 'none') {
+    container.style.display = 'none';
+    return;
+  }
+  container.style.display = 'block';
+  container.innerHTML = '<div style="padding:8px 0 4px 20px;font-size:11px;color:var(--muted);">Načítám podúkoly…</div>';
+  try {
+    const d = await fetch(`/api/freelo/task/${taskId}/podukoly`).then(r => r.json());
+    if (d.ok && d.subtasks.length) {
+      container.innerHTML = d.subtasks.map(s => flTaskHTML(s, 1)).join('');
+    } else if (d.ok) {
+      container.innerHTML = '<div style="padding:6px 0 4px 20px;font-size:11px;color:var(--muted);font-style:italic;">Žádné podúkoly.</div>';
+    } else {
+      container.innerHTML = `<div style="padding:6px 0 4px 20px;font-size:11px;color:var(--danger);">${d.error || 'Chyba'}</div>`;
+    }
+  } catch(e) { container.innerHTML = `<div style="padding:6px 0;font-size:11px;color:var(--danger);">Chyba: ${e.message}</div>`; }
+}
+
+function flNovyPodukol(parentId) {
+  const name = prompt('Název podúkolu:');
+  if (!name || !name.trim()) return;
+  fetch(`/api/klient/${FL_KLIENT_ID}/freelo-pridat-podukol`, {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({parent_id: parentId, name: name.trim()})
+  }).then(r => r.json()).then(d => {
+    if (d.ok) {
+      toast('Podúkol přidán ✓');
+      // Otevři / obnov podúkoly
+      const container = document.getElementById(`flsub-${parentId}`);
+      container.style.display = 'none';
+      flToggleSubtasks(parentId);
+      // Aktualizuj count v paměti
+      const task = flAllTasks.find(t => t.id === parentId);
+      if (task) task.count_subtasks = (task.count_subtasks || 0) + 1;
+      flRenderTasks();
+    } else { toast(d.error || 'Chyba', false); }
+  }).catch(e => toast('Chyba: ' + e.message, false));
 }
 
 function flNovyUkolToggle() {
