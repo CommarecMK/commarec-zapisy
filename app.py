@@ -3153,5 +3153,50 @@ def debug_freelo_tasklist(tasklist_id):
     })
 
 
+@app.route("/api/freelo/debug-state/<int:task_id>", methods=["GET"])
+@login_required
+def debug_freelo_state(task_id):
+    """Otestuje různé PATCH formáty pro označení úkolu jako hotového."""
+    import requests as req
+    results = {}
+    
+    # Načti aktuální stav
+    r = freelo_get(f"/task/{task_id}")
+    if r.status_code == 200:
+        t = r.json()
+        results["current_state"] = t.get("state")
+        results["date_finished"] = t.get("date_finished")
+        # Najdi description comment
+        for c in t.get("comments", []):
+            if c.get("is_description"):
+                results["description_comment_id"] = c.get("id")
+                results["description_content"] = c.get("content", "")[:200]
+                break
+    
+    # Test PATCH formátů (nedestruktivní — vrátíme zpět)
+    patch_tests = [
+        ("state_obj_2", {"state": {"id": 2}}),
+        ("state_int_2", {"state": 2}),
+        ("state_str_done", {"state": "done"}),
+        ("finished_true", {"finished": True}),
+        ("date_finished_now", {"date_finished": "2026-03-22"}),
+    ]
+    
+    for name, payload in patch_tests:
+        try:
+            r2 = freelo_patch(f"/task/{task_id}", payload)
+            results[f"PATCH_{name}"] = {
+                "status": r2.status_code,
+                "response": r2.text[:200]
+            }
+            # Pokud uspělo, vrať zpět na active
+            if r2.status_code in (200, 201, 204):
+                freelo_patch(f"/task/{task_id}", {"state": {"id": 1}})
+                break  # Našli jsme správný formát
+        except Exception as e:
+            results[f"PATCH_{name}"] = {"error": str(e)}
+    
+    return jsonify(results)
+
 if __name__ == "__main__":
     app.run(debug=False, host="0.0.0.0", port=int(os.environ.get("PORT", 5000)))
