@@ -1,0 +1,204 @@
+{% extends "base.html" %}
+{% block title %}Nová nabídka{% endblock %}
+{% block extra_head %}
+<style>
+.pol-tabulka{width:100%;border-collapse:collapse;}
+.pol-tabulka th{font-family:'Montserrat',sans-serif;font-size:10px;font-weight:700;color:#8aa0b8;text-transform:uppercase;letter-spacing:0.1em;padding:8px 10px;text-align:left;border-bottom:2px solid var(--border);}
+.pol-tabulka td{padding:6px 6px;vertical-align:top;border-bottom:1px solid var(--border);}
+.pol-tabulka tr:last-child td{border-bottom:none;}
+.pol-input{width:100%;padding:7px 9px;border:1.5px solid var(--border);border-radius:5px;font-size:13px;font-family:'Montserrat',sans-serif;color:#173767;background:white;}
+.pol-input:focus{outline:none;border-color:#00AFF0;}
+.pol-input.cislo{text-align:right;}
+.btn-add-row{font-family:'Montserrat',sans-serif;font-size:12px;font-weight:700;color:#00AFF0;background:none;border:1.5px dashed rgba(0,175,240,0.3);border-radius:5px;padding:8px 20px;cursor:pointer;width:100%;margin-top:8px;}
+.btn-add-row:hover{background:rgba(0,175,240,0.05);}
+.btn-del-row{font-size:14px;color:#D0DAE8;background:none;border:none;cursor:pointer;padding:4px 8px;}
+.btn-del-row:hover{color:#FF383C;}
+.celkem-box{background:#173767;color:white;border-radius:8px;padding:20px 24px;display:flex;align-items:center;justify-content:space-between;}
+.celkem-label{font-family:'Montserrat',sans-serif;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;opacity:0.6;}
+.celkem-value{font-family:'DrukCondensed','Impact',sans-serif;font-size:40px;font-weight:900;letter-spacing:0.02em;}
+.celkem-mena{font-family:'Montserrat',sans-serif;font-size:14px;font-weight:600;opacity:0.6;margin-left:6px;}
+.row-num{font-family:'Montserrat',sans-serif;font-size:11px;color:#D0DAE8;font-weight:600;min-width:20px;text-align:center;}
+.jednotka-sel{padding:7px 6px;border:1.5px solid var(--border);border-radius:5px;font-size:12px;font-family:'Montserrat',sans-serif;color:#173767;background:white;width:70px;}
+.jednotka-sel:focus{outline:none;border-color:#00AFF0;}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+  <div class="page-header">
+    <div>
+      <h1>Nová nabídka</h1>
+      <p style="color:#4A6080;font-size:13px;margin-top:4px;">Cenová nabídka skladového vybavení</p>
+    </div>
+    <a href="{{ url_for('crm_prehled') }}" class="btn btn-secondary">← Zpět na CRM</a>
+  </div>
+
+  <form method="post" id="nabForm">
+
+    <!-- HLAVIČKA -->
+    <div class="card" style="margin-bottom:1.5rem;">
+      <div class="card-header"><h2>Základní informace</h2></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;padding:0 0 8px;">
+
+        <div>
+          <label style="font-family:'Montserrat',sans-serif;font-size:11px;font-weight:700;color:#4A6080;text-transform:uppercase;letter-spacing:0.08em;display:block;margin-bottom:6px;">Klient *</label>
+          <select name="klient_id" required onchange="nactiProjekty(this.value)" style="width:100%;padding:8px 10px;border:1.5px solid var(--border);border-radius:5px;font-size:13px;font-family:'Montserrat',sans-serif;color:#173767;">
+            <option value="">— Vyberte klienta —</option>
+            {% for k in klienti %}
+            <option value="{{ k.id }}" {% if klient and klient.id == k.id %}selected{% endif %}>{{ k.nazev }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div>
+          <label style="font-family:'Montserrat',sans-serif;font-size:11px;font-weight:700;color:#4A6080;text-transform:uppercase;letter-spacing:0.08em;display:block;margin-bottom:6px;">Projekt</label>
+          <select name="projekt_id" id="projekt_sel" style="width:100%;padding:8px 10px;border:1.5px solid var(--border);border-radius:5px;font-size:13px;font-family:'Montserrat',sans-serif;color:#173767;">
+            <option value="">— Bez projektu —</option>
+            {% for p in projekty %}
+            <option value="{{ p.id }}" {% if projekt_id == p.id %}selected{% endif %}>{{ p.nazev }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div>
+          <label style="font-family:'Montserrat',sans-serif;font-size:11px;font-weight:700;color:#4A6080;text-transform:uppercase;letter-spacing:0.08em;display:block;margin-bottom:6px;">Platnost nabídky</label>
+          <input type="date" name="platnost_do" style="width:100%;padding:8px 10px;border:1.5px solid var(--border);border-radius:5px;font-size:13px;font-family:'Montserrat',sans-serif;color:#173767;">
+        </div>
+
+        <div style="grid-column:1/-1;">
+          <label style="font-family:'Montserrat',sans-serif;font-size:11px;font-weight:700;color:#4A6080;text-transform:uppercase;letter-spacing:0.08em;display:block;margin-bottom:6px;">Název nabídky *</label>
+          <input type="text" name="nazev" required placeholder="např. Vybavení skladu — regálový systém + RF terminály" style="width:100%;padding:8px 10px;border:1.5px solid var(--border);border-radius:5px;font-size:13px;font-family:'Montserrat',sans-serif;color:#173767;box-sizing:border-box;">
+        </div>
+
+        <div style="grid-column:1/-1;">
+          <label style="font-family:'Montserrat',sans-serif;font-size:11px;font-weight:700;color:#4A6080;text-transform:uppercase;letter-spacing:0.08em;display:block;margin-bottom:6px;">Poznámka / podmínky</label>
+          <textarea name="poznamka" rows="2" placeholder="Podmínky dodání, záruční podmínky, poznámky k nabídce..." style="width:100%;padding:8px 10px;border:1.5px solid var(--border);border-radius:5px;font-size:13px;font-family:'Montserrat',sans-serif;color:#173767;resize:vertical;box-sizing:border-box;"></textarea>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- POLOŽKY -->
+    <div class="card" style="margin-bottom:1.5rem;padding:0;overflow:hidden;">
+      <div class="card-header" style="padding:16px 20px 14px;">
+        <h2>Položky</h2>
+      </div>
+      <div style="padding:0 20px 20px;">
+        <table class="pol-tabulka" id="polTable">
+          <thead>
+            <tr>
+              <th style="width:30px;">#</th>
+              <th style="min-width:200px;">Název / popis</th>
+              <th style="width:70px;">Množství</th>
+              <th style="width:74px;">Jednotka</th>
+              <th style="width:120px;">Cena/ks (Kč)</th>
+              <th style="width:80px;">Sleva %</th>
+              <th style="width:130px;">Celkem (Kč)</th>
+              <th style="width:36px;"></th>
+            </tr>
+          </thead>
+          <tbody id="polBody">
+            <!-- Řádky se přidávají JS -->
+          </tbody>
+        </table>
+        <button type="button" class="btn-add-row" onclick="addRow()">+ Přidat položku</button>
+      </div>
+    </div>
+
+    <!-- CELKEM -->
+    <div class="celkem-box" style="margin-bottom:1.5rem;">
+      <div>
+        <div class="celkem-label">Celková cena bez DPH</div>
+        <div style="font-family:'Montserrat',sans-serif;font-size:12px;color:rgba(255,255,255,0.4);margin-top:2px;">DPH 21% na vyžádání</div>
+      </div>
+      <div style="display:flex;align-items:baseline;">
+        <div class="celkem-value" id="celkemVal">0</div>
+        <div class="celkem-mena">Kč</div>
+      </div>
+    </div>
+
+    <!-- ODESLAT -->
+    <div style="display:flex;gap:12px;justify-content:flex-end;">
+      <a href="{{ url_for('crm_prehled') }}" class="btn btn-secondary">Zrušit</a>
+      <button type="submit" class="btn btn-navy" style="font-family:'DrukCondensed','Impact',sans-serif;font-size:16px;font-weight:900;text-transform:uppercase;letter-spacing:0.06em;padding:10px 32px;">Vytvořit nabídku</button>
+    </div>
+
+  </form>
+</div>
+
+<script>
+let rowCount = 0;
+
+const JEDNOTKY = ['ks', 'm', 'm²', 'm³', 'hod', 'den', 'paušál', 'set', 'bal'];
+
+function addRow(data) {
+  rowCount++;
+  const d = data || {};
+  const tbody = document.getElementById('polBody');
+  const tr = document.createElement('tr');
+  tr.id = 'row_' + rowCount;
+  tr.innerHTML = `
+    <td><div class="row-num">${tbody.rows.length + 1}</div></td>
+    <td>
+      <input type="text" name="pol_nazev" placeholder="Název položky (např. Regál paletový 2700×2700 mm)" class="pol-input" value="${d.nazev||''}" oninput="prepocti()" required>
+      <input type="text" name="pol_popis" placeholder="Volitelný popis, specifikace..." class="pol-input" value="${d.popis||''}" style="margin-top:4px;font-size:12px;color:#4A6080;">
+    </td>
+    <td><input type="number" name="pol_mnozstvi" class="pol-input cislo" value="${d.mnozstvi||1}" min="0" step="0.01" oninput="prepocti()"></td>
+    <td>
+      <select name="pol_jednotka" class="jednotka-sel">
+        ${JEDNOTKY.map(j => `<option ${(d.jednotka||'ks')===j?'selected':''}>${j}</option>`).join('')}
+      </select>
+    </td>
+    <td><input type="number" name="pol_cena" class="pol-input cislo" value="${d.cena||0}" min="0" step="0.01" oninput="prepocti()" placeholder="0"></td>
+    <td><input type="number" name="pol_sleva" class="pol-input cislo" value="${d.sleva||0}" min="0" max="100" step="0.1" oninput="prepocti()" placeholder="0"></td>
+    <td><div class="pol-input cislo row-celkem" style="background:#f8f9fb;font-weight:700;color:#173767;">0</div></td>
+    <td><button type="button" class="btn-del-row" onclick="delRow('row_${rowCount}')">✕</button></td>
+  `;
+  tbody.appendChild(tr);
+  prepocti();
+  updateNums();
+}
+
+function delRow(id) {
+  document.getElementById(id).remove();
+  prepocti();
+  updateNums();
+}
+
+function updateNums() {
+  const rows = document.querySelectorAll('#polBody tr');
+  rows.forEach((tr, i) => {
+    const num = tr.querySelector('.row-num');
+    if (num) num.textContent = i + 1;
+  });
+}
+
+function prepocti() {
+  let total = 0;
+  const rows = document.querySelectorAll('#polBody tr');
+  rows.forEach(tr => {
+    const mnozstvi = parseFloat(tr.querySelector('[name=pol_mnozstvi]')?.value) || 0;
+    const cena = parseFloat(tr.querySelector('[name=pol_cena]')?.value) || 0;
+    const sleva = parseFloat(tr.querySelector('[name=pol_sleva]')?.value) || 0;
+    const celkem = mnozstvi * cena * (1 - sleva/100);
+    const celkemEl = tr.querySelector('.row-celkem');
+    if (celkemEl) celkemEl.textContent = celkem.toLocaleString('cs-CZ', {minimumFractionDigits:0, maximumFractionDigits:0});
+    total += celkem;
+  });
+  document.getElementById('celkemVal').textContent = total.toLocaleString('cs-CZ', {minimumFractionDigits:0, maximumFractionDigits:0});
+}
+
+async function nactiProjekty(klientId) {
+  const sel = document.getElementById('projekt_sel');
+  sel.innerHTML = '<option value="">— Bez projektu —</option>';
+  if (!klientId) return;
+  // Načíst projekty přes API — nebo jednoduše reload s klient_id
+  window.location.href = '?klient_id=' + klientId;
+}
+
+// Přidej 3 prázdné řádky na start
+addRow();
+addRow();
+addRow();
+</script>
+{% endblock %}

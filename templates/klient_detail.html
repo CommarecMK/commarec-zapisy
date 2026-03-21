@@ -25,6 +25,7 @@
       {% if not k.is_active %}<span class="badge badge-gray">Neaktivní</span>{% endif %}
     </div>
     <div style="display:flex;gap:8px;">
+      <a href="{{ url_for('nabidka_nova') }}?klient_id={{ k.id }}" class="btn btn-secondary" style="font-family:'DrukCondensed','Impact',sans-serif;font-size:13px;font-weight:900;letter-spacing:0.06em;text-transform:uppercase;">📋 Nabídka</a>
       <a href="{{ url_for('klient_vyvoj', klient_id=k.id) }}" class="btn btn-secondary" style="font-family:'DrukCondensed','Impact',sans-serif;font-size:13px;font-weight:900;letter-spacing:0.06em;text-transform:uppercase;">📈 Vývoj</a>
       <a href="{{ url_for('novy_zapis') }}?klient_id={{ k.id }}" class="btn btn-navy" style="font-family:'DrukCondensed','Impact',sans-serif;font-size:13px;font-weight:900;letter-spacing:0.06em;text-transform:uppercase;">+ Nový zápis</a>
       <a href="{{ url_for('klient_upravit', klient_id=k.id) }}" class="btn btn-secondary">Upravit</a>
