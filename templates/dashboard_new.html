@@ -1,0 +1,253 @@
+{% extends "base.html" %}
+{% block title %}Dashboard — Commarec Zápisy{% endblock %}
+{% block extra_head %}
+<style>
+/* HERO */
+.dash-hero{
+  background:#0E213E;
+  border-radius:10px;
+  padding:2rem 2.5rem;
+  margin-bottom:1.5rem;
+  display:flex;
+  align-items:flex-end;
+  justify-content:space-between;
+  flex-wrap:wrap;
+  gap:16px;
+  min-height:140px;
+  position:relative;
+  overflow:hidden;
+}
+.dash-hero::before{
+  content:'';
+  position:absolute;
+  inset:0;
+  background:
+    radial-gradient(ellipse 55% 90% at 15% 60%, rgba(23,55,103,0.9) 0%,transparent 70%),
+    radial-gradient(ellipse 35% 50% at 75% 25%, rgba(0,138,189,0.2) 0%,transparent 60%);
+  z-index:0;
+}
+.dash-hero-content{position:relative;z-index:1;}
+.dash-greeting{font-family:'Montserrat',sans-serif;font-size:12px;font-weight:700;color:rgba(255,255,255,0.4);text-transform:uppercase;letter-spacing:0.12em;margin-bottom:4px;}
+.dash-title{font-family:'DrukCondensed','Impact',sans-serif;font-size:52px;font-weight:900;color:white;text-transform:uppercase;letter-spacing:0.03em;line-height:1.0;}
+.dash-datum{font-family:'Montserrat',sans-serif;font-size:12px;color:rgba(255,255,255,0.4);font-weight:600;margin-top:6px;}
+.dash-hero-btns{position:relative;z-index:1;display:flex;gap:10px;flex-wrap:wrap;}
+.btn-hero-main{font-family:'DrukCondensed','Impact',sans-serif;font-size:16px;font-weight:900;text-transform:uppercase;letter-spacing:0.08em;background:#00AFF0;color:white;border:none;padding:10px 24px;border-radius:6px;text-decoration:none;cursor:pointer;}
+.btn-hero-main:hover{background:#009DD8;color:white;}
+.btn-hero-sec{font-family:'DrukCondensed','Impact',sans-serif;font-size:15px;font-weight:900;text-transform:uppercase;letter-spacing:0.08em;background:rgba(255,255,255,0.1);color:white;border:1.5px solid rgba(255,255,255,0.2);padding:9px 20px;border-radius:6px;text-decoration:none;}
+.btn-hero-sec:hover{background:rgba(255,255,255,0.2);color:white;}
+
+/* STATUS GRID */
+.status-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:1.5rem;}
+.status-karta{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:18px 20px;position:relative;overflow:hidden;transition:box-shadow 0.15s;text-decoration:none;display:block;}
+.status-karta:hover{box-shadow:0 2px 12px rgba(0,0,0,0.08);}
+.status-karta::before{content:'';position:absolute;left:0;top:0;bottom:0;width:4px;border-radius:2px 0 0 2px;}
+.status-karta.cyan::before{background:#00AFF0;}
+.status-karta.navy::before{background:#173767;}
+.status-karta.green::before{background:#34C759;}
+.status-karta.orange::before{background:#FF8D00;}
+.status-num{font-family:'DrukCondensed','Impact',sans-serif;font-size:48px;font-weight:900;color:#173767;line-height:1.0;}
+.status-num.cyan{color:#00AFF0;}
+.status-num.green{color:#0A7A5A;}
+.status-num.orange{color:#FF8D00;}
+.status-label{font-family:'Montserrat',sans-serif;font-size:10px;font-weight:700;color:#8aa0b8;text-transform:uppercase;letter-spacing:0.1em;margin-top:4px;}
+.status-sub{font-family:'Montserrat',sans-serif;font-size:11px;color:#4A6080;font-weight:600;margin-top:2px;}
+
+/* MAIN GRID */
+.main-grid{display:grid;grid-template-columns:1fr 360px;gap:1.5rem;align-items:start;}
+@media(max-width:900px){.main-grid{grid-template-columns:1fr;}}
+
+/* SEKCE NADPIS */
+.sekce-nadpis{font-family:'DrukCondensed','Impact',sans-serif;font-size:28px;font-weight:900;color:#173767;text-transform:uppercase;letter-spacing:0.04em;margin-bottom:0.75rem;}
+
+/* AKTIVITA FEED */
+.aktivita-item{display:flex;align-items:flex-start;gap:12px;padding:10px 0;border-bottom:1px solid var(--border);}
+.aktivita-item:last-child{border-bottom:none;}
+.aktivita-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;margin-top:4px;}
+.aktivita-dot.audit{background:#173767;}
+.aktivita-dot.operativa{background:#00AFF0;}
+.aktivita-dot.obchod{background:#00C8B3;}
+.aktivita-dot.nabidka{background:#FF8D00;}
+.aktivita-body{flex:1;min-width:0;}
+.aktivita-title{font-family:'Montserrat',sans-serif;font-size:13px;font-weight:700;color:#173767;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.aktivita-meta{font-family:'Montserrat',sans-serif;font-size:11px;color:#8aa0b8;margin-top:2px;}
+.aktivita-datum{font-family:'Montserrat',sans-serif;font-size:11px;color:#8aa0b8;flex-shrink:0;white-space:nowrap;}
+
+/* QUICK ACTIONS */
+.qa-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.qa-btn{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px 12px;border-radius:8px;text-decoration:none;border:1.5px solid var(--border);background:var(--surface);transition:all 0.15s;text-align:center;}
+.qa-btn:hover{border-color:#00AFF0;box-shadow:0 2px 8px rgba(0,175,240,0.12);}
+.qa-icon{font-size:24px;margin-bottom:6px;line-height:1;}
+.qa-label{font-family:'DrukCondensed','Impact',sans-serif;font-size:16px;font-weight:900;color:#173767;text-transform:uppercase;letter-spacing:0.06em;}
+.qa-sub{font-family:'Montserrat',sans-serif;font-size:11px;color:#8aa0b8;margin-top:2px;}
+.qa-btn.orange{border-color:rgba(255,141,0,0.3);background:rgba(255,141,0,0.04);}
+.qa-btn.orange:hover{border-color:#FF8D00;background:rgba(255,141,0,0.08);}
+.qa-btn.navy{border-color:rgba(23,55,103,0.3);background:rgba(23,55,103,0.04);}
+.qa-btn.navy:hover{border-color:#173767;background:rgba(23,55,103,0.08);}
+.qa-btn.cyan{border-color:rgba(0,175,240,0.3);background:rgba(0,175,240,0.04);}
+.qa-btn.cyan:hover{border-color:#00AFF0;}
+
+/* KLIENTI BEZ AKTIVITY */
+.pozor-item{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 0;border-bottom:1px solid var(--border);}
+.pozor-item:last-child{border-bottom:none;}
+.pozor-nazev{font-family:'Montserrat',sans-serif;font-size:13px;font-weight:700;color:#173767;}
+.pozor-meta{font-family:'Montserrat',sans-serif;font-size:11px;color:#8aa0b8;margin-top:2px;}
+.pozor-dni{font-family:'DrukCondensed','Impact',sans-serif;font-size:20px;font-weight:900;color:#FF8D00;}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+
+  <!-- HERO -->
+  <div class="dash-hero">
+    <div class="dash-hero-content">
+      <div class="dash-greeting">Commarec Zápisy</div>
+      <div class="dash-title">Dobrý {% if now.hour < 12 %}ráno{% elif now.hour < 18 %}den{% else %}večer{% endif %},<br>{{ current_user.name.split()[0] if current_user.name else 'konzultante' }}!</div>
+      <div class="dash-datum">{{ now.strftime('%A, %d. %m. %Y') }}</div>
+    </div>
+    <div class="dash-hero-btns">
+      <a href="{{ url_for('novy_zapis') }}" class="btn-hero-main">+ Nový zápis</a>
+      <a href="{{ url_for('crm_prehled') }}" class="btn-hero-sec">CRM přehled</a>
+      <a href="{{ url_for('progress_report') }}" class="btn-hero-sec">Report</a>
+    </div>
+  </div>
+
+  <!-- STATUS KARTY -->
+  <div class="status-grid">
+    <a href="{{ url_for('crm_prehled') }}" class="status-karta cyan">
+      <div class="status-num cyan">{{ stats.klienti_aktivni }}</div>
+      <div class="status-label">Aktivních klientů</div>
+      <div class="status-sub">{{ stats.projekty_aktivni }} projektů</div>
+    </a>
+    <a href="{{ url_for('dashboard_old') }}" class="status-karta navy">
+      <div class="status-num">{{ stats.zapisy_30d }}</div>
+      <div class="status-label">Zápisů za 30 dní</div>
+      <div class="status-sub">celkem {{ stats.zapisy_celkem }}</div>
+    </a>
+    <a href="{{ url_for('crm_prehled') }}?filtr=bez_aktivity" class="status-karta orange">
+      <div class="status-num orange">{{ stats.bez_aktivity }}</div>
+      <div class="status-label">Klientů bez aktivity</div>
+      <div class="status-sub">více než 60 dní</div>
+    </a>
+    <a href="{{ url_for('nabidka_nova') }}" class="status-karta green">
+      <div class="status-num green">{{ stats.nabidky_otevrene }}</div>
+      <div class="status-label">Otevřených nabídek</div>
+      <div class="status-sub">koncepty + odeslané</div>
+    </a>
+  </div>
+
+  <!-- MAIN GRID -->
+  <div class="main-grid">
+
+    <!-- LEVÝ SLOUPEC: Poslední aktivita -->
+    <div>
+      <div class="sekce-nadpis">Poslední aktivita</div>
+      <div class="card" style="padding:0;overflow:hidden;">
+        <div style="padding:16px 20px;">
+          {% for item in aktivita %}
+          <div class="aktivita-item">
+            <div class="aktivita-dot {{ item.typ }}"></div>
+            <div class="aktivita-body">
+              <a href="{{ item.url }}" class="aktivita-title" style="text-decoration:none;">{{ item.title }}</a>
+              <div class="aktivita-meta">{{ item.klient }} {% if item.projekt %}· {{ item.projekt }}{% endif %} · <span style="background:{% if item.typ=='audit' %}rgba(23,55,103,0.08){% elif item.typ=='obchod' %}rgba(0,200,179,0.1){% elif item.typ=='nabidka' %}rgba(255,141,0,0.1){% else %}rgba(0,175,240,0.1){% endif %};color:{% if item.typ=='audit' %}#173767{% elif item.typ=='obchod' %}#00A090{% elif item.typ=='nabidka' %}#C06A00{% else %}#0085B8{% endif %};padding:1px 6px;border-radius:3px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;">{{ item.typ_label }}</span></div>
+            </div>
+            <div class="aktivita-datum">
+              {% set diff = (now - item.datum).days %}
+              {% if diff == 0 %}dnes{% elif diff == 1 %}včera{% elif diff < 7 %}před {{ diff }}d{% else %}{{ item.datum.strftime('%d.%m.') }}{% endif %}
+            </div>
+          </div>
+          {% else %}
+          <div style="font-family:'Montserrat',sans-serif;font-size:13px;color:#8aa0b8;padding:20px 0;text-align:center;">Žádná aktivita</div>
+          {% endfor %}
+        </div>
+        {% if aktivita %}
+        <div style="padding:12px 20px;border-top:1px solid var(--border);background:#f7f9fb;">
+          <a href="{{ url_for('dashboard_old') }}" style="font-family:'Montserrat',sans-serif;font-size:12px;font-weight:700;color:#00AFF0;text-decoration:none;">Všechny zápisy →</a>
+        </div>
+        {% endif %}
+      </div>
+
+      <!-- KLIENTI BEZ AKTIVITY -->
+      {% if pozor_klienti %}
+      <div style="margin-top:1.5rem;">
+        <div class="sekce-nadpis" style="color:#FF8D00;">⚠ Bez aktivity</div>
+        <div class="card" style="padding:0 20px;">
+          {% for item in pozor_klienti %}
+          <div class="pozor-item">
+            <div>
+              <div class="pozor-nazev">{{ item.klient.nazev }}</div>
+              <div class="pozor-meta">Poslední zápis: {{ item.posledni.created_at.strftime('%d. %m. %Y') if item.posledni else 'nikdy' }}</div>
+            </div>
+            <div style="display:flex;align-items:center;gap:10px;">
+              <div>
+                <div class="pozor-dni">{{ item.dni }}d</div>
+                <div style="font-family:'Montserrat',sans-serif;font-size:9px;color:#8aa0b8;text-transform:uppercase;letter-spacing:0.08em;">bez aktivity</div>
+              </div>
+              <a href="{{ url_for('novy_zapis') }}?klient_id={{ item.klient.id }}" style="font-family:'DrukCondensed','Impact',sans-serif;font-size:13px;font-weight:900;text-transform:uppercase;letter-spacing:0.06em;background:#FF8D00;color:white;padding:6px 12px;border-radius:5px;text-decoration:none;">+ Zápis</a>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+      {% endif %}
+    </div>
+
+    <!-- PRAVÝ SLOUPEC: Quick actions + stats -->
+    <div>
+      <div class="sekce-nadpis">Rychlé akce</div>
+      <div class="qa-grid" style="margin-bottom:1.5rem;">
+        <a href="{{ url_for('novy_zapis') }}" class="qa-btn cyan">
+          <div class="qa-icon">📝</div>
+          <div class="qa-label">Nový zápis</div>
+          <div class="qa-sub">ze schůzky</div>
+        </a>
+        <a href="{{ url_for('nabidka_nova') }}" class="qa-btn orange">
+          <div class="qa-icon">📋</div>
+          <div class="qa-label">Nabídka</div>
+          <div class="qa-sub">vybavení skladu</div>
+        </a>
+        <a href="{{ url_for('crm_prehled') }}" class="qa-btn navy">
+          <div class="qa-icon">👥</div>
+          <div class="qa-label">CRM</div>
+          <div class="qa-sub">přehled klientů</div>
+        </a>
+        <a href="{{ url_for('progress_report') }}" class="qa-btn">
+          <div class="qa-icon">📊</div>
+          <div class="qa-label">Report</div>
+          <div class="qa-sub">progress za období</div>
+        </a>
+      </div>
+
+      <!-- STAV PROJEKTŮ -->
+      <div class="sekce-nadpis">Aktivní projekty</div>
+      <div class="card" style="padding:0;overflow:hidden;">
+        {% for p in aktivni_projekty %}
+        <div style="padding:12px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:10px;">
+          <div style="min-width:0;">
+            <div style="font-family:'Montserrat',sans-serif;font-size:12px;font-weight:700;color:#173767;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ p.nazev }}</div>
+            <div style="font-family:'Montserrat',sans-serif;font-size:11px;color:#8aa0b8;margin-top:2px;">{{ p.klient.nazev }}</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;flex-shrink:0;">
+            {% if p.datum_do %}
+              {% set dnu_zbyva = (p.datum_do - now.date()).days %}
+              {% if dnu_zbyva < 0 %}
+              <span style="font-family:'Montserrat',sans-serif;font-size:10px;font-weight:700;background:rgba(255,56,60,0.1);color:#C0392B;padding:2px 8px;border-radius:3px;">po termínu</span>
+              {% elif dnu_zbyva < 14 %}
+              <span style="font-family:'Montserrat',sans-serif;font-size:10px;font-weight:700;background:rgba(255,141,0,0.1);color:#C06A00;padding:2px 8px;border-radius:3px;">{{ dnu_zbyva }}d</span>
+              {% else %}
+              <span style="font-family:'Montserrat',sans-serif;font-size:10px;font-weight:700;background:#f0f3f7;color:#4A6080;padding:2px 8px;border-radius:3px;">{{ dnu_zbyva }}d</span>
+              {% endif %}
+            {% endif %}
+            <a href="{{ url_for('projekt_detail', projekt_id=p.id) }}" style="font-family:'Montserrat',sans-serif;font-size:11px;font-weight:700;color:#00AFF0;text-decoration:none;">detail →</a>
+          </div>
+        </div>
+        {% else %}
+        <div style="padding:20px;font-family:'Montserrat',sans-serif;font-size:13px;color:#8aa0b8;text-align:center;">Žádné aktivní projekty</div>
+        {% endfor %}
+      </div>
+
+    </div>
+  </div>
+
+</div>
+{% endblock %}

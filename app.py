@@ -51,6 +51,9 @@ class Klient(db.Model):
     adresa      = db.Column(db.String(300), default="")
     poznamka    = db.Column(db.Text, default="")
     logo_url    = db.Column(db.String(500), default="")  # URL loga klienta
+    ic          = db.Column(db.String(20), default="")   # IČ
+    dic         = db.Column(db.String(20), default="")   # DIČ
+    sidlo       = db.Column(db.String(300), default="")  # Adresa sídla (fakturační)
     is_active   = db.Column(db.Boolean, default=True)
     created_at  = db.Column(db.DateTime, default=datetime.utcnow)
     # profil skladu (JSON) — automaticky extrahovan z prepisu
@@ -591,7 +594,15 @@ class Nabidka(db.Model):
 
     @property
     def celkova_cena(self):
-        return sum(p.celkem for p in self.polozky)
+        return sum(p.celkem_bez_dph for p in self.polozky)
+
+    @property
+    def celkova_dph(self):
+        return sum(p.dph_castka for p in self.polozky)
+
+    @property
+    def celkova_cena_s_dph(self):
+        return self.celkova_cena + self.celkova_dph
 
 class NabidkaPolozka(db.Model):
     __tablename__ = "nabidka_polozka"
@@ -604,11 +615,24 @@ class NabidkaPolozka(db.Model):
     jednotka    = db.Column(db.String(30), default="ks")  # ks, m, m2, hod, paušál
     cena_ks     = db.Column(db.Numeric(12, 2), default=0)
     sleva_pct   = db.Column(db.Numeric(5, 2), default=0)
+    dph_pct     = db.Column(db.Numeric(5, 2), default=0)  # 0 = bez DPH, 21 = 21%, atd.
+
+    @property
+    def celkem_bez_dph(self):
+        zaklad = float(self.mnozstvi) * float(self.cena_ks)
+        return zaklad * (1 - float(self.sleva_pct) / 100)
 
     @property
     def celkem(self):
-        zaklad = float(self.mnozstvi) * float(self.cena_ks)
-        return zaklad * (1 - float(self.sleva_pct) / 100)
+        return self.celkem_bez_dph
+
+    @property
+    def dph_castka(self):
+        return self.celkem_bez_dph * float(self.dph_pct) / 100
+
+    @property
+    def celkem_s_dph(self):
+        return self.celkem_bez_dph + self.dph_castka
 
 
 # ─────────────────────────────────────────────
@@ -641,7 +665,7 @@ def admin_required(f):
 @app.route("/")
 def index():
     if "user_id" in session:
-        return redirect(url_for("dashboard"))
+        return redirect(url_for("home"))
     return redirect(url_for("login"))
 
 @app.route("/login", methods=["GET", "POST"])
@@ -671,7 +695,7 @@ def logout():
 
 @app.route("/dashboard")
 @login_required
-def dashboard():
+def dashboard_old():
     zapisy  = Zápisy_query()
     klienti = Klient.query.filter_by(is_active=True).order_by(Klient.nazev).all()
     stats = {
@@ -1068,6 +1092,7 @@ def nabidka_nova():
                 jednotka=jednotky[i] if i < len(jednotky) else "ks",
                 cena_ks=float(ceny[i]) if i < len(ceny) and ceny[i] else 0,
                 sleva_pct=float(slevy[i]) if i < len(slevy) and slevy[i] else 0,
+                dph_pct=float(request.form.getlist("pol_dph")[i]) if i < len(request.form.getlist("pol_dph")) and request.form.getlist("pol_dph")[i] else 0,
             )
             db.session.add(p)
 
@@ -1137,6 +1162,7 @@ def nabidka_ulozit(nabidka_id):
                 p.jednotka = pol_data.get("jednotka", p.jednotka)
                 p.cena_ks = float(pol_data.get("cena_ks", p.cena_ks))
                 p.sleva_pct = float(pol_data.get("sleva_pct", p.sleva_pct or 0))
+                p.dph_pct = float(pol_data.get("dph_pct", p.dph_pct or 0))
         else:
             # Nová položka
             p = NabidkaPolozka(
@@ -1148,11 +1174,12 @@ def nabidka_ulozit(nabidka_id):
                 jednotka=pol_data.get("jednotka", "ks"),
                 cena_ks=float(pol_data.get("cena_ks", 0)),
                 sleva_pct=float(pol_data.get("sleva_pct", 0)),
+                dph_pct=float(pol_data.get("dph_pct", 0)),
             )
             db.session.add(p)
 
     db.session.commit()
-    return jsonify(ok=True, celkem=float(n.celkova_cena), cislo=n.cislo)
+    return jsonify(ok=True, celkem=float(n.celkova_cena), dph=float(n.celkova_dph), celkem_s_dph=float(n.celkova_cena_s_dph), cislo=n.cislo)
 
 
 @app.route("/nabidka/<int:nabidka_id>/stav", methods=["POST"])
@@ -2294,6 +2321,10 @@ with app.app_context():
         db.create_all()  # skips existing tables — safe to run repeatedly (vytvoří i template_config)
         # Auto-migrate new columns
         migrations = [
+            ("klient", "ic",      "ALTER TABLE klient ADD COLUMN IF NOT EXISTS ic VARCHAR(20) DEFAULT ''"),
+            ("klient", "dic",     "ALTER TABLE klient ADD COLUMN IF NOT EXISTS dic VARCHAR(20) DEFAULT ''"),
+            ("klient", "sidlo",   "ALTER TABLE klient ADD COLUMN IF NOT EXISTS sidlo VARCHAR(300) DEFAULT ''"),
+            ("nabidka_polozka", "dph_pct", "ALTER TABLE nabidka_polozka ADD COLUMN IF NOT EXISTS dph_pct NUMERIC(5,2) DEFAULT 0"),
             ("projekt", "freelo_project_id",  "ALTER TABLE projekt ADD COLUMN IF NOT EXISTS freelo_project_id INTEGER"),
             ("projekt", "freelo_tasklist_id", "ALTER TABLE projekt ADD COLUMN IF NOT EXISTS freelo_tasklist_id INTEGER"),
             ("zapis", "output_json",    "ALTER TABLE zapis ADD COLUMN output_json TEXT DEFAULT '{}'"),

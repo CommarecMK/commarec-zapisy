@@ -26,13 +26,13 @@
 .posl-zapis-label{font-family:'Montserrat',sans-serif;font-size:10px;font-weight:700;color:#8aa0b8;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:4px;}
 .posl-zapis-nazev{font-family:'Montserrat',sans-serif;font-size:12px;font-weight:700;color:#173767;margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:160px;}
 .posl-zapis-datum{font-family:'Montserrat',sans-serif;font-size:11px;color:#8aa0b8;}
-.btn-crm{font-family:'DrukCondensed','Impact',sans-serif;font-size:14px;font-weight:900;text-transform:uppercase;letter-spacing:0.06em;text-decoration:none;padding:7px 14px;border-radius:5px;text-align:center;white-space:nowrap;border:none;cursor:pointer;display:block;}
-.btn-crm-navy{background:#173767;color:white;}
-.btn-crm-navy:hover{background:#254f8a;color:white;}
-.btn-crm-outline{background:white;color:#173767;border:1.5px solid var(--border);}
-.btn-crm-outline:hover{border-color:#00AFF0;color:#00AFF0;}
-.btn-crm-green{background:rgba(52,199,89,0.1);color:#0A7A5A;border:1.5px solid rgba(52,199,89,0.2);}
-.btn-crm-green:hover{background:rgba(52,199,89,0.2);}
+.btn-crm{font-family:'DrukCondensed','Impact',sans-serif;font-size:15px;font-weight:900;text-transform:uppercase;letter-spacing:0.1em;text-decoration:none;padding:8px 16px;border-radius:6px;text-align:center;white-space:nowrap;border:none;cursor:pointer;display:block;line-height:1.2;}
+.btn-crm-navy{background:#173767;color:white !important;}
+.btn-crm-navy:hover{background:#254f8a;color:white !important;}
+.btn-crm-outline{background:#f0f3f7;color:#173767 !important;border:2px solid #D0DAE8;}
+.btn-crm-outline:hover{border-color:#173767;background:white;}
+.btn-crm-orange{background:#FF8D00;color:white !important;border:none;}
+.btn-crm-orange:hover{background:#E07800;color:white !important;}
 .filtr-tabs{display:flex;gap:4px;background:#f0f3f7;padding:3px;border-radius:6px;width:fit-content;}
 .filtr-tab{font-family:'Montserrat',sans-serif;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;padding:5px 14px;border-radius:4px;background:none;border:none;cursor:pointer;color:#4A6080;text-decoration:none;}
 .filtr-tab.active{background:white;color:#173767;box-shadow:0 1px 4px rgba(0,0,0,0.08);}
@@ -52,7 +52,7 @@
       <p style="color:#4A6080;font-size:13px;margin-top:4px;">{{ crm_data|length }} klientů · progress report · nabídky</p>
     </div>
     <div style="display:flex;gap:8px;">
-      <a href="{{ url_for('nabidka_nova') }}" class="btn btn-secondary btn-sm">+ Nová nabídka</a>
+      <a href="{{ url_for('nabidka_nova') }}" style="font-family:'DrukCondensed','Impact',sans-serif;font-size:15px;font-weight:900;text-transform:uppercase;letter-spacing:0.08em;background:#FF8D00;color:white;padding:8px 20px;border-radius:6px;text-decoration:none;border:none;">+ Nová nabídka</a>
       <a href="{{ url_for('novy_zapis') }}" class="btn btn-navy" style="font-family:'DrukCondensed','Impact',sans-serif;font-size:13px;font-weight:900;letter-spacing:0.06em;text-transform:uppercase;">+ Nový zápis</a>
     </div>
   </div>
@@ -163,7 +163,7 @@
       <!-- AKCE -->
       <div class="crm-akce">
         <a href="{{ url_for('klient_vyvoj', klient_id=k.id) }}" class="btn-crm btn-crm-navy">Vývoj →</a>
-        <a href="{{ url_for('nabidka_nova') }}?klient_id={{ k.id }}" class="btn-crm btn-crm-green">+ Nabídka</a>
+        <a href="{{ url_for('nabidka_nova') }}?klient_id={{ k.id }}" class="btn-crm btn-crm-orange">+ Nabídka</a>
         <a href="{{ url_for('novy_zapis') }}?klient_id={{ k.id }}" class="btn-crm btn-crm-outline">+ Zápis</a>
       </div>
     </div>

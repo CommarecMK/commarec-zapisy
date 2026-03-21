@@ -1,106 +1,126 @@
 {% extends "base.html" %}
 {% block title %}{{ n.cislo }} — {{ n.nazev }}{% endblock %}
 {% block extra_head %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 <style>
 .stav-badge{font-family:'Montserrat',sans-serif;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;padding:4px 12px;border-radius:4px;}
 .stav-draft{background:#f0f3f7;color:#4A6080;}
 .stav-odeslana{background:rgba(0,175,240,0.1);color:#0085B8;}
 .stav-prijata{background:rgba(52,199,89,0.1);color:#0A7A5A;}
 .stav-zamitnuta{background:rgba(255,56,60,0.1);color:#C0392B;}
-.pol-tabulka{width:100%;border-collapse:collapse;}
-.pol-tabulka th{font-family:'Montserrat',sans-serif;font-size:10px;font-weight:700;color:#8aa0b8;text-transform:uppercase;letter-spacing:0.1em;padding:8px 10px;text-align:left;border-bottom:2px solid var(--border);}
-.pol-tabulka td{padding:6px 6px;vertical-align:middle;border-bottom:1px solid var(--border);}
-.pol-tabulka tr:last-child td{border-bottom:none;}
-.pol-input{width:100%;padding:6px 8px;border:1.5px solid transparent;border-radius:4px;font-size:13px;font-family:'Montserrat',sans-serif;color:#173767;background:transparent;box-sizing:border-box;}
-.pol-input:hover{border-color:var(--border);}
-.pol-input:focus{outline:none;border-color:#00AFF0;background:white;}
-.pol-input.cislo{text-align:right;}
-.pol-celkem{font-family:'Montserrat',sans-serif;font-size:13px;font-weight:700;color:#173767;text-align:right;padding:0 8px;}
+.pol-table{width:100%;border-collapse:collapse;}
+.pol-table th{font-family:'Montserrat',sans-serif;font-size:10px;font-weight:700;color:#8aa0b8;text-transform:uppercase;letter-spacing:0.1em;padding:8px 10px;text-align:left;border-bottom:2px solid var(--border);}
+.pol-table td{padding:5px 5px;vertical-align:middle;border-bottom:1px solid var(--border);}
+.pol-table tr:last-child td{border-bottom:none;}
+.pi{width:100%;padding:6px 8px;border:1.5px solid transparent;border-radius:4px;font-size:13px;font-family:'Montserrat',sans-serif;color:#173767;background:transparent;box-sizing:border-box;}
+.pi:hover{border-color:var(--border);}
+.pi:focus{outline:none;border-color:#00AFF0;background:white;}
+.pi.r{text-align:right;}
+.row-celkem{font-family:'Montserrat',sans-serif;font-size:13px;font-weight:700;color:#173767;text-align:right;padding:0 8px;}
 .btn-del{font-size:13px;color:#D0DAE8;background:none;border:none;cursor:pointer;padding:4px 8px;}
 .btn-del:hover{color:#FF383C;}
-.row-num{font-family:'Montserrat',sans-serif;font-size:11px;color:#D0DAE8;font-weight:600;text-align:center;}
+.jsel{padding:6px 4px;border:1.5px solid transparent;border-radius:4px;font-size:12px;font-family:'Montserrat',sans-serif;color:#173767;background:transparent;}
+.jsel:hover,.jsel:focus{outline:none;border-color:#00AFF0;}
+.dph-sel{padding:6px 4px;border:1.5px solid transparent;border-radius:4px;font-size:11px;font-family:'Montserrat',sans-serif;color:#4A6080;background:transparent;width:58px;}
+.dph-sel:focus{outline:none;border-color:#00AFF0;}
 .btn-add-row{font-family:'Montserrat',sans-serif;font-size:12px;font-weight:700;color:#00AFF0;background:none;border:1.5px dashed rgba(0,175,240,0.3);border-radius:5px;padding:8px 20px;cursor:pointer;width:100%;margin-top:8px;}
 .btn-add-row:hover{background:rgba(0,175,240,0.05);}
-.celkem-box{background:#173767;color:white;border-radius:8px;padding:18px 24px;display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem;}
-.celkem-label{font-family:'Montserrat',sans-serif;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;opacity:0.6;}
-.celkem-value{font-family:'DrukCondensed','Impact',sans-serif;font-size:40px;font-weight:900;letter-spacing:0.02em;}
-.save-indicator{font-family:'Montserrat',sans-serif;font-size:12px;font-weight:600;color:#0A7A5A;opacity:0;transition:opacity 0.3s;margin-left:12px;}
-.save-indicator.show{opacity:1;}
-.jednotka-sel{padding:6px 4px;border:1.5px solid transparent;border-radius:4px;font-size:12px;font-family:'Montserrat',sans-serif;color:#173767;background:transparent;width:70px;}
-.jednotka-sel:hover{border-color:var(--border);}
-.jednotka-sel:focus{outline:none;border-color:#00AFF0;}
-
-/* PDF PRINT STYLES */
-@media print {
-  @page { size: A4; margin: 20mm 20mm 25mm 20mm; }
-  .nav, .page-header .btn, .card-actions-bar, .btn-del, .btn-add-row,
-  .stav-actions, #save-bar { display: none !important; }
-  body { background: white !important; font-size: 11pt; }
-  .container { max-width: 100% !important; padding: 0 !important; }
-  .nabidka-print-header { display: block !important; }
-
-  /* Tabulka v print */
-  .pol-tabulka { page-break-inside: avoid; }
-  .pol-input, .jednotka-sel { border: none !important; background: transparent !important; padding: 4px 2px !important; }
-  .pol-input.cislo { text-align: right; }
-  .pol-celkem { font-weight: 700; }
-  .celkem-box { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+/* CELKEM BOX */
+.celkem-box{background:#173767;color:white;border-radius:8px;padding:22px 28px;display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem;}
+.celkem-label{font-family:'Montserrat',sans-serif;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.12em;opacity:0.55;}
+.celkem-value{font-family:'DrukCondensed','Impact',sans-serif;font-size:60px;font-weight:900;letter-spacing:0.12em;line-height:1.0;}
+.celkem-mena{font-family:'Montserrat',sans-serif;font-size:16px;font-weight:600;opacity:0.55;margin-left:8px;}
+.save-ok{font-family:'Montserrat',sans-serif;font-size:12px;font-weight:600;color:#0A7A5A;opacity:0;transition:opacity 0.3s;}
+.save-ok.show{opacity:1;}
+/* STAV DROPDOWN */
+.stav-menu{display:none;position:absolute;right:0;top:calc(100% + 4px);background:white;border:1px solid var(--border);border-radius:8px;padding:4px;z-index:200;min-width:150px;box-shadow:0 4px 16px rgba(0,0,0,0.1);}
+.stav-menu.open{display:block;}
+.stav-opt{display:block;width:100%;text-align:left;padding:8px 14px;font-size:13px;font-family:'Montserrat',sans-serif;background:none;border:none;cursor:pointer;border-radius:5px;font-weight:600;}
+.stav-opt:hover{background:#f0f3f7;}
+/* CRM BUTTONS */
+.btn-crm-action{font-family:'DrukCondensed','Impact',sans-serif;font-size:14px;font-weight:900;text-transform:uppercase;letter-spacing:0.08em;padding:9px 20px;border-radius:6px;border:none;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;gap:6px;}
+.btn-navy-solid{background:#173767;color:white;}
+.btn-navy-solid:hover{background:#254f8a;color:white;}
+.btn-orange{background:#FF8D00;color:white;}
+.btn-orange:hover{background:#E07800;color:white;}
+.btn-outline-dk{background:white;color:#173767;border:2px solid #173767;}
+.btn-outline-dk:hover{background:#f0f3f7;}
+/* PRINT / PDF */
+.pdf-header{display:none;}
+@media print{
+  .nav,.action-bar,.btn-del,.btn-add-row{display:none!important;}
+  body{background:white!important;font-size:10pt;}
+  .container{max-width:100%!important;padding:0!important;}
+  .pdf-header{display:block!important;}
+  .pol-table,.celkem-box{-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+  .pi,.jsel,.dph-sel{border:none!important;background:transparent!important;padding:2px!important;}
+  @page{size:A4;margin:18mm 18mm 22mm 18mm;}
 }
-.nabidka-print-header { display: none; }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="container">
-
-  <!-- PRINT ZÁHLAVÍ -->
-  <div class="nabidka-print-header">
-    <div style="display:flex;justify-content:space-between;align-items:flex-start;padding-bottom:12pt;border-bottom:2pt solid #00AFF0;margin-bottom:16pt;">
-      <div>
-        <img src="/static/logo-dark.svg" alt="Commarec" style="height:20pt;">
-        <div style="font-size:8pt;color:#4A6080;margin-top:4pt;">Commarec s.r.o. · Varšavská 715/36, Praha 2 · commarec.cz</div>
-      </div>
-      <div style="text-align:right;">
-        <div style="font-size:18pt;font-weight:900;font-family:'DrukCondensed','Impact',sans-serif;color:#173767;">NABÍDKA</div>
-        <div style="font-size:10pt;color:#4A6080;">{{ n.cislo }}</div>
-        <div style="font-size:9pt;color:#4A6080;margin-top:4pt;">{{ n.created_at.strftime('%d. %m. %Y') }}</div>
+<div id="nabidka-pdf-wrap">
+<!-- PDF HLAVIČKA -->
+<div class="pdf-header" style="margin-bottom:20pt;">
+  <div style="display:flex;justify-content:space-between;align-items:flex-start;padding-bottom:10pt;border-bottom:2pt solid #00AFF0;margin-bottom:14pt;">
+    <div>
+      <img src="/static/logo-dark.svg" alt="Commarec" style="height:22pt;" onerror="this.style.display='none'">
+      <div style="margin-top:4pt;font-size:8pt;color:#4A6080;font-family:'Montserrat',sans-serif;">
+        Commarec s.r.o. · Varšavská 715/36, 120 00 Praha 2<br>
+        IČ: 09156834 · DIČ: CZ09156834 · www.commarec.cz
       </div>
     </div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:20pt;margin-bottom:16pt;">
-      <div>
-        <div style="font-size:8pt;font-weight:700;color:#8aa0b8;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:4pt;">Zákazník</div>
-        <div style="font-size:12pt;font-weight:700;color:#173767;">{{ n.klient.nazev }}</div>
-        {% if n.klient.adresa %}<div style="font-size:9pt;color:#4A6080;">{{ n.klient.adresa }}</div>{% endif %}
-        {% if n.klient.kontakt %}<div style="font-size:9pt;color:#4A6080;">{{ n.klient.kontakt }}</div>{% endif %}
-      </div>
-      <div>
-        {% if n.platnost_do %}<div><span style="font-size:8pt;font-weight:700;color:#8aa0b8;text-transform:uppercase;">Platnost do:</span> <span style="font-size:9pt;">{{ n.platnost_do.strftime('%d. %m. %Y') }}</span></div>{% endif %}
-        {% if n.projekt %}<div style="margin-top:4pt;"><span style="font-size:8pt;font-weight:700;color:#8aa0b8;text-transform:uppercase;">Projekt:</span> <span style="font-size:9pt;">{{ n.projekt.nazev }}</span></div>{% endif %}
-      </div>
+    <div style="text-align:right;">
+      <div style="font-family:'DrukCondensed','Impact',sans-serif;font-size:20pt;font-weight:900;color:#173767;text-transform:uppercase;letter-spacing:0.06em;">Cenová nabídka</div>
+      <div style="font-family:'Montserrat',sans-serif;font-size:10pt;color:#4A6080;font-weight:700;">{{ n.cislo }}</div>
+      <div style="font-family:'Montserrat',sans-serif;font-size:9pt;color:#4A6080;">{{ n.created_at.strftime('%d. %m. %Y') }}</div>
+      {% if n.platnost_do %}<div style="font-size:9pt;color:#4A6080;">Platnost do: {{ n.platnost_do.strftime('%d. %m. %Y') }}</div>{% endif %}
     </div>
-    <div style="font-size:14pt;font-weight:700;color:#173767;margin-bottom:8pt;">{{ n.nazev }}</div>
-    {% if n.poznamka %}<div style="font-size:9pt;color:#4A6080;margin-bottom:12pt;line-height:1.5;">{{ n.poznamka }}</div>{% endif %}
   </div>
+  <!-- Zákazník vs Dodavatel -->
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:20pt;margin-bottom:14pt;">
+    <div style="background:#f7f9fb;border-radius:6pt;padding:10pt 12pt;">
+      <div style="font-family:'Montserrat',sans-serif;font-size:8pt;font-weight:700;color:#8aa0b8;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:6pt;">Zákazník</div>
+      <div style="font-family:'Montserrat',sans-serif;font-size:12pt;font-weight:700;color:#173767;">{{ n.klient.nazev }}</div>
+      {% if n.klient.sidlo %}<div style="font-size:9pt;color:#4A6080;">{{ n.klient.sidlo }}</div>{% elif n.klient.adresa %}<div style="font-size:9pt;color:#4A6080;">{{ n.klient.adresa }}</div>{% endif %}
+      {% if n.klient.ic %}<div style="font-size:9pt;color:#4A6080;margin-top:4pt;">IČ: {{ n.klient.ic }}{% if n.klient.dic %} · DIČ: {{ n.klient.dic }}{% endif %}</div>{% endif %}
+      {% if n.klient.kontakt %}<div style="font-size:9pt;color:#4A6080;margin-top:4pt;">Kontakt: {{ n.klient.kontakt }}{% if n.klient.email %} · {{ n.klient.email }}{% endif %}</div>{% endif %}
+    </div>
+    <div>
+      <div style="font-family:'Montserrat',sans-serif;font-size:8pt;font-weight:700;color:#8aa0b8;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:6pt;">Dodavatel</div>
+      <div style="font-family:'Montserrat',sans-serif;font-size:12pt;font-weight:700;color:#173767;">Commarec s.r.o.</div>
+      <div style="font-size:9pt;color:#4A6080;">Varšavská 715/36, 120 00 Praha 2</div>
+      <div style="font-size:9pt;color:#4A6080;margin-top:4pt;">IČ: 09156834 · DIČ: CZ09156834</div>
+      <div style="font-size:9pt;color:#4A6080;margin-top:4pt;">www.commarec.cz · info@commarec.cz</div>
+    </div>
+  </div>
+  <div style="font-family:'DrukCondensed','Impact',sans-serif;font-size:14pt;font-weight:900;color:#173767;text-transform:uppercase;letter-spacing:0.04em;margin-bottom:4pt;">{{ n.nazev }}</div>
+  {% if n.poznamka %}<div style="font-size:9pt;color:#4A6080;font-family:'Montserrat',sans-serif;margin-bottom:10pt;line-height:1.5;">{{ n.poznamka }}</div>{% endif %}
+</div>
 
+<div class="container">
   <!-- ACTION BAR -->
-  <div id="save-bar" class="card-actions-bar" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;flex-wrap:wrap;gap:10px;">
-    <div style="display:flex;align-items:center;gap:10px;">
-      <a href="{{ url_for('crm_prehled') }}" class="btn btn-secondary btn-sm">← CRM</a>
-      <a href="{{ url_for('klient_detail', klient_id=n.klient_id) }}" class="btn btn-secondary btn-sm">{{ n.klient.nazev }}</a>
+  <div class="action-bar" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;flex-wrap:wrap;gap:10px;">
+    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+      <a href="{{ url_for('crm_prehled') }}" class="btn-crm-action btn-outline-dk" style="font-size:13px;padding:7px 14px;">← CRM</a>
+      <a href="{{ url_for('klient_detail', klient_id=n.klient_id) }}" class="btn-crm-action btn-outline-dk" style="font-size:12px;padding:7px 14px;">{{ n.klient.nazev }}</a>
       <span class="stav-badge stav-{{ n.stav }}">{{ {'draft':'Koncept','odeslana':'Odeslaná','prijata':'Přijatá','zamitnuta':'Zamítnutá'}.get(n.stav, n.stav) }}</span>
     </div>
     <div style="display:flex;gap:8px;align-items:center;">
-      <span class="save-indicator" id="saveInd">✓ Uloženo</span>
-      <button onclick="ulozit()" class="btn btn-secondary btn-sm">Uložit změny</button>
-      <button onclick="window.print()" class="btn btn-secondary btn-sm">🖨 PDF</button>
-      <!-- Stav menu -->
-      <div style="position:relative;" class="stav-actions">
-        <button onclick="this.nextElementSibling.classList.toggle('open')" class="btn btn-secondary btn-sm">Stav ▾</button>
-        <div class="dropdown-menu" style="display:none;position:absolute;right:0;top:100%;margin-top:4px;background:white;border:1px solid var(--border);border-radius:6px;padding:4px;z-index:100;min-width:140px;">
-          {% for stav, label in [('draft','Koncept'),('odeslana','Odeslaná'),('prijata','Přijatá'),('zamitnuta','Zamítnutá')] %}
-          <form method="post" action="{{ url_for('nabidka_stav', nabidka_id=n.id) }}">
+      <span class="save-ok" id="saveInd">✓ Uloženo</span>
+      <button onclick="ulozit()" class="btn-crm-action btn-outline-dk" style="font-size:13px;padding:8px 16px;">Uložit</button>
+      <button onclick="stahnoutPDF()" class="btn-crm-action btn-orange">⬇ PDF</button>
+      <!-- STAV -->
+      <div style="position:relative;">
+        <button id="stavBtn" onclick="document.getElementById('stavMenu').classList.toggle('open')" class="btn-crm-action btn-navy-solid">
+          Stav ▾
+        </button>
+        <div class="stav-menu" id="stavMenu">
+          {% for stav, label, color in [('draft','Koncept','#4A6080'),('odeslana','Odeslaná','#0085B8'),('prijata','Přijatá','#0A7A5A'),('zamitnuta','Zamítnutá','#C0392B')] %}
+          <form method="post" action="{{ url_for('nabidka_stav', nabidka_id=n.id) }}" style="margin:0;">
             <input type="hidden" name="stav" value="{{ stav }}">
-            <button type="submit" style="display:block;width:100%;text-align:left;padding:7px 12px;font-size:13px;font-family:'Montserrat',sans-serif;background:none;border:none;cursor:pointer;border-radius:4px;" onmouseover="this.style.background='#f0f3f7'" onmouseout="this.style.background='none'">{{ label }}</button>
+            <button type="submit" class="stav-opt" style="color:{{ color }};">{{ label }}</button>
           </form>
           {% endfor %}
         </div>
@@ -113,8 +133,11 @@
     <div style="display:grid;grid-template-columns:2fr 1fr 1fr;gap:16px;">
       <div>
         <div style="font-family:'Montserrat',sans-serif;font-size:10px;font-weight:700;color:#8aa0b8;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:4px;">Název nabídky</div>
-        <div style="font-family:'DrukCondensed','Impact',sans-serif;font-size:22px;font-weight:900;color:#173767;text-transform:uppercase;letter-spacing:0.04em;">{{ n.nazev }}</div>
-        <div style="font-family:'Montserrat',sans-serif;font-size:12px;color:#8aa0b8;margin-top:4px;">{{ n.cislo }} · {{ n.klient.nazev }}{% if n.projekt %} · {{ n.projekt.nazev }}{% endif %}</div>
+        <div style="font-family:'DrukCondensed','Impact',sans-serif;font-size:24px;font-weight:900;color:#173767;text-transform:uppercase;letter-spacing:0.04em;">{{ n.nazev }}</div>
+        <div style="font-family:'Montserrat',sans-serif;font-size:12px;color:#8aa0b8;margin-top:4px;">{{ n.cislo }} · {{ n.klient.nazev }}{% if n.klient.ic %} · IČ {{ n.klient.ic }}{% endif %}{% if n.projekt %} · {{ n.projekt.nazev }}{% endif %}</div>
+        {% if n.klient.sidlo or n.klient.adresa %}
+        <div style="font-family:'Montserrat',sans-serif;font-size:11px;color:#4A6080;margin-top:3px;">{{ n.klient.sidlo or n.klient.adresa }}</div>
+        {% endif %}
       </div>
       <div>
         <div style="font-family:'Montserrat',sans-serif;font-size:10px;font-weight:700;color:#8aa0b8;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:4px;">Vytvořeno</div>
@@ -123,7 +146,7 @@
       </div>
       <div>
         <div style="font-family:'Montserrat',sans-serif;font-size:10px;font-weight:700;color:#8aa0b8;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:4px;">Stav</div>
-        <div><span class="stav-badge stav-{{ n.stav }}">{{ {'draft':'Koncept','odeslana':'Odeslaná','prijata':'Přijatá','zamitnuta':'Zamítnutá'}.get(n.stav, n.stav) }}</span></div>
+        <span class="stav-badge stav-{{ n.stav }}">{{ {'draft':'Koncept','odeslana':'Odeslaná','prijata':'Přijatá','zamitnuta':'Zamítnutá'}.get(n.stav, n.stav) }}</span>
       </div>
     </div>
     {% if n.poznamka %}
@@ -136,45 +159,53 @@
     <div class="card-header" style="padding:14px 20px 12px;">
       <h2>Položky</h2>
     </div>
-    <div style="padding:0 20px 20px;">
-      <table class="pol-tabulka">
+    <div style="padding:0 20px 20px;overflow-x:auto;">
+      <table class="pol-table">
         <thead>
           <tr>
-            <th style="width:28px;">#</th>
+            <th style="width:26px;">#</th>
             <th>Název a popis</th>
-            <th style="width:70px;">Množ.</th>
-            <th style="width:72px;">Jedn.</th>
-            <th style="width:120px;">Cena/ks (Kč)</th>
-            <th style="width:76px;">Sleva %</th>
-            <th style="width:130px;text-align:right;">Celkem (Kč)</th>
-            <th style="width:32px;" class="card-actions-bar"></th>
+            <th style="width:68px;">Množ.</th>
+            <th style="width:66px;">Jedn.</th>
+            <th style="width:118px;">Cena/ks (Kč)</th>
+            <th style="width:68px;">Sleva %</th>
+            <th style="width:58px;">DPH %</th>
+            <th style="width:120px;text-align:right;">Celkem bez DPH</th>
+            <th style="width:30px;" class="action-bar"></th>
           </tr>
         </thead>
         <tbody id="polBody">
           {% for p in n.polozky %}
           <tr data-id="{{ p.id }}">
-            <td><div class="row-num">{{ loop.index }}</div></td>
+            <td style="font-family:'Montserrat',sans-serif;font-size:11px;color:#D0DAE8;font-weight:600;text-align:center;">{{ loop.index }}</td>
             <td>
-              <input type="text" class="pol-input pol-nazev" value="{{ p.nazev }}" placeholder="Název položky" oninput="markDirty()">
-              <input type="text" class="pol-input pol-popis" value="{{ p.popis }}" placeholder="Specifikace, poznámka..." style="margin-top:3px;font-size:12px;color:#4A6080;" oninput="markDirty()">
+              <input type="text" class="pi pol-nazev" value="{{ p.nazev }}" placeholder="Název položky" oninput="markDirty()">
+              <input type="text" class="pi pol-popis" value="{{ p.popis }}" placeholder="Specifikace..." style="margin-top:3px;font-size:11px;color:#4A6080;" oninput="markDirty()">
             </td>
-            <td><input type="number" class="pol-input cislo pol-mnozstvi" value="{{ p.mnozstvi }}" min="0" step="0.01" oninput="prepocti();markDirty()"></td>
+            <td><input type="number" class="pi r pol-mnozstvi" value="{{ p.mnozstvi }}" min="0" step="0.01" oninput="prepocti();markDirty()"></td>
             <td>
-              <select class="jednotka-sel pol-jednotka" onchange="markDirty()">
+              <select class="jsel pol-jednotka" onchange="markDirty()">
                 {% for j in ['ks','m','m²','m³','hod','den','paušál','set','bal'] %}
                 <option {% if p.jednotka == j %}selected{% endif %}>{{ j }}</option>
                 {% endfor %}
               </select>
             </td>
-            <td><input type="number" class="pol-input cislo pol-cena" value="{{ p.cena_ks }}" min="0" step="0.01" oninput="prepocti();markDirty()"></td>
-            <td><input type="number" class="pol-input cislo pol-sleva" value="{{ p.sleva_pct or 0 }}" min="0" max="100" step="0.1" oninput="prepocti();markDirty()"></td>
-            <td><div class="pol-celkem" id="celkem_{{ p.id }}">{{ '{:,.0f}'.format(p.celkem).replace(',', '\u00a0') }}</div></td>
-            <td class="card-actions-bar"><button class="btn-del" onclick="smazatPolozku({{ p.id }}, this)">✕</button></td>
+            <td><input type="number" class="pi r pol-cena" value="{{ p.cena_ks }}" min="0" step="0.01" oninput="prepocti();markDirty()"></td>
+            <td><input type="number" class="pi r pol-sleva" value="{{ p.sleva_pct or 0 }}" min="0" max="100" step="0.1" oninput="prepocti();markDirty()"></td>
+            <td>
+              <select class="dph-sel pol-dph" onchange="prepocti();markDirty()">
+                {% for d in [0,10,15,21] %}
+                <option value="{{ d }}" {% if (p.dph_pct or 0)|int == d %}selected{% endif %}>{{ d }}%</option>
+                {% endfor %}
+              </select>
+            </td>
+            <td><div class="row-celkem" id="celkem_{{ p.id }}">{{ '{:,.0f}'.format(p.celkem_bez_dph).replace(',','\u00a0') }}</div></td>
+            <td class="action-bar"><button class="btn-del" onclick="smazatPolozku({{ p.id }}, this)">✕</button></td>
           </tr>
           {% endfor %}
         </tbody>
       </table>
-      <button type="button" class="btn-add-row card-actions-bar" onclick="addRow()">+ Přidat položku</button>
+      <button type="button" class="btn-add-row action-bar" onclick="addRow()">+ Přidat položku</button>
     </div>
   </div>
 
@@ -182,112 +213,150 @@
   <div class="celkem-box">
     <div>
       <div class="celkem-label">Celková cena bez DPH</div>
-      <div style="font-family:'Montserrat',sans-serif;font-size:12px;color:rgba(255,255,255,0.4);margin-top:2px;">Cena s DPH 21%: <span id="celkemDPH">{{ '{:,.0f}'.format(n.celkova_cena * 1.21).replace(',', ' ') }}</span> Kč</div>
+      <div style="font-family:'Montserrat',sans-serif;font-size:12px;color:rgba(255,255,255,0.4);margin-top:4px;">
+        DPH celkem: <span id="celkemDPH">0</span> Kč &nbsp;·&nbsp; S DPH: <span id="celkemSDPH">0</span> Kč
+      </div>
     </div>
-    <div style="display:flex;align-items:baseline;">
-      <div class="celkem-value" id="celkemVal">{{ '{:,.0f}'.format(n.celkova_cena).replace(',', '\u00a0') }}</div>
-      <div style="font-family:'Montserrat',sans-serif;font-size:14px;font-weight:600;opacity:0.6;margin-left:6px;">Kč</div>
+    <div style="display:flex;align-items:baseline;gap:0;">
+      <div class="celkem-value" id="celkemVal">{{ '{:,.0f}'.format(n.celkova_cena).replace(',','\u00a0') }}</div>
+      <div class="celkem-mena">Kč</div>
+    </div>
+  </div>
+
+  <!-- PRÁVNÍ NÁLEŽITOSTI (viditelné na webu i v PDF) -->
+  <div style="background:#f7f9fb;border:1px solid var(--border);border-radius:8px;padding:16px 20px;margin-bottom:1.5rem;">
+    <div style="font-family:'Montserrat',sans-serif;font-size:10px;font-weight:700;color:#8aa0b8;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:8px;">Podmínky nabídky</div>
+    <div style="font-family:'Montserrat',sans-serif;font-size:12px;color:#4A6080;line-height:1.7;">
+      Tato nabídka je platná do data uvedeného výše. Ceny jsou uvedeny bez DPH, pokud není u položky uvedeno jinak. Dodavatel si vyhrazuje právo na změnu cen v případě změny vstupních nákladů. Součástí dodávky je předávací protokol. Záruční podmínky dle OZ. Dodavatel: <strong>Commarec s.r.o.</strong>, Varšavská 715/36, 120 00 Praha 2, IČ: 09156834, DIČ: CZ09156834, zapsaná v OR vedeném MS v Praze, oddíl C, vložka 330195.
     </div>
   </div>
 
 </div>
+</div>
 
 <script>
 let dirty = false;
-let newRowCounter = 0;
+let newCounter = 0;
 const JEDNOTKY = ['ks','m','m²','m³','hod','den','paušál','set','bal'];
+const DPH_OPTS = [0,10,15,21];
 
-function markDirty() { dirty = true; }
+function markDirty(){ dirty = true; }
 
-function prepocti() {
-  let total = 0;
-  document.querySelectorAll('#polBody tr').forEach((tr, i) => {
-    const mnozstvi = parseFloat(tr.querySelector('.pol-mnozstvi')?.value) || 0;
-    const cena = parseFloat(tr.querySelector('.pol-cena')?.value) || 0;
-    const sleva = parseFloat(tr.querySelector('.pol-sleva')?.value) || 0;
-    const celkem = mnozstvi * cena * (1 - sleva/100);
-    const id = tr.dataset.id;
-    const el = document.getElementById('celkem_' + id) || tr.querySelector('.pol-celkem');
-    if (el) el.textContent = Math.round(celkem).toLocaleString('cs-CZ');
-    total += celkem;
-    tr.querySelector('.row-num').textContent = i+1;
+function fmtNum(n){ return Math.round(n).toLocaleString('cs-CZ'); }
+
+function prepocti(){
+  let totalBez=0, totalDPH=0;
+  document.querySelectorAll('#polBody tr').forEach((tr,i)=>{
+    const mnoz = parseFloat(tr.querySelector('.pol-mnozstvi')?.value)||0;
+    const cena = parseFloat(tr.querySelector('.pol-cena')?.value)||0;
+    const sleva= parseFloat(tr.querySelector('.pol-sleva')?.value)||0;
+    const dph  = parseFloat(tr.querySelector('.pol-dph')?.value)||0;
+    const bez  = mnoz*cena*(1-sleva/100);
+    const dphC = bez*dph/100;
+    const id   = tr.dataset.id;
+    const el   = document.getElementById('celkem_'+id)||tr.querySelector('.row-celkem');
+    if(el) el.textContent = fmtNum(bez);
+    totalBez+=bez; totalDPH+=dphC;
+    const num = tr.querySelector('.row-num');
+    if(num) num.textContent=i+1;
   });
-  document.getElementById('celkemVal').textContent = Math.round(total).toLocaleString('cs-CZ');
-  document.getElementById('celkemDPH').textContent = Math.round(total * 1.21).toLocaleString('cs-CZ');
+  document.getElementById('celkemVal').textContent = fmtNum(totalBez);
+  document.getElementById('celkemDPH').textContent = fmtNum(totalDPH);
+  document.getElementById('celkemSDPH').textContent = fmtNum(totalBez+totalDPH);
 }
 
-function addRow() {
-  newRowCounter--;
-  const tmpId = 'new_' + newRowCounter;
-  const tr = document.createElement('tr');
-  tr.dataset.id = tmpId;
-  tr.innerHTML = `
-    <td><div class="row-num">${document.querySelectorAll('#polBody tr').length + 1}</div></td>
+function addRow(){
+  newCounter--;
+  const tmpId='new_'+newCounter;
+  const tr=document.createElement('tr');
+  tr.dataset.id=tmpId;
+  tr.innerHTML=`
+    <td style="font-family:Montserrat,sans-serif;font-size:11px;color:#D0DAE8;font-weight:600;text-align:center;" class="row-num">${document.querySelectorAll('#polBody tr').length+1}</td>
     <td>
-      <input type="text" class="pol-input pol-nazev" placeholder="Název položky" oninput="markDirty()">
-      <input type="text" class="pol-input pol-popis" placeholder="Specifikace, poznámka..." style="margin-top:3px;font-size:12px;color:#4A6080;" oninput="markDirty()">
+      <input type="text" class="pi pol-nazev" placeholder="Název položky" oninput="markDirty()">
+      <input type="text" class="pi pol-popis" placeholder="Specifikace..." style="margin-top:3px;font-size:11px;color:#4A6080;" oninput="markDirty()">
     </td>
-    <td><input type="number" class="pol-input cislo pol-mnozstvi" value="1" min="0" step="0.01" oninput="prepocti();markDirty()"></td>
-    <td><select class="jednotka-sel pol-jednotka" onchange="markDirty()">${JEDNOTKY.map(j=>`<option>${j}</option>`).join('')}</select></td>
-    <td><input type="number" class="pol-input cislo pol-cena" value="0" min="0" step="0.01" oninput="prepocti();markDirty()"></td>
-    <td><input type="number" class="pol-input cislo pol-sleva" value="0" min="0" max="100" step="0.1" oninput="prepocti();markDirty()"></td>
-    <td><div class="pol-celkem" id="celkem_${tmpId}">0</div></td>
-    <td class="card-actions-bar"><button class="btn-del" onclick="this.closest('tr').remove();prepocti()">✕</button></td>
-  `;
+    <td><input type="number" class="pi r pol-mnozstvi" value="1" min="0" step="0.01" oninput="prepocti();markDirty()"></td>
+    <td><select class="jsel pol-jednotka" onchange="markDirty()">${JEDNOTKY.map(j=>`<option>${j}</option>`).join('')}</select></td>
+    <td><input type="number" class="pi r pol-cena" value="0" min="0" step="0.01" oninput="prepocti();markDirty()"></td>
+    <td><input type="number" class="pi r pol-sleva" value="0" min="0" max="100" step="0.1" oninput="prepocti();markDirty()"></td>
+    <td><select class="dph-sel pol-dph" onchange="prepocti();markDirty()">${DPH_OPTS.map(d=>`<option value="${d}">${d}%</option>`).join('')}</select></td>
+    <td><div class="row-celkem" id="celkem_${tmpId}">0</div></td>
+    <td class="action-bar"><button class="btn-del" onclick="this.closest('tr').remove();prepocti()">✕</button></td>`;
   document.getElementById('polBody').appendChild(tr);
   tr.querySelector('.pol-nazev').focus();
   markDirty();
 }
 
-async function smazatPolozku(id, btn) {
-  if (!confirm('Smazat položku?')) return;
-  const tr = btn.closest('tr');
-  try {
-    await fetch(`/nabidka/{{ n.id }}/polozka/${id}/smazat`, {method:'POST'});
-  } catch(e) {}
-  tr.remove();
-  prepocti();
+async function smazatPolozku(id,btn){
+  if(!confirm('Smazat položku?')) return;
+  const tr=btn.closest('tr');
+  try{ await fetch(`/nabidka/{{ n.id }}/polozka/${id}/smazat`,{method:'POST'}); }catch(e){}
+  tr.remove(); prepocti();
 }
 
-async function ulozit() {
-  const polozky = [];
-  document.querySelectorAll('#polBody tr').forEach((tr, i) => {
-    const id = tr.dataset.id;
-    const pol = {
-      nazev: tr.querySelector('.pol-nazev')?.value || '',
-      popis: tr.querySelector('.pol-popis')?.value || '',
-      mnozstvi: parseFloat(tr.querySelector('.pol-mnozstvi')?.value) || 1,
-      jednotka: tr.querySelector('.pol-jednotka')?.value || 'ks',
-      cena_ks: parseFloat(tr.querySelector('.pol-cena')?.value) || 0,
-      sleva_pct: parseFloat(tr.querySelector('.pol-sleva')?.value) || 0,
+async function ulozit(){
+  const polozky=[];
+  document.querySelectorAll('#polBody tr').forEach((tr,i)=>{
+    const id=tr.dataset.id;
+    const pol={
+      nazev: tr.querySelector('.pol-nazev')?.value||'',
+      popis: tr.querySelector('.pol-popis')?.value||'',
+      mnozstvi: parseFloat(tr.querySelector('.pol-mnozstvi')?.value)||1,
+      jednotka: tr.querySelector('.pol-jednotka')?.value||'ks',
+      cena_ks: parseFloat(tr.querySelector('.pol-cena')?.value)||0,
+      sleva_pct: parseFloat(tr.querySelector('.pol-sleva')?.value)||0,
+      dph_pct: parseFloat(tr.querySelector('.pol-dph')?.value)||0,
       poradi: i,
     };
-    if (!id.startsWith('new_')) pol.id = parseInt(id);
-    if (pol.nazev.trim()) polozky.push(pol);
+    if(!id.startsWith('new_')) pol.id=parseInt(id);
+    if(pol.nazev.trim()) polozky.push(pol);
   });
-
-  const r = await fetch('/nabidka/{{ n.id }}/ulozit', {
-    method: 'POST',
-    headers: {'Content-Type':'application/json'},
-    body: JSON.stringify({polozky}),
+  const r=await fetch('/nabidka/{{ n.id }}/ulozit',{
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({polozky}),
   });
-  const data = await r.json();
-  if (data.ok) {
-    dirty = false;
-    const ind = document.getElementById('saveInd');
+  const data=await r.json();
+  if(data.ok){
+    dirty=false;
+    const ind=document.getElementById('saveInd');
     ind.classList.add('show');
-    setTimeout(() => ind.classList.remove('show'), 2500);
-    // Reload pro aktualizaci ID nových položek
-    setTimeout(() => location.reload(), 800);
+    setTimeout(()=>ind.classList.remove('show'),2500);
+    setTimeout(()=>location.reload(),600);
   }
 }
 
-// Auto-save každých 30s pokud jsou změny
-setInterval(() => { if (dirty) ulozit(); }, 30000);
+function stahnoutPDF(){
+  const el=document.getElementById('nabidka-pdf-wrap');
+  // Ukaž pdf-header
+  document.querySelector('.pdf-header').style.display='block';
+  // Skryj action-bar elementy
+  document.querySelectorAll('.action-bar,.btn-del,.btn-add-row').forEach(e=>e.style.display='none');
+  
+  const opt={
+    margin:[12,12,15,12],
+    filename:'{{ n.cislo }}-{{ n.nazev|replace(" ","-")|lower }}.pdf',
+    image:{type:'jpeg',quality:0.95},
+    html2canvas:{scale:2,useCORS:true},
+    jsPDF:{unit:'mm',format:'a4',orientation:'portrait'},
+    pagebreak:{mode:['avoid-all','css','legacy']},
+  };
+  html2pdf().set(opt).from(el).save().then(()=>{
+    document.querySelector('.pdf-header').style.display='none';
+    document.querySelectorAll('.action-bar,.btn-del,.btn-add-row').forEach(e=>e.style.display='');
+  });
+}
 
-// Varování při odchodu
-window.onbeforeunload = () => dirty ? 'Máte neuložené změny.' : null;
+// Zavři stav menu kliknutím mimo
+document.addEventListener('click',e=>{
+  if(!e.target.closest('#stavBtn') && !e.target.closest('#stavMenu')){
+    document.getElementById('stavMenu')?.classList.remove('open');
+  }
+});
 
+setInterval(()=>{ if(dirty) ulozit(); },30000);
+window.onbeforeunload=()=>dirty?'Máte neuložené změny.':null;
 prepocti();
 </script>
 {% endblock %}

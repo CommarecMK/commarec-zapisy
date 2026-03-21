@@ -28,8 +28,22 @@
         </div>
       </div>
       <div class="form-group">
-        <label>Adresa</label>
+        <label>Adresa provozní</label>
         <input type="text" name="adresa" value="{{ klient.adresa if klient else '' }}" placeholder="Ulice, Město">
+      </div>
+      <div class="form-group">
+        <label>Adresa sídla (fakturační)</label>
+        <input type="text" name="sidlo" value="{{ klient.sidlo if klient else '' }}" placeholder="Fakturační adresa sídla">
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:1rem;">
+        <div>
+          <label style="font-family:'Montserrat',sans-serif;font-size:11px;font-weight:700;color:#4A6080;text-transform:uppercase;letter-spacing:0.08em;display:block;margin-bottom:4px;">IČ</label>
+          <input type="text" name="ic" value="{{ klient.ic if klient else '' }}" placeholder="12345678" style="width:100%;padding:8px 10px;border:1.5px solid var(--border);border-radius:5px;font-size:13px;font-family:'Montserrat',sans-serif;box-sizing:border-box;">
+        </div>
+        <div>
+          <label style="font-family:'Montserrat',sans-serif;font-size:11px;font-weight:700;color:#4A6080;text-transform:uppercase;letter-spacing:0.08em;display:block;margin-bottom:4px;">DIČ</label>
+          <input type="text" name="dic" value="{{ klient.dic if klient else '' }}" placeholder="CZ12345678" style="width:100%;padding:8px 10px;border:1.5px solid var(--border);border-radius:5px;font-size:13px;font-family:'Montserrat',sans-serif;box-sizing:border-box;">
+        </div>
       </div>
 
       <!-- LOGO KLIENTA -->
