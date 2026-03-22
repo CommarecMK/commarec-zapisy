@@ -181,7 +181,7 @@
       <tr id="tpanel-{{ key }}" style="display:none;">
         <td colspan="3" style="padding:0;">
           <div class="tmpl-panel open">
-            <form method="POST" action="{{ url_for('ulozit_template', template_key=key) }}">
+            <form method="POST" action="{{ url_for('admin_template_save', template_key=key) }}">
               <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:#4A6080;margin-bottom:6px;">
                 Sekce: {% for s in sections %}<span style="font-size:10px;font-weight:700;padding:2px 6px;border-radius:3px;background:#f0f3f7;color:#4A6080;border:1px solid var(--border);margin-right:3px;">{{ sec_labels.get(s,s) }}</span>{% endfor %}
               </div>
@@ -190,7 +190,7 @@
                 <button type="submit" class="tmpl-save-btn">Uložit prompt</button>
                 {% if current_prompt %}
                 <button type="button" class="tmpl-reset-btn"
-                  onclick="if(confirm('Obnovit výchozí prompt?'))fetch('{{ url_for('reset_template',template_key=key) }}',{method:'POST'}).then(()=>location.reload())">
+                  onclick="if(confirm('Obnovit výchozí prompt?'))fetch('{{ url_for('admin_template_reset', template_key=key) }}',{method:'POST'}).then(()=>location.reload())">
                   Obnovit výchozí
                 </button>
                 {% endif %}

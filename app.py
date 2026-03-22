@@ -2913,10 +2913,8 @@ def upravit_uzivatele(user_id):
     return redirect(url_for("admin"))
 
 @app.route("/admin/templates", methods=["GET"])
-@login_required
+@admin_required
 def admin_templates():
-    if not session.get("is_admin"):
-        return redirect(url_for("dashboard"))
     configs = {}
     for key in TEMPLATE_PROMPTS:
         cfg = TemplateConfig.query.filter_by(template_key=key).first()
@@ -2927,12 +2925,10 @@ def admin_templates():
 
 
 @app.route("/admin/templates/<template_key>", methods=["POST"])
-@login_required
+@admin_required
 def admin_template_save(template_key):
-    if not session.get("is_admin"):
-        return jsonify({"error": "Unauthorized"}), 403
     if template_key not in TEMPLATE_PROMPTS:
-        return jsonify({"error": "Neznámá šablona"}), 404
+        return redirect(url_for("admin"))
     prompt = request.form.get("system_prompt", "").strip()
     cfg = TemplateConfig.query.filter_by(template_key=template_key).first()
     if not cfg:
@@ -2943,14 +2939,13 @@ def admin_template_save(template_key):
         db.session.add(cfg)
     cfg.system_prompt = prompt
     db.session.commit()
-    return jsonify({"ok": True, "msg": "Šablona uložena"})
+    session["admin_flash"] = f"Šablona '{TEMPLATE_NAMES.get(template_key, template_key)}' uložena."
+    return redirect(url_for("admin"))
 
 
 @app.route("/admin/templates/<template_key>/reset", methods=["POST"])
-@login_required
+@admin_required
 def admin_template_reset(template_key):
-    if not session.get("is_admin"):
-        return jsonify({"error": "Unauthorized"}), 403
     cfg = TemplateConfig.query.filter_by(template_key=template_key).first()
     if cfg:
         cfg.system_prompt = ""
