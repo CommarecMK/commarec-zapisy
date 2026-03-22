@@ -1654,9 +1654,28 @@ def detail_zapisu(zapis_id):
         summary = {}
     # Sanitizuj hodnoty — oprav JSON arrays (["x","y"]) → HTML text
     summary = sanitize_summary(summary)
+
+    # Tasklist klienta — pokud je nastaven, zápis ho použije automaticky (bez dropdownu)
+    klient_tasklist_id = None
+    klient_tasklist_name = None
+    klient_project_name = None
+    if zapis.klient and zapis.klient.freelo_tasklist_id:
+        klient_tasklist_id = zapis.klient.freelo_tasklist_id
+        # Pokus se načíst název tasklist z Freelo
+        try:
+            r = freelo_get(f"/tasklist/{klient_tasklist_id}")
+            if r.status_code == 200:
+                d = r.json()
+                klient_tasklist_name = d.get("name", str(klient_tasklist_id))
+        except Exception:
+            klient_tasklist_name = str(klient_tasklist_id)
+
     return render_template("detail.html", zapis=zapis, tasks=tasks, notes=notes,
                            summary=summary, section_titles=SECTION_TITLES,
-                           template_names=TEMPLATE_NAMES)
+                           template_names=TEMPLATE_NAMES,
+                           klient_tasklist_id=klient_tasklist_id,
+                           klient_tasklist_name=klient_tasklist_name,
+                           klient_project_name=klient_project_name)
 
 @app.route("/zapis/verejny/<token>")
 def zapis_verejny(token):

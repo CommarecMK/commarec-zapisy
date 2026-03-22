@@ -223,6 +223,34 @@
 }
 .fl-edit-textarea:focus { outline: none; border-color: var(--cyan); }
 
+/* Rich text editor */
+.fl-rte-wrap { border: 1.5px solid var(--border); border-radius: 4px; overflow: hidden; background: white; }
+.fl-rte-wrap:focus-within { border-color: var(--cyan); }
+.fl-rte-toolbar {
+  display: flex; gap: 2px; padding: 4px 6px;
+  background: #f0f3f7; border-bottom: 1px solid var(--border);
+  flex-wrap: wrap;
+}
+.fl-rte-btn {
+  padding: 3px 7px; border: 1px solid transparent; border-radius: 3px;
+  font-size: 12px; font-family: var(--font-body); cursor: pointer;
+  background: none; color: var(--navy); line-height: 1.4;
+  transition: all 0.1s;
+}
+.fl-rte-btn:hover { background: white; border-color: var(--border); }
+.fl-rte-btn.active { background: var(--navy); color: white; }
+.fl-rte-sep { width: 1px; background: var(--border); margin: 2px 3px; }
+.fl-rte-editor {
+  min-height: 70px; max-height: 200px; overflow-y: auto;
+  padding: 7px 10px; font-size: 12px; font-family: var(--font-body);
+  line-height: 1.6; color: var(--text); outline: none;
+}
+.fl-rte-editor p { margin: 0 0 4px; }
+.fl-rte-editor ul, .fl-rte-editor ol { padding-left: 1.4em; margin: 4px 0; }
+.fl-rte-editor li { margin-bottom: 2px; }
+.fl-rte-editor strong { font-weight: 700; }
+.fl-rte-editor em { font-style: italic; }
+
 /* Komentáře */
 .fl-comments { padding: 0 12px 12px; display: none; }
 .fl-comments.open { display: block; }
@@ -1025,7 +1053,16 @@ function flTaskHTML(t, indent) {
 
     <div class="fl-task-edit" id="fledit-${t.id}">
       <input class="fl-edit-input" id="flname-${t.id}" value="${flEsc(t.name)}" placeholder="Název" style="margin-bottom:6px;width:100%;">
-      <textarea class="fl-edit-textarea" id="fldesc-${t.id}" placeholder="Popis úkolu">${flEsc(t.description || '')}</textarea>
+      <div class="fl-rte-wrap" style="margin-bottom:6px;">
+        <div class="fl-rte-toolbar">
+          <button class="fl-rte-btn" onmousedown="event.preventDefault();document.execCommand('bold')" title="Tučné"><strong>B</strong></button>
+          <button class="fl-rte-btn" onmousedown="event.preventDefault();document.execCommand('italic')" title="Kurzíva"><em>I</em></button>
+          <div class="fl-rte-sep"></div>
+          <button class="fl-rte-btn" onmousedown="event.preventDefault();document.execCommand('insertUnorderedList')" title="Seznam •">≡</button>
+          <button class="fl-rte-btn" onmousedown="event.preventDefault();document.execCommand('insertOrderedList')" title="Číslování">1.</button>
+        </div>
+        <div class="fl-rte-editor" id="fldesc-${t.id}" contenteditable="true">${t.description || ''}</div>
+      </div>
       <div class="fl-edit-row" style="margin-top:6px;">
         <input class="fl-edit-input" id="fldate-${t.id}" type="date" value="${(t.deadline||'').slice(0,10)}" title="Deadline">
         <div class="asgn-wrap">
@@ -1105,18 +1142,18 @@ async function flToggleEdit(taskId) {
   // Lazy načtení description pokud ještě není
   const descEl = document.getElementById(`fldesc-${taskId}`);
   if (descEl && !descEl.dataset.loaded) {
-    descEl.placeholder = 'Načítám popis…';
+    descEl.textContent = 'Načítám popis…';
     try {
       const d = await fetch(`/api/freelo/task/${taskId}/detail`).then(r => r.json());
       if (d.ok) {
-        descEl.value = d.description || '';
-        // Aktualizuj i v cache
+        // contenteditable div — použij innerHTML pro HTML formátování
+        descEl.innerHTML = d.description || '';
         const task = flAllTasks.find(t => t.id === taskId);
         if (task) task.description = d.description || '';
       }
     } catch(e) {}
     descEl.dataset.loaded = '1';
-    descEl.placeholder = 'Popis úkolu';
+    if (!descEl.innerHTML.trim()) descEl.innerHTML = '';
   }
 }
 
@@ -1126,7 +1163,7 @@ async function flUlozitEdit(taskId) {
   const dateEl   = document.getElementById(`fldate-${taskId}`);
   const workerEl = document.getElementById(`flworker-input-${taskId}`);
   const name     = nameEl?.value.trim() || '';
-  const desc     = descEl?.value || '';
+  const desc     = descEl?.innerHTML || '';
   const deadline = dateEl?.value || '';
   const assignee = workerEl?.value.trim() || '';
   if (!name) { toast('Název je povinný', false); return; }
