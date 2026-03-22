@@ -612,9 +612,13 @@
               <input id="fl-new-name" class="fl-edit-input" placeholder="Název úkolu *" style="margin-bottom:8px;width:100%;">
               <div class="fl-new-row">
                 <input id="fl-new-deadline" class="fl-edit-input" type="date">
-                <input id="fl-new-desc" class="fl-edit-input" placeholder="Popis (volitelný)">
+                <div class="asgn-wrap" style="position:relative;">
+                  <input id="fl-new-assignee" class="fl-edit-input" placeholder="Zodpovědná osoba" autocomplete="off" onfocus="openAD(this)" oninput="filterAD(this)" style="cursor:pointer;">
+                  <div class="asgn-dd"></div>
+                </div>
               </div>
-              <div style="display:flex;gap:6px;">
+              <input id="fl-new-desc" class="fl-edit-input" placeholder="Popis (volitelný)" style="margin-top:6px;width:100%;">
+              <div style="display:flex;gap:6px;margin-top:8px;">
                 <button onclick="flPridatUkol()" class="btn btn-navy btn-sm">Přidat do Freela</button>
                 <button onclick="flNovyUkolToggle()" class="btn btn-secondary btn-sm">Zrušit</button>
               </div>
@@ -1285,25 +1289,26 @@ function flNovyUkolToggle() {
 }
 
 async function flPridatUkol() {
-  const name = document.getElementById('fl-new-name').value.trim();
+  const name     = document.getElementById('fl-new-name').value.trim();
   const deadline = document.getElementById('fl-new-deadline').value;
-  const desc = document.getElementById('fl-new-desc').value.trim();
+  const desc     = document.getElementById('fl-new-desc').value.trim();
+  const assignee = document.getElementById('fl-new-assignee').value.trim();
   if (!name) { toast('Název je povinný', false); return; }
   const btn = document.querySelector('#fl-new-task-form .btn-navy');
   btn.disabled = true; btn.textContent = 'Přidávám…';
   try {
     const d = await fetch(`/api/klient/${FL_KLIENT_ID}/freelo-pridat-ukol`, {
       method: 'POST', headers: {'Content-Type':'application/json'},
-      body: JSON.stringify({name, deadline, description: desc})
+      body: JSON.stringify({name, deadline, description: desc, assignee})
     }).then(r => r.json());
     if (d.ok) {
       flAllTasks.unshift(d.task);
       document.getElementById('fl-new-name').value = '';
       document.getElementById('fl-new-deadline').value = '';
       document.getElementById('fl-new-desc').value = '';
+      document.getElementById('fl-new-assignee').value = '';
       flNovyUkolToggle();
       flRenderTasks();
-      // Aktualizuj badge
       const openCount = flAllTasks.filter(t => t.state === 'open').length;
       const badge = document.getElementById('fl-count-badge');
       badge.textContent = `${openCount} otevřených`;

@@ -2167,6 +2167,7 @@ def api_klient_freelo_pridat_ukol(klient_id):
     if not name:
         return jsonify({"error": "Název je povinný"}), 400
     try:
+        # Najdi project_id podle tasklist_id
         resp_p = freelo_get("/projects")
         project_id = str(FREELO_PROJECT_ID)
         if resp_p.status_code == 200:
@@ -2179,23 +2180,50 @@ def api_klient_freelo_pridat_ukol(klient_id):
                     if tl.get("id") == k.freelo_tasklist_id:
                         project_id = str(p.get("id"))
                         break
+
+        # Resolve assignee jméno → worker_id (stejně jako odeslat_do_freela)
+        worker_id = None
+        assignee_name = (data.get("assignee") or "").strip()
+        if assignee_name:
+            try:
+                mr = freelo_get(f"/project/{project_id}/workers")
+                if mr.status_code == 200:
+                    for w in mr.json().get("data", {}).get("workers", []):
+                        if w.get("fullname", "").lower() == assignee_name.lower():
+                            worker_id = w["id"]
+                            break
+            except Exception:
+                pass
+
         payload = {"name": name}
-        if data.get("description"):
-            payload["description"] = data["description"]
+        if worker_id:
+            payload["worker_id"] = worker_id
         if data.get("deadline"):
-            payload["deadline"] = data["deadline"]
+            payload["due_date"] = data["deadline"]
+
         resp = freelo_post(f"/project/{project_id}/tasklist/{k.freelo_tasklist_id}/tasks", payload)
         if resp.status_code in (200, 201):
-            task = resp.json().get("data", resp.json())
+            task_data = resp.json()
+            task = task_data.get("data", task_data)
+            task_id = task.get("id")
+
+            # Přidej popis zvlášť (Freelo ho ignoruje při vytvoření)
+            desc = (data.get("description") or "").strip()
+            if task_id and desc:
+                freelo_post(f"/task/{task_id}/description", {"content": f"<div>{desc}</div>"})
+
             return jsonify({"ok": True, "task": {
-                "id": task.get("id"),
+                "id": task_id,
                 "name": name,
                 "state": "open",
                 "deadline": data.get("deadline", ""),
-                "assignee": "",
+                "assignee": assignee_name,
+                "assignee_id": worker_id,
                 "comments_count": 0,
-                "description": data.get("description", ""),
-                "url": f"https://app.freelo.io/task/{task.get('id')}",
+                "description": desc,
+                "url": f"https://app.freelo.io/task/{task_id}",
+                "project_id": int(project_id) if project_id else None,
+                "tasklist_id": k.freelo_tasklist_id,
             }})
         return jsonify({"error": f"Freelo {resp.status_code}: {resp.text[:300]}"}), 400
     except Exception as e:
