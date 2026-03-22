@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{% if klient %}{{ klient.nazev }} — {% endif %}Klientský portál</title>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --navy: #173767; --navy-dark: #0E213E;
+  --cyan: #00AFF0; --green: #34C759; --orange: #FF8D00;
+  --danger: #FF383C; --muted: #4A6080; --border: #D0DAE8;
+  --bg: #f0f3f7; --text: #1a2533;
+  --font: 'Montserrat', sans-serif;
+}
+body { font-family: var(--font); background: var(--bg); color: var(--text); font-size: 14px; line-height: 1.6; }
+
+/* NAV */
+.portal-nav {
+  background: linear-gradient(135deg, var(--navy) 0%, var(--navy-dark) 100%);
+  padding: 0 2rem; display: flex; align-items: center; justify-content: space-between;
+  height: 56px; position: sticky; top: 0; z-index: 100;
+}
+.portal-nav-logo { display: flex; align-items: center; gap: 10px; }
+.portal-nav-logo img { height: 22px; }
+.portal-nav-label { font-size: 10px; font-weight: 700; color: rgba(255,255,255,0.4); text-transform: uppercase; letter-spacing: 0.1em; }
+.portal-nav-right { display: flex; align-items: center; gap: 16px; }
+.portal-nav-user { font-size: 12px; color: rgba(255,255,255,0.6); font-weight: 600; }
+.portal-logout { font-size: 11px; font-weight: 700; color: rgba(255,255,255,0.5); text-decoration: none; text-transform: uppercase; letter-spacing: 0.06em; padding: 5px 10px; border: 1px solid rgba(255,255,255,0.15); border-radius: 4px; transition: all 0.15s; }
+.portal-logout:hover { color: white; border-color: rgba(255,255,255,0.4); }
+
+/* HERO */
+.portal-hero {
+  background: linear-gradient(135deg, var(--navy) 0%, #254f8a 100%);
+  padding: 2.5rem 2rem 2rem; color: white;
+}
+.portal-hero-inner { max-width: 900px; margin: 0 auto; }
+.portal-klient-name { font-size: 28px; font-weight: 900; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 4px; }
+.portal-klient-sub { font-size: 13px; color: rgba(255,255,255,0.5); }
+
+/* MAIN */
+.portal-main { max-width: 900px; margin: 0 auto; padding: 1.5rem 2rem 4rem; }
+
+/* TABS */
+.portal-tabs { display: flex; gap: 4px; margin-bottom: 1.5rem; border-bottom: 2px solid var(--border); padding-bottom: 0; }
+.portal-tab { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; padding: 8px 18px; border: none; background: none; color: var(--muted); cursor: pointer; border-bottom: 3px solid transparent; margin-bottom: -2px; font-family: var(--font); transition: all 0.15s; }
+.portal-tab.active { color: var(--navy); border-bottom-color: var(--cyan); }
+.portal-tab:hover:not(.active) { color: var(--navy); }
+.portal-section { display: none; }
+.portal-section.active { display: block; }
+
+/* CARDS */
+.p-card { background: white; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; margin-bottom: 12px; transition: box-shadow 0.15s; }
+.p-card:hover { box-shadow: 0 2px 12px rgba(23,55,103,0.08); }
+.p-card-head { padding: 14px 18px; display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+.p-card-body { padding: 0 18px 16px; font-size: 13px; color: var(--muted); border-top: 1px solid var(--border); padding-top: 12px; }
+.p-card-title { font-size: 14px; font-weight: 700; color: var(--navy); margin-bottom: 4px; }
+.p-card-meta { font-size: 11px; color: var(--muted); display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+
+/* BADGES */
+.badge { display: inline-block; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; padding: 2px 8px; border-radius: 3px; }
+.badge-audit { background: rgba(0,175,240,0.1); color: #0085B8; }
+.badge-operativa { background: rgba(52,199,89,0.1); color: #0A7A5A; }
+.badge-obchod { background: rgba(255,141,0,0.1); color: #C06A00; }
+.badge-draft { background: var(--bg); color: var(--muted); border: 1px solid var(--border); }
+.badge-odeslana { background: rgba(0,175,240,0.1); color: #0085B8; }
+.badge-prijata { background: rgba(52,199,89,0.12); color: #0A7A5A; }
+
+/* ÚKOLY */
+.ukol-row { display: flex; align-items: center; gap: 10px; padding: 10px 0; border-bottom: 1px solid var(--border); }
+.ukol-row:last-child { border-bottom: none; }
+.ukol-check { width: 18px; height: 18px; border-radius: 50%; border: 2px solid var(--border); flex-shrink: 0; display: flex; align-items: center; justify-content: center; }
+.ukol-check.done { background: var(--green); border-color: var(--green); color: white; font-size: 10px; font-weight: 700; }
+.ukol-name { flex: 1; font-size: 13px; font-weight: 600; color: var(--navy); }
+.ukol-name.done { text-decoration: line-through; color: var(--muted); font-weight: 500; }
+.ukol-assignee { font-size: 11px; color: var(--muted); }
+.ukol-date { font-size: 11px; color: var(--muted); white-space: nowrap; }
+
+/* EMPTY */
+.p-empty { text-align: center; padding: 3rem 1rem; color: var(--muted); font-size: 13px; }
+.p-empty-icon { font-size: 36px; margin-bottom: 12px; }
+
+/* STAT CARDS */
+.portal-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 1.5rem; }
+.p-stat { background: white; border: 1px solid var(--border); border-radius: 8px; padding: 16px 20px; }
+.p-stat-num { font-size: 28px; font-weight: 900; color: var(--navy); font-family: var(--font); line-height: 1; }
+.p-stat-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); margin-top: 4px; }
+
+/* NABÍDKA BUTTON */
+.btn-portal { display: inline-block; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; padding: 6px 14px; border-radius: 4px; text-decoration: none; font-family: var(--font); border: 1.5px solid var(--border); color: var(--muted); background: white; cursor: pointer; transition: all 0.15s; white-space: nowrap; }
+.btn-portal:hover { border-color: var(--navy); color: var(--navy); }
+
+@media (max-width: 600px) {
+  .portal-stats { grid-template-columns: 1fr 1fr; }
+  .portal-main { padding: 1rem 1rem 3rem; }
+  .portal-hero { padding: 1.5rem 1rem 1rem; }
+  .portal-klient-name { font-size: 22px; }
+}
+</style>
+</head>
+<body>
+
+<nav class="portal-nav">
+  <div class="portal-nav-logo">
+    <img src="/static/logo-white.svg" alt="Commarec">
+    <div class="portal-nav-label">Klientský portál</div>
+  </div>
+  <div class="portal-nav-right">
+    <span class="portal-nav-user">{{ session.user_name }}</span>
+    <a href="{{ url_for('logout') }}" class="portal-logout">Odhlásit</a>
+  </div>
+</nav>
+
+{% if not klient %}
+<div class="portal-main">
+  <div class="p-empty">
+    <div class="p-empty-icon">🔗</div>
+    <div>Váš účet zatím není propojen s žádným klientem.<br>Kontaktujte správce systému.</div>
+  </div>
+</div>
+{% else %}
+
+<div class="portal-hero">
+  <div class="portal-hero-inner">
+    <div class="portal-klient-name">{{ klient.nazev }}</div>
+    <div class="portal-klient-sub">
+      {% if klient.kontakt %}{{ klient.kontakt }}{% endif %}
+      {% if klient.email %} · {{ klient.email }}{% endif %}
+    </div>
+  </div>
+</div>
+
+<div class="portal-main">
+
+  <!-- Statistiky -->
+  <div class="portal-stats">
+    <div class="p-stat">
+      <div class="p-stat-num">{{ zapisy|length }}</div>
+      <div class="p-stat-label">Zápisů ze schůzek</div>
+    </div>
+    <div class="p-stat">
+      <div class="p-stat-num">{{ nabidky|length }}</div>
+      <div class="p-stat-label">Nabídek</div>
+    </div>
+    <div class="p-stat">
+      <div class="p-stat-num">{{ ukoly|selectattr('state','eq','open')|list|length }}</div>
+      <div class="p-stat-label">Otevřených úkolů</div>
+    </div>
+  </div>
+
+  <!-- Tabs -->
+  <div class="portal-tabs">
+    <button class="portal-tab active" onclick="showTab('zapisy', this)">📋 Zápisy</button>
+    <button class="portal-tab" onclick="showTab('nabidky', this)">📄 Nabídky</button>
+    <button class="portal-tab" onclick="showTab('ukoly', this)">✅ Úkoly</button>
+  </div>
+
+  <!-- ZÁPISY -->
+  <div id="tab-zapisy" class="portal-section active">
+    {% if zapisy %}
+      {% for z in zapisy %}
+      <div class="p-card">
+        <div class="p-card-head">
+          <div>
+            <div class="p-card-title">{{ z.title }}</div>
+            <div class="p-card-meta">
+              <span class="badge badge-{{ z.template }}">{{ {'audit':'Audit','operativa':'Operativa','obchod':'Obchod'}.get(z.template, z.template) }}</span>
+              <span>{{ z.created_at.strftime('%d. %m. %Y') }}</span>
+              {% if z.projekt %}<span>{{ z.projekt.nazev }}</span>{% endif %}
+            </div>
+          </div>
+          {% if z.is_public and z.public_token %}
+          <a href="{{ url_for('zapis_verejny', token=z.public_token) }}" target="_blank" class="btn-portal">Otevřít →</a>
+          {% endif %}
+        </div>
+        {% if z.output_json and z.output_json != '{}' %}
+        {% set s = z.output_json | fromjson %}
+        {% if s.get('summary') %}
+        <div class="p-card-body">{{ s.get('summary','') | safe | truncate(300) }}</div>
+        {% endif %}
+        {% endif %}
+      </div>
+      {% endfor %}
+    {% else %}
+      <div class="p-empty"><div class="p-empty-icon">📋</div><div>Zatím žádné zápisy.</div></div>
+    {% endif %}
+  </div>
+
+  <!-- NABÍDKY -->
+  <div id="tab-nabidky" class="portal-section">
+    {% if nabidky %}
+      {% for n in nabidky %}
+      <div class="p-card">
+        <div class="p-card-head">
+          <div>
+            <div class="p-card-title">{{ n.nazev }}</div>
+            <div class="p-card-meta">
+              <span class="badge badge-{{ n.stav }}">{{ n.stav }}</span>
+              <span>{{ n.cislo }}</span>
+              <span>{{ n.created_at.strftime('%d. %m. %Y') }}</span>
+              {% if n.platnost_do %}<span>Platnost do: {{ n.platnost_do.strftime('%d. %m. %Y') }}</span>{% endif %}
+            </div>
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    {% else %}
+      <div class="p-empty"><div class="p-empty-icon">📄</div><div>Zatím žádné nabídky.</div></div>
+    {% endif %}
+  </div>
+
+  <!-- ÚKOLY -->
+  <div id="tab-ukoly" class="portal-section">
+    {% if ukoly %}
+    <div class="p-card">
+      <div style="padding: 16px 18px;">
+        {% set open_ukoly = ukoly | selectattr('state','eq','open') | list %}
+        {% set done_ukoly = ukoly | selectattr('state','eq','done') | list %}
+
+        {% if open_ukoly %}
+        <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted);margin-bottom:8px;">Otevřené ({{ open_ukoly|length }})</div>
+        {% for u in open_ukoly %}
+        <div class="ukol-row">
+          <div class="ukol-check"></div>
+          <div class="ukol-name">{{ u.name }}</div>
+          {% if u.assignee %}<div class="ukol-assignee">👤 {{ u.assignee }}</div>{% endif %}
+          {% if u.deadline %}<div class="ukol-date">📅 {{ u.deadline }}</div>{% endif %}
+        </div>
+        {% endfor %}
+        {% endif %}
+
+        {% if done_ukoly %}
+        <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted);margin:16px 0 8px;">Splněné ({{ done_ukoly|length }})</div>
+        {% for u in done_ukoly %}
+        <div class="ukol-row">
+          <div class="ukol-check done">✓</div>
+          <div class="ukol-name done">{{ u.name }}</div>
+          {% if u.assignee %}<div class="ukol-assignee">{{ u.assignee }}</div>{% endif %}
+        </div>
+        {% endfor %}
+        {% endif %}
+      </div>
+    </div>
+    {% else %}
+      <div class="p-empty"><div class="p-empty-icon">✅</div><div>Žádné úkoly.</div></div>
+    {% endif %}
+  </div>
+
+</div>
+{% endif %}
+
+<script>
+function showTab(name, btn) {
+  document.querySelectorAll('.portal-section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.portal-tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('tab-' + name).classList.add('active');
+  btn.classList.add('active');
+}
+</script>
+</body>
+</html>

@@ -96,9 +96,13 @@ class User(db.Model):
     password_hash = db.Column(db.String(256), nullable=False)
     is_admin      = db.Column(db.Boolean, default=False)
     is_active     = db.Column(db.Boolean, default=True)
-    role          = db.Column(db.String(40), default="konzultant")  # superadmin | admin | konzultant
+    # Role: superadmin | admin | konzultant | obchodnik | junior | klient
+    role          = db.Column(db.String(40), default="konzultant")
+    # Pro roli "klient" — propojení s klientem v DB
+    klient_id     = db.Column(db.Integer, db.ForeignKey("klient.id"), nullable=True)
     created_at    = db.Column(db.DateTime, default=datetime.utcnow)
     zapisy        = db.relationship("Zapis", backref="author", lazy=True, foreign_keys="Zapis.user_id")
+    klient_vazba  = db.relationship("Klient", foreign_keys=[klient_id], lazy="joined")
 
 class Zapis(db.Model):
     id              = db.Column(db.Integer, primary_key=True)
@@ -645,19 +649,91 @@ def login_required(f):
     def decorated(*args, **kwargs):
         if "user_id" not in session:
             return redirect(url_for("login"))
+        # Klient má vlastní portál
+        if session.get("user_role") == "klient":
+            return redirect(url_for("klient_portal"))
         return f(*args, **kwargs)
     return decorated
 
 def admin_required(f):
+    """Pouze superadmin."""
     @wraps(f)
     def decorated(*args, **kwargs):
         if "user_id" not in session:
             return redirect(url_for("login"))
         user = User.query.get(session["user_id"])
-        if not user or not user.is_admin:
-            return redirect(url_for("dashboard"))
+        if not user or user.role != "superadmin":
+            return abort(403)
         return f(*args, **kwargs)
     return decorated
+
+def role_required(*roles):
+    """Povolí přístup jen uživatelům s jednou z uvedených rolí."""
+    def decorator(f):
+        @wraps(f)
+        def decorated(*args, **kwargs):
+            if "user_id" not in session:
+                return redirect(url_for("login"))
+            user = User.query.get(session["user_id"])
+            if not user or user.role not in roles:
+                return abort(403)
+            return f(*args, **kwargs)
+        return decorated
+    return decorator
+
+def get_current_user():
+    """Vrátí aktuálně přihlášeného uživatele nebo None."""
+    uid = session.get("user_id")
+    if not uid:
+        return None
+    return User.query.get(uid)
+
+# ─────────────────────────────────────────────
+# OPRÁVNĚNÍ — co smí která role
+# ─────────────────────────────────────────────
+ROLE_PERMISSIONS = {
+    # superadmin: vše (kontroluje se zvlášť)
+    "admin": {
+        "edit_zapis_any", "delete_zapis", "manage_klient", "freelo_setup",
+        "nabidky", "nabidky_any", "send_freelo", "view_all",
+        "create_zapis", "edit_zapis_own",
+    },
+    "konzultant": {
+        "create_zapis", "edit_zapis_own", "send_freelo", "view_all",
+    },
+    "obchodnik": {
+        "nabidky", "nabidky_any", "view_all",
+    },
+    "junior": {
+        "create_zapis", "edit_zapis_own", "view_assigned",
+    },
+    "klient": {
+        "portal_only",
+    },
+}
+
+def can(action, obj=None):
+    """Kontrola zda má aktuální uživatel dané oprávnění."""
+    u = get_current_user()
+    if not u:
+        return False
+    if u.role == "superadmin":
+        return True
+    perms = ROLE_PERMISSIONS.get(u.role, set())
+    if action in perms:
+        # edit_zapis_own — jen vlastní zápis
+        if action == "edit_zapis_own" and obj and hasattr(obj, "user_id"):
+            return obj.user_id == u.id
+        return True
+    # edit_zapis — obecná kontrola (any nebo own)
+    if action == "edit_zapis":
+        if "edit_zapis_any" in perms:
+            return True
+        if "edit_zapis_own" in perms:
+            if obj and hasattr(obj, "user_id"):
+                return obj.user_id == u.id
+            return True
+    return False
 
 # ─────────────────────────────────────────────
 # ROUTES — AUTH
@@ -2798,28 +2874,27 @@ def admin():
 @app.route("/admin/pridat-uzivatele", methods=["POST"])
 @admin_required
 def pridat_uzivatele():
-    email    = request.form.get("email","").strip().lower()
-    name     = request.form.get("name","").strip()
-    is_admin = bool(request.form.get("is_admin"))
-    role     = request.form.get("role","konzultant")
+    email     = request.form.get("email","").strip().lower()
+    name      = request.form.get("name","").strip()
+    role      = request.form.get("role","konzultant")
+    klient_id = request.form.get("klient_id", type=int) or None
+    is_admin  = role in ("superadmin", "admin")
     if not email or not name:
         return redirect(url_for("admin"))
     if User.query.filter_by(email=email).first():
+        session["admin_flash"] = f"Email {email} už existuje."
         return redirect(url_for("admin"))
 
-    # Generuj bezpečné heslo: 3 slova + čísla (snadno zapamatovatelné)
-    words = ["Sklad", "Logistika", "Komárec", "Picking", "Trasa", "Expres", "Projekt"]
     import random
+    words = ["Sklad", "Logistika", "Picking", "Trasa", "Expres", "Projekt", "Audit"]
     password = random.choice(words) + str(random.randint(10,99)) + random.choice(words) + "!"
 
-    u = User(email=email, name=name, role=role,
-             password_hash=generate_password_hash(password), is_admin=is_admin)
+    u = User(email=email, name=name, role=role, is_admin=is_admin,
+             klient_id=klient_id if role == "klient" else None,
+             password_hash=generate_password_hash(password))
     db.session.add(u)
     db.session.commit()
-
-    # Flash zpráva s heslem — zobraz vždy (email zatím neposíláme)
     session["admin_flash"] = f"Uživatel {name} vytvořen. Heslo: {password}"
-
     return redirect(url_for("admin"))
 
 @app.route("/admin/upravit-uzivatele/<int:user_id>", methods=["POST"])
@@ -2827,9 +2902,11 @@ def pridat_uzivatele():
 def upravit_uzivatele(user_id):
     user = User.query.get_or_404(user_id)
     user.name      = request.form.get("name", user.name).strip()
-    user.is_admin  = bool(request.form.get("is_admin"))
-    user.is_active = bool(request.form.get("is_active"))
     user.role      = request.form.get("role", user.role)
+    user.is_admin  = user.role in ("superadmin", "admin")
+    user.is_active = bool(request.form.get("is_active"))
+    klient_id      = request.form.get("klient_id", type=int) or None
+    user.klient_id = klient_id if user.role == "klient" else None
     if request.form.get("password"):
         user.password_hash = generate_password_hash(request.form["password"])
     db.session.commit()
@@ -3098,6 +3175,7 @@ with app.app_context():
             ("zapis", "projekt_id",     "ALTER TABLE zapis ADD COLUMN projekt_id INTEGER"),
             ("user",  "is_active",      "ALTER TABLE user ADD COLUMN is_active BOOLEAN DEFAULT TRUE"),
             ("user",  "role",           "ALTER TABLE user ADD COLUMN role VARCHAR(40) DEFAULT 'konzultant'"),
+            ("user",  "klient_id",      "ALTER TABLE user ADD COLUMN IF NOT EXISTS klient_id INTEGER REFERENCES klient(id)"),
             ("klient", "logo_url",       "ALTER TABLE klient ADD COLUMN logo_url VARCHAR(500) DEFAULT ''"),
             ("klient", "poznamka",     "ALTER TABLE klient ADD COLUMN IF NOT EXISTS poznamka TEXT DEFAULT ''"),
             ("klient", "freelo_tasklist_id", "ALTER TABLE klient ADD COLUMN IF NOT EXISTS freelo_tasklist_id INTEGER"),
@@ -3627,6 +3705,58 @@ def api_freelo_task_detail(task_id):
         })
     except Exception as e:
         return jsonify({"ok": False, "error": str(e)})
+
+
+# ─────────────────────────────────────────────
+# ERROR HANDLERS
+# ─────────────────────────────────────────────
+
+@app.errorhandler(403)
+def forbidden(e):
+    return render_template("403.html"), 403
+
+
+# ─────────────────────────────────────────────
+# KLIENTSKÝ PORTÁL — role klient
+# ─────────────────────────────────────────────
+
+@app.route("/portal")
+def klient_portal():
+    """Portál pro klienta — vidí jen své zápisy, nabídky, Freelo úkoly."""
+    if "user_id" not in session:
+        return redirect(url_for("login"))
+    u = User.query.get(session["user_id"])
+    if not u or u.role != "klient":
+        return redirect(url_for("prehled"))
+    
+    if not u.klient_id:
+        return render_template("portal.html", klient=None, zapisy=[], nabidky=[], ukoly=[])
+    
+    k = Klient.query.get(u.klient_id)
+    zapisy = Zapis.query.filter_by(klient_id=k.id).order_by(Zapis.created_at.desc()).all()
+    nabidky = Nabidka.query.filter_by(klient_id=k.id).order_by(Nabidka.created_at.desc()).all()
+    
+    # Freelo úkoly
+    ukoly = []
+    if k.freelo_tasklist_id and FREELO_API_KEY and FREELO_EMAIL:
+        try:
+            resp = freelo_get(f"/tasklist/{k.freelo_tasklist_id}")
+            if resp.status_code == 200:
+                raw = resp.json()
+                tasks_raw = raw.get("tasks", raw.get("data", []))
+                for t in tasks_raw:
+                    if not isinstance(t, dict): continue
+                    is_done = bool(t.get("date_finished"))
+                    ukoly.append({
+                        "name": t.get("name", ""),
+                        "state": "done" if is_done else "open",
+                        "assignee": t.get("worker", {}).get("fullname", "") if t.get("worker") else "",
+                        "deadline": (t.get("due_date") or "")[:10],
+                    })
+        except Exception:
+            pass
+    
+    return render_template("portal.html", klient=k, zapisy=zapisy, nabidky=nabidky, ukoly=ukoly)
 
 
 if __name__ == "__main__":

@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block title %}Přístup zamítnut{% endblock %}
+{% block content %}
+<div style="display:flex;align-items:center;justify-content:center;min-height:60vh;">
+  <div style="text-align:center;max-width:400px;padding:2rem;">
+    <div style="font-family:'Montserrat',sans-serif;font-size:72px;font-weight:900;color:#e8eef4;line-height:1;">403</div>
+    <div style="font-family:'Montserrat',sans-serif;font-size:18px;font-weight:800;color:#173767;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:12px;">Přístup zamítnut</div>
+    <p style="font-size:14px;color:#4A6080;margin-bottom:24px;">Na tuto stránku nemáš oprávnění. Pokud si myslíš, že jde o chybu, kontaktuj správce.</p>
+    <a href="{{ url_for('prehled') }}" class="btn btn-navy">← Zpět na přehled</a>
+  </div>
+</div>
+{% endblock %}
