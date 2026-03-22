@@ -2101,6 +2101,25 @@ def api_klient_freelo_ukoly(klient_id):
             tasks_raw = raw2.get("tasks", raw2.get("data", []))
         else:
             tasks_raw = []
+
+        # Zjisti project_id pro tento tasklist (potřebné pro editaci)
+        tasklist_project_id = None
+        try:
+            resp_p = freelo_get("/projects")
+            if resp_p.status_code == 200:
+                raw_p = resp_p.json()
+                projects_list = raw_p if isinstance(raw_p, list) else raw_p.get("data", raw_p.get("projects", []))
+                for p in projects_list:
+                    if not isinstance(p, dict): continue
+                    for tl in p.get("tasklists", []):
+                        if tl.get("id") == k.freelo_tasklist_id:
+                            tasklist_project_id = p.get("id")
+                            break
+                    if tasklist_project_id:
+                        break
+        except Exception:
+            pass
+
         ukoly = []
         for t in tasks_raw:
             if not isinstance(t, dict):
@@ -2127,6 +2146,8 @@ def api_klient_freelo_ukoly(klient_id):
                 "created_at": t.get("date_add", ""),
                 "is_subtask": bool(t.get("parent_task_id")),
                 "parent_task_id": t.get("parent_task_id"),
+                "project_id": tasklist_project_id,
+                "tasklist_id": k.freelo_tasklist_id,
             })
         ukoly.sort(key=lambda x: (0 if x["state"] == "open" else 1, x.get("deadline") or "9999"))
         return jsonify({"ukoly": ukoly, "tasklist_id": k.freelo_tasklist_id})
@@ -2200,11 +2221,27 @@ def api_freelo_task_stav(task_id):
 @app.route("/api/freelo/task/<int:task_id>/edit", methods=["POST"])
 @login_required
 def api_freelo_task_edit(task_id):
-    """Edituje úkol přes PUT /task/{id} (name, due_date, worker_id) + POST /task/{id}/description."""
+    """Edituje úkol přes PUT /project/{pid}/tasklist/{tlid}/task/{tid} + POST /task/{id}/description."""
     data = request.get_json()
     errors = []
 
-    # Název, deadline, worker — PUT /task/{id}
+    # project_id a tasklist_id posílá frontend (jsou uloženy v task objektu od api_klient_freelo_ukoly)
+    project_id = data.get("project_id")
+    tasklist_id = data.get("tasklist_id")
+
+    # Pokud frontend neposlal project_id/tasklist_id, zjistíme je z Freelo GET /task/{id}
+    if not project_id or not tasklist_id:
+        try:
+            r = freelo_get(f"/task/{task_id}")
+            if r.status_code == 200:
+                td = r.json()
+                if isinstance(td, dict):
+                    project_id = project_id or (td.get("project") or {}).get("id")
+                    tasklist_id = tasklist_id or (td.get("tasklist") or {}).get("id")
+        except Exception:
+            pass
+
+    # Název, deadline, worker — PUT /project/{pid}/tasklist/{tlid}/task/{tid}
     put_payload = {}
     if "name" in data and data["name"]:
         put_payload["name"] = data["name"]
@@ -2215,10 +2252,17 @@ def api_freelo_task_edit(task_id):
 
     if put_payload:
         try:
-            # Zkus POST, pak PUT dle Freelo API verze
-            resp = freelo_post(f"/task/{task_id}", put_payload)
-            if resp.status_code not in (200, 201, 204):
-                # Fallback na PUT
+            if project_id and tasklist_id:
+                # Správná Freelo URL s plnou cestou
+                resp = requests.put(
+                    f"https://api.freelo.io/v1/project/{project_id}/tasklist/{tasklist_id}/task/{task_id}",
+                    auth=freelo_auth(),
+                    headers={"Content-Type": "application/json"},
+                    json=put_payload,
+                    timeout=15
+                )
+            else:
+                # Fallback bez project/tasklist (pravděpodobně selže, ale zkusíme)
                 resp = requests.put(
                     f"https://api.freelo.io/v1/task/{task_id}",
                     auth=freelo_auth(),
@@ -2234,7 +2278,11 @@ def api_freelo_task_edit(task_id):
     # Popis — POST /task/{id}/description
     if "description" in data and data["description"] is not None:
         try:
-            resp2 = freelo_post(f"/task/{task_id}/description", {"content": data["description"]})
+            desc = data["description"].strip()
+            # Freelo vyžaduje HTML obsah
+            if desc and not desc.startswith("<"):
+                desc = f"<div>{desc}</div>"
+            resp2 = freelo_post(f"/task/{task_id}/description", {"content": desc})
             if resp2.status_code not in (200, 201, 204):
                 errors.append(f"Popis: {resp2.status_code} {resp2.text[:150]}")
         except Exception as e:
@@ -3393,47 +3441,6 @@ def debug_freelo_state2(task_id):
         results[f"GET{url}"] = {"status": r.status_code, "preview": r.text[:150]}
 
     return jsonify(results)
-
-@app.route("/api/freelo/debug-edit/<int:task_id>")
-@login_required
-def debug_freelo_edit(task_id):
-    """Testuje různé HTTP metody pro editaci názvu úkolu."""
-    results = {}
-    payload = {"name": "TEST EDIT NAME - IGNORUJ"}
-    
-    # PATCH
-    try:
-        r = freelo_patch(f"/task/{task_id}", payload)
-        results["PATCH_task"] = {"status": r.status_code, "body": r.text[:200]}
-    except Exception as e:
-        results["PATCH_task"] = {"error": str(e)}
-    
-    # PUT
-    try:
-        r = requests.put(f"https://api.freelo.io/v1/task/{task_id}",
-                        auth=freelo_auth(), headers={"Content-Type":"application/json"},
-                        json=payload, timeout=10)
-        results["PUT_task"] = {"status": r.status_code, "body": r.text[:200]}
-    except Exception as e:
-        results["PUT_task"] = {"error": str(e)}
-
-    # POST na různé sub-endpointy
-    for sub in ["edit", "update", "rename"]:
-        try:
-            r = freelo_post(f"/task/{task_id}/{sub}", payload)
-            results[f"POST_{sub}"] = {"status": r.status_code, "body": r.text[:200]}
-        except Exception as e:
-            results[f"POST_{sub}"] = {"error": str(e)}
-
-    # Zkus i due_date místo deadline
-    try:
-        r = freelo_patch(f"/task/{task_id}", {"due_date": "2026-04-01"})
-        results["PATCH_due_date"] = {"status": r.status_code, "body": r.text[:200]}
-    except Exception as e:
-        results["PATCH_due_date"] = {"error": str(e)}
-        
-    return jsonify(results)
-
 
 @app.route("/api/klient/<int:klient_id>/freelo-members", methods=["GET"])
 @login_required

@@ -1,0 +1,1300 @@
+{% extends "base.html" %}
+{% block title %}{{ k.nazev }}{% endblock %}
+
+{% block extra_head %}
+<style>
+.kd-container { max-width: 1100px; margin: 0 auto; padding: 2rem 1.5rem 4rem; }
+
+/* Header */
+.kd-header {
+  background: linear-gradient(135deg, #173767 0%, #0E213E 100%);
+  border-radius: 8px; padding: 2rem 2.5rem; color: white;
+  margin-bottom: 1.5rem; display: flex; align-items: flex-start;
+  justify-content: space-between; gap: 1rem;
+}
+.kd-nazev { font-family: var(--font-display); font-size: 28px; font-weight: 900; text-transform: uppercase; letter-spacing: 0.04em; line-height: 1; color: white; margin-bottom: 6px; }
+.kd-sub { font-size: 13px; color: rgba(255,255,255,0.5); }
+.kd-header-actions { display: flex; gap: 8px; flex-shrink: 0; margin-top: 4px; }
+.btn-hdr { font-family: var(--font-body); font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; padding: 8px 16px; border-radius: 5px; text-decoration: none; cursor: pointer; border: none; white-space: nowrap; }
+.btn-hdr.cyan { background: var(--cyan); color: #0E213E; }
+.btn-hdr.cyan:hover { background: #00c4ff; text-decoration: none; color: #0E213E; }
+.btn-hdr.orange { background: #FF8D00; color: white; }
+.btn-hdr.orange:hover { background: #E07800; text-decoration: none; color: white; }
+
+/* Stats bar */
+.kd-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 1.5rem; }
+.kd-stat { background: white; border: 1px solid var(--border); border-radius: var(--radius); padding: 14px 18px; }
+.kd-stat-num { font-family: var(--font-display); font-size: 26px; font-weight: 900; color: var(--navy); line-height: 1; }
+.kd-stat-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); margin-top: 3px; }
+.kd-stat-sub { font-size: 11px; font-weight: 500; color: var(--muted); text-transform: none; letter-spacing: 0; }
+
+/* Grid */
+.kd-grid { display: grid; grid-template-columns: 340px 1fr; gap: 1.25rem; align-items: start; }
+
+/* Cards */
+.kd-card { background: white; border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; margin-bottom: 1.25rem; }
+.kd-card-head { padding: 14px 18px 12px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
+.kd-card-head h2 { font-size: 13px; font-weight: 700; color: var(--navy); margin: 0; text-transform: uppercase; letter-spacing: 0.06em; }
+.kd-card-body { padding: 16px 18px; }
+
+/* Edit */
+.edit-field { margin-bottom: 12px; }
+.edit-field label { display: block; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); margin-bottom: 4px; }
+.edit-field input, .edit-field textarea { width: 100%; padding: 8px 10px; border: 1.5px solid var(--border); border-radius: 4px; font-size: 13px; font-family: var(--font-body); background: white; color: var(--text); transition: border-color 0.15s; }
+.edit-field input:focus, .edit-field textarea:focus { outline: none; border-color: var(--cyan); }
+.edit-field textarea { resize: vertical; min-height: 70px; line-height: 1.5; }
+
+/* Info rows */
+.info-row { display: flex; gap: 10px; margin-bottom: 10px; font-size: 13px; align-items: flex-start; }
+.info-row-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); min-width: 80px; padding-top: 1px; flex-shrink: 0; }
+.info-row-val { color: var(--text); font-weight: 500; line-height: 1.5; }
+.info-row-val.empty { color: var(--border); }
+
+/* Profil grid */
+.profil-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.profil-item { background: var(--bg); border-radius: 4px; padding: 8px 10px; }
+.profil-item-key { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); margin-bottom: 2px; }
+.profil-item-val { font-size: 13px; font-weight: 600; color: var(--navy); }
+
+/* Projekty */
+.projekt-row { display: flex; align-items: center; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid var(--border); gap: 10px; }
+.projekt-row:last-child { border-bottom: none; }
+.projekt-nazev { font-size: 13px; font-weight: 700; color: var(--navy); }
+.projekt-datum { font-size: 11px; color: var(--muted); }
+.badge-ak { background: rgba(0,175,240,0.1); color: #0085B8; border: 1px solid rgba(0,175,240,0.2); font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; padding: 2px 7px; border-radius: 3px; }
+.badge-uk { background: var(--bg); color: var(--muted); border: 1px solid var(--border); font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; padding: 2px 7px; border-radius: 3px; }
+
+/* Timeline */
+.timeline-item { display: grid; grid-template-columns: 8px 1fr; gap: 14px; padding: 12px 0; border-bottom: 1px solid var(--border); }
+.timeline-item:last-child { border-bottom: none; }
+.tl-dot { width: 8px; height: 8px; border-radius: 50%; margin-top: 5px; flex-shrink: 0; }
+.tl-dot.audit { background: var(--navy); }
+.tl-dot.operativa { background: var(--cyan); }
+.tl-dot.obchod { background: #34C759; }
+.tl-title { font-size: 13px; font-weight: 700; color: var(--navy); text-decoration: none; display: block; margin-bottom: 3px; }
+.tl-title:hover { color: var(--cyan); text-decoration: none; }
+.tl-meta { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.tl-tag { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; padding: 1px 7px; border-radius: 3px; }
+.tl-tag.audit { background: rgba(23,55,103,0.08); color: var(--navy); }
+.tl-tag.operativa { background: rgba(0,175,240,0.1); color: #0085B8; }
+.tl-tag.obchod { background: rgba(52,199,89,0.1); color: #0A7A5A; }
+.tl-datum { font-size: 11px; color: var(--muted); }
+.typ-tabs { display: flex; gap: 4px; margin-bottom: 12px; }
+.typ-tab { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; padding: 4px 10px; border-radius: 4px; border: 1.5px solid var(--border); background: white; color: var(--muted); cursor: pointer; }
+.typ-tab.active { background: var(--navy); color: white; border-color: var(--navy); }
+
+/* Skóre */
+.skore-bar { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.skore-point { display: flex; flex-direction: column; align-items: center; gap: 2px; }
+.skore-circle { width: 48px; height: 48px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-family: var(--font-display); font-size: 14px; font-weight: 900; }
+.skore-circle.high { background: rgba(52,199,89,0.12); color: #0A7A5A; border: 2px solid rgba(52,199,89,0.3); }
+.skore-circle.mid  { background: rgba(0,175,240,0.1);  color: #0085B8; border: 2px solid rgba(0,175,240,0.2); }
+.skore-circle.low  { background: rgba(255,141,0,0.1);  color: #C06A00; border: 2px solid rgba(255,141,0,0.2); }
+.skore-circle.crit { background: rgba(192,57,43,0.08); color: var(--danger); border: 2px solid rgba(192,57,43,0.15); }
+.skore-dt { font-size: 10px; color: var(--muted); }
+.skore-arr { color: var(--border); font-size: 16px; margin-top: -8px; }
+
+/* Úkoly */
+.ukol-row { display: flex; gap: 10px; align-items: flex-start; padding: 8px 0; border-bottom: 1px solid var(--border); }
+.ukol-row:last-child { border-bottom: none; }
+.ukol-dot { width: 8px; height: 8px; border-radius: 50%; background: #FF8D00; flex-shrink: 0; margin-top: 4px; }
+.ukol-name { font-size: 13px; font-weight: 600; color: var(--navy); }
+.ukol-meta { font-size: 11px; color: var(--muted); margin-top: 1px; }
+
+/* Nabídky */
+.nabidka-row { display: flex; align-items: center; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid var(--border); gap: 10px; }
+.nabidka-row:last-child { border-bottom: none; }
+.stav-badge { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; padding: 2px 8px; border-radius: 3px; }
+.stav-badge.draft { background: var(--bg); color: var(--muted); border: 1px solid var(--border); }
+.stav-badge.odeslana { background: rgba(0,175,240,0.1); color: #0085B8; border: 1px solid rgba(0,175,240,0.2); }
+.stav-badge.prijata { background: rgba(52,199,89,0.12); color: #0A7A5A; border: 1px solid rgba(52,199,89,0.25); }
+.stav-badge.zamitnuta { background: rgba(192,57,43,0.08); color: var(--danger); border: 1px solid rgba(192,57,43,0.15); }
+
+
+/* ── FREELO PANEL ────────────────────────────── */
+.fl-panel { }
+.fl-connect {
+  text-align: center; padding: 2rem;
+  color: var(--muted); font-size: 13px;
+}
+.fl-connect select {
+  width: 100%; margin: 10px 0 8px;
+  padding: 8px 10px;
+  border: 1.5px solid var(--border);
+  border-radius: 4px; font-size: 13px;
+  font-family: var(--font-body);
+}
+.fl-header {
+  display: flex; align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px; flex-wrap: wrap; gap: 8px;
+}
+.fl-tabs { display: flex; gap: 4px; }
+.fl-tab {
+  font-size: 11px; font-weight: 700;
+  text-transform: uppercase; letter-spacing: 0.05em;
+  padding: 4px 10px; border-radius: 4px;
+  border: 1.5px solid var(--border);
+  background: white; color: var(--muted); cursor: pointer;
+}
+.fl-tab.active { background: var(--navy); color: white; border-color: var(--navy); }
+
+/* Úkol řádek */
+.fl-task {
+  border: 1px solid var(--border);
+  border-radius: 5px; margin-bottom: 8px;
+  background: white; transition: box-shadow 0.1s;
+}
+.fl-task:hover { box-shadow: 0 1px 6px rgba(23,55,103,0.07); }
+.fl-task.done { opacity: 0.6; }
+.fl-task.overdue .fl-task-name { color: var(--danger); }
+.fl-task-main {
+  display: grid;
+  grid-template-columns: 28px 1fr auto;
+  gap: 10px; align-items: center;
+  padding: 10px 12px;
+}
+.fl-checkbox {
+  width: 18px; height: 18px;
+  border-radius: 50%; border: 2px solid var(--border);
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; flex-shrink: 0;
+  transition: all 0.15s; background: white;
+}
+.fl-checkbox:hover { border-color: var(--cyan); }
+.fl-checkbox.done { background: #34C759; border-color: #34C759; }
+.fl-checkbox.done::after { content: '✓'; color: white; font-size: 11px; font-weight: 700; }
+
+.fl-task-info { min-width: 0; }
+.fl-task-name {
+  font-size: 13px; font-weight: 600; color: var(--navy);
+  margin-bottom: 3px; line-height: 1.3;
+}
+.fl-task-name.done { text-decoration: line-through; color: var(--muted); }
+.fl-task-meta { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.fl-meta-chip {
+  font-size: 10px; font-weight: 600; color: var(--muted);
+  display: flex; align-items: center; gap: 3px;
+}
+.fl-meta-chip.deadline-ok { color: #0A7A5A; }
+.fl-meta-chip.deadline-soon { color: #C06A00; font-weight: 700; }
+.fl-meta-chip.deadline-over { color: var(--danger); font-weight: 700; }
+.fl-comments-badge {
+  font-size: 10px; font-weight: 700;
+  background: var(--bg); color: var(--muted);
+  border: 1px solid var(--border); border-radius: 3px;
+  padding: 1px 5px; cursor: pointer;
+}
+.fl-comments-badge:hover { border-color: var(--navy); color: var(--navy); }
+
+.fl-task-actions {
+  display: flex; gap: 4px; flex-shrink: 0;
+}
+.fl-btn {
+  font-size: 11px; font-weight: 600;
+  padding: 4px 8px; border-radius: 4px;
+  border: 1.5px solid var(--border);
+  background: white; color: var(--muted);
+  cursor: pointer; transition: all 0.1s;
+  white-space: nowrap;
+}
+.fl-btn:hover { border-color: var(--navy); color: var(--navy); }
+.fl-btn.danger:hover { border-color: var(--danger); color: var(--danger); }
+
+/* Edit inline */
+.fl-task-edit {
+  display: none; padding: 8px 12px 12px;
+  border-top: 1px solid var(--border);
+  background: #f9fafb;
+}
+.fl-task-edit.open { display: block; }
+.fl-edit-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px; }
+.fl-edit-input {
+  width: 100%; padding: 7px 10px;
+  border: 1.5px solid var(--border); border-radius: 4px;
+  font-size: 12px; font-family: var(--font-body);
+}
+.fl-edit-input:focus { outline: none; border-color: var(--cyan); }
+.fl-edit-textarea {
+  width: 100%; padding: 7px 10px;
+  border: 1.5px solid var(--border); border-radius: 4px;
+  font-size: 12px; font-family: var(--font-body);
+  resize: vertical; min-height: 60px; line-height: 1.5;
+}
+.fl-edit-textarea:focus { outline: none; border-color: var(--cyan); }
+
+/* Komentáře */
+.fl-comments { padding: 0 12px 12px; display: none; }
+.fl-comments.open { display: block; }
+.fl-comment-item {
+  padding: 7px 0; border-bottom: 1px solid var(--border);
+  font-size: 12px;
+}
+.fl-comment-item:last-child { border-bottom: none; }
+.fl-comment-author { font-weight: 700; color: var(--navy); margin-right: 6px; }
+.fl-comment-date { font-size: 10px; color: var(--muted); }
+.fl-comment-text { color: var(--text); margin-top: 3px; line-height: 1.5; }
+.fl-comment-form {
+  display: flex; gap: 6px; margin-top: 8px;
+}
+.fl-comment-input {
+  flex: 1; padding: 6px 10px;
+  border: 1.5px solid var(--border); border-radius: 4px;
+  font-size: 12px; font-family: var(--font-body);
+}
+.fl-comment-input:focus { outline: none; border-color: var(--cyan); }
+
+/* Nový úkol form */
+.fl-new-task {
+  display: none; margin-top: 10px;
+  padding: 12px; background: #f0f5fb;
+  border-radius: 5px; border: 1px solid #c8d8ee;
+}
+.fl-new-task.open { display: block; }
+.fl-new-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px; }
+
+/* Načítání */
+.fl-loading {
+  text-align: center; padding: 2rem;
+  color: var(--muted); font-size: 13px;
+}
+.fl-spinner {
+  display: inline-block; width: 20px; height: 20px;
+  border: 2px solid var(--border); border-top-color: var(--cyan);
+  border-radius: 50%; animation: spin 0.7s linear infinite;
+  margin-bottom: 8px;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.fl-empty {
+  text-align: center; padding: 1.5rem;
+  color: var(--muted); font-size: 13px;
+}
+.fl-tasklist-info {
+  font-size: 11px; color: var(--muted);
+  margin-bottom: 10px;
+  display: flex; align-items: center; gap: 8px;
+}
+.fl-tasklist-info a { color: var(--cyan); font-size: 11px; }
+
+/* Toast */
+#toast { position: fixed; bottom: 24px; right: 24px; background: var(--navy); color: white; padding: 10px 18px; border-radius: 6px; font-size: 13px; font-weight: 600; opacity: 0; transition: opacity 0.2s; z-index: 999; pointer-events: none; }
+#toast.show { opacity: 1; }
+
+/* Nový projekt */
+#novy-projekt-form { display: none; padding: 14px 0 4px; border-top: 1px solid var(--border); margin-top: 4px; }
+.projekt-form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div id="toast"></div>
+<div class="kd-container">
+
+  <!-- HEADER -->
+  <div class="kd-header">
+    <div>
+      <div style="font-size:11px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:rgba(255,255,255,0.4);margin-bottom:6px;">
+        <a href="{{ url_for('prehled') }}" style="color:rgba(255,255,255,0.4);text-decoration:none;">← Přehled</a>
+      </div>
+      <div class="kd-nazev">{{ k.nazev }}</div>
+      <div class="kd-sub">
+        {% if k.kontakt %}<span style="color:rgba(255,255,255,0.8);">{{ k.kontakt }}</span>{% endif %}
+        {% if k.email %} · {{ k.email }}{% endif %}
+        {% if k.telefon %} · {{ k.telefon }}{% endif %}
+      </div>
+    </div>
+    <div class="kd-header-actions">
+      <a href="{{ url_for('novy_zapis') }}?klient_id={{ k.id }}" class="btn-hdr cyan">+ Nový zápis</a>
+      <a href="{{ url_for('nabidka_nova') }}?klient_id={{ k.id }}" class="btn-hdr orange">+ Nabídka</a>
+    </div>
+  </div>
+
+  <!-- STATS -->
+  <div class="kd-stats">
+    <div class="kd-stat">
+      <div class="kd-stat-num" style="color:var(--cyan);">{{ zapisy|length }}</div>
+      <div class="kd-stat-label">Zápisů celkem
+        <span class="kd-stat-sub">{{ zapisy|selectattr('template','eq','audit')|list|length }} audit · {{ zapisy|selectattr('template','eq','operativa')|list|length }} operativa</span>
+      </div>
+    </div>
+    <div class="kd-stat">
+      <div class="kd-stat-num">{{ projekty|selectattr('is_active')|list|length }}</div>
+      <div class="kd-stat-label">Aktivní projekty<span class="kd-stat-sub">z celkem {{ projekty|length }}</span></div>
+    </div>
+    <div class="kd-stat">
+      <div class="kd-stat-num">{% if zapisy %}{{ zapisy[0].created_at.strftime('%d.%m.') }}{% else %}–{% endif %}</div>
+      <div class="kd-stat-label">Poslední zápis<span class="kd-stat-sub">{% if zapisy %}{{ zapisy[0].created_at.strftime('%Y') }}{% endif %}</span></div>
+    </div>
+    <div class="kd-stat">
+      <div class="kd-stat-num">
+        {% if skore_list %}
+          {% set s = skore_list[0].skore %}
+          <span style="color:{% if s >= 70 %}#0A7A5A{% elif s >= 55 %}#0085B8{% elif s >= 40 %}#C06A00{% else %}var(--danger){% endif %};">{{ s }}%</span>
+        {% else %}–{% endif %}
+      </div>
+      <div class="kd-stat-label">Skóre skladu<span class="kd-stat-sub">poslední audit</span></div>
+    </div>
+  </div>
+
+  <!-- DVA SLOUPCE -->
+  <div class="kd-grid">
+
+    <!-- LEVÝ SLOUPEC -->
+    <div>
+
+      <!-- INFORMACE -->
+      <div class="kd-card">
+        <div class="kd-card-head">
+          <h2>Informace</h2>
+          <button onclick="toggleEdit()" class="btn btn-secondary btn-sm" id="edit-btn">✎ Upravit</button>
+        </div>
+        <div class="kd-card-body">
+          <div id="read-mode">
+            <div class="info-row"><div class="info-row-label">Kontakt</div><div class="info-row-val {% if not k.kontakt %}empty{% endif %}">{{ k.kontakt or '—' }}</div></div>
+            <div class="info-row"><div class="info-row-label">E-mail</div><div class="info-row-val {% if not k.email %}empty{% endif %}">{{ k.email or '—' }}</div></div>
+            <div class="info-row"><div class="info-row-label">Telefon</div><div class="info-row-val {% if not k.telefon %}empty{% endif %}">{{ k.telefon or '—' }}</div></div>
+            <div class="info-row"><div class="info-row-label">Adresa</div><div class="info-row-val {% if not k.adresa %}empty{% endif %}">{{ k.adresa or '—' }}</div></div>
+            <div class="info-row"><div class="info-row-label">Sídlo</div><div class="info-row-val {% if not k.sidlo %}empty{% endif %}">{{ k.sidlo or '—' }}</div></div>
+            <div class="info-row"><div class="info-row-label">IČ / DIČ</div><div class="info-row-val">{{ k.ic or '—' }}{% if k.dic %} / {{ k.dic }}{% endif %}</div></div>
+          </div>
+          <form id="edit-mode" style="display:none;" onsubmit="saveInfo(event)">
+            <div class="edit-field"><label>Název firmy</label><input name="nazev" value="{{ k.nazev }}"></div>
+            <div class="edit-field"><label>Kontaktní osoba</label><input name="kontakt" value="{{ k.kontakt or '' }}"></div>
+            <div class="edit-field"><label>E-mail</label><input name="email" type="email" value="{{ k.email or '' }}"></div>
+            <div class="edit-field"><label>Telefon</label><input name="telefon" value="{{ k.telefon or '' }}"></div>
+            <div class="edit-field"><label>Provozní adresa</label><input name="adresa" value="{{ k.adresa or '' }}"></div>
+            <div class="edit-field"><label>Sídlo (fakturační)</label><input name="sidlo" value="{{ k.sidlo or '' }}"></div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+              <div class="edit-field"><label>IČ</label><input name="ic" value="{{ k.ic or '' }}"></div>
+              <div class="edit-field"><label>DIČ</label><input name="dic" value="{{ k.dic or '' }}"></div>
+            </div>
+            <div style="display:flex;gap:8px;margin-top:4px;">
+              <button type="submit" class="btn btn-navy btn-sm">Uložit</button>
+              <button type="button" onclick="toggleEdit()" class="btn btn-secondary btn-sm">Zrušit</button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <!-- POZNÁMKY -->
+      <div class="kd-card">
+        <div class="kd-card-head"><h2>Poznámky</h2></div>
+        <div class="kd-card-body">
+          <textarea id="poznamky-text" style="width:100%;min-height:100px;padding:10px 12px;border:1.5px solid var(--border);border-radius:4px;font-size:13px;font-family:var(--font-body);line-height:1.6;resize:vertical;" placeholder="Interní poznámky ke klientovi…">{{ k.poznamka or '' }}</textarea>
+          <div style="margin-top:8px;display:flex;gap:8px;align-items:center;">
+            <button onclick="savePoznamky()" class="btn btn-navy btn-sm">Uložit</button>
+            <span id="pozn-status" style="font-size:11px;color:var(--muted);"></span>
+          </div>
+        </div>
+      </div>
+
+      <!-- PROFIL SKLADU -->
+      {% if profil %}
+      <div class="kd-card">
+        <div class="kd-card-head">
+          <h2>Profil skladu</h2>
+          <button onclick="toggleProfil()" class="btn btn-secondary btn-sm" id="profil-btn">✎ Upravit</button>
+        </div>
+        <div class="kd-card-body">
+          <div id="profil-read">
+            <div class="profil-grid">
+              {% for k2, v in profil.items() if not k2.startswith('_') %}
+              <div class="profil-item">
+                <div class="profil-item-key">{{ k2 | replace('_', ' ') }}</div>
+                <div class="profil-item-val">{{ v }}</div>
+              </div>
+              {% endfor %}
+            </div>
+          </div>
+          <form id="profil-edit" style="display:none;" onsubmit="saveProfil(event)">
+            {% for k2, v in profil.items() if not k2.startswith('_') %}
+            <div class="edit-field"><label>{{ k2 | replace('_', ' ') }}</label><input name="{{ k2 }}" value="{{ v }}"></div>
+            {% endfor %}
+            <div style="display:flex;gap:8px;margin-top:4px;">
+              <button type="submit" class="btn btn-navy btn-sm">Uložit profil</button>
+              <button type="button" onclick="toggleProfil()" class="btn btn-secondary btn-sm">Zrušit</button>
+            </div>
+          </form>
+        </div>
+      </div>
+      {% endif %}
+
+      <!-- PROJEKTY -->
+      <div class="kd-card">
+        <div class="kd-card-head">
+          <h2>Projekty</h2>
+          <button onclick="document.getElementById('novy-projekt-form').style.display='block';" class="btn btn-secondary btn-sm">+ Přidat</button>
+        </div>
+        <div class="kd-card-body">
+          {% for p in projekty %}
+          <div class="projekt-row">
+            <div>
+              <div class="projekt-nazev">{{ p.nazev }}</div>
+              <div class="projekt-datum">{% if p.datum_od %}{{ p.datum_od.strftime('%m/%Y') }}{% endif %}{% if p.datum_do %} — {{ p.datum_do.strftime('%m/%Y') }}{% endif %}</div>
+            </div>
+            <span class="{% if p.is_active %}badge-ak{% else %}badge-uk{% endif %}">{% if p.is_active %}Aktivní{% else %}Ukončen{% endif %}</span>
+          </div>
+          {% else %}
+          <p style="color:var(--muted);font-size:13px;">Žádné projekty</p>
+          {% endfor %}
+          <div id="novy-projekt-form">
+            <form method="post" action="{{ url_for('projekt_novy') }}">
+              <input type="hidden" name="klient_id" value="{{ k.id }}">
+              <div class="edit-field"><label>Název projektu</label><input name="nazev" required placeholder="Např. WMS implementace 2026"></div>
+              <div class="projekt-form-row">
+                <div class="edit-field"><label>Datum od</label><input type="date" name="datum_od"></div>
+                <div class="edit-field"><label>Datum do</label><input type="date" name="datum_do"></div>
+              </div>
+              <div style="display:flex;gap:8px;">
+                <button type="submit" class="btn btn-navy btn-sm">Vytvořit projekt</button>
+                <button type="button" onclick="document.getElementById('novy-projekt-form').style.display='none';" class="btn btn-secondary btn-sm">Zrušit</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /levý sloupec -->
+
+    <!-- PRAVÝ SLOUPEC -->
+    <div>
+
+      <!-- SKÓRE VÝVOJ -->
+      {% if skore_list %}
+      <div class="kd-card">
+        <div class="kd-card-head"><h2>Vývoj skóre skladu</h2></div>
+        <div class="kd-card-body">
+          <div class="skore-bar">
+            {% set items = skore_list | reverse | list %}
+            {% for i in range(items|length) %}
+            {% set s = items[i] %}
+            {% if i > 0 %}<span class="skore-arr">→</span>{% endif %}
+            <div class="skore-point">
+              <div class="skore-circle {% if s.skore >= 70 %}high{% elif s.skore >= 55 %}mid{% elif s.skore >= 40 %}low{% else %}crit{% endif %}">{{ s.skore }}%</div>
+              <div class="skore-dt">{{ s.datum.strftime('%m/%y') }}</div>
+            </div>
+            {% endfor %}
+            {% if skore_list|length > 1 %}
+            {% set delta = skore_list[0].skore - skore_list[-1].skore %}
+            <span style="font-size:14px;font-weight:700;margin-left:6px;color:{% if delta >= 0 %}#0A7A5A{% else %}var(--danger){% endif %};">
+              {% if delta >= 0 %}▲ +{{ delta }}{% else %}▼ {{ delta }}{% endif %}
+            </span>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+      {% endif %}
+
+      <!-- OTEVŘENÉ ÚKOLY -->
+      {% if ukoly_otevrene %}
+      <div class="kd-card">
+        <div class="kd-card-head"><h2>Otevřené úkoly ({{ ukoly_otevrene|length }})</h2></div>
+        <div class="kd-card-body">
+          {% for u in ukoly_otevrene[:8] %}
+          <div class="ukol-row">
+            <div class="ukol-dot"></div>
+            <div>
+              <div class="ukol-name">{{ u.name }}</div>
+              <div class="ukol-meta">{% if u.deadline %}Do: {{ u.deadline }} · {% endif %}<a href="{{ url_for('detail_zapisu', zapis_id=u.zapis_id) }}" style="color:var(--cyan);text-decoration:none;">{{ u.zapis_title | truncate(35) }}</a></div>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+      {% endif %}
+
+      <!-- CHRONOLOGIE -->
+      <div class="kd-card">
+        <div class="kd-card-head">
+          <h2>Chronologie zápisů ({{ zapisy|length }})</h2>
+          <a href="{{ url_for('novy_zapis') }}?klient_id={{ k.id }}" class="btn btn-navy btn-sm">+ Nový zápis</a>
+        </div>
+        <div class="kd-card-body">
+          <div class="typ-tabs">
+            <button class="typ-tab active" onclick="filterTL('vse',this)">Vše</button>
+            <button class="typ-tab" onclick="filterTL('audit',this)">Audit</button>
+            <button class="typ-tab" onclick="filterTL('operativa',this)">Operativa</button>
+            <button class="typ-tab" onclick="filterTL('obchod',this)">Obchod</button>
+          </div>
+          {% if zapisy %}
+          <div id="timeline">
+            {% for z in zapisy %}
+            <div class="timeline-item" data-typ="{{ z.template }}">
+              <div class="tl-dot {{ z.template }}"></div>
+              <div>
+                <a href="{{ url_for('detail_zapisu', zapis_id=z.id) }}" class="tl-title">{{ z.title or (z.projekt.nazev if z.projekt else k.nazev) }}</a>
+                <div class="tl-meta">
+                  <span class="tl-tag {{ z.template }}">{{ template_names.get(z.template, z.template) }}</span>
+                  <span class="tl-datum">{{ z.created_at.strftime('%d. %m. %Y') }}</span>
+                  {% if z.projekt %}<span class="tl-datum">· {{ z.projekt.nazev | truncate(30) }}</span>{% endif %}
+                </div>
+              </div>
+            </div>
+            {% endfor %}
+          </div>
+          {% else %}<p style="color:var(--muted);font-size:13px;">Žádné zápisy</p>{% endif %}
+        </div>
+      </div>
+
+
+      <!-- FREELO PANEL -->
+      <div class="kd-card" id="freelo-card">
+        <div class="kd-card-head">
+          <h2>Freelo úkoly</h2>
+          <div style="display:flex;gap:6px;align-items:center;">
+            <span id="fl-count-badge" style="display:none;font-size:11px;font-weight:700;background:rgba(0,175,240,0.1);color:#0085B8;border:1px solid rgba(0,175,240,0.2);border-radius:3px;padding:2px 7px;"></span>
+            <button onclick="flNovyUkolToggle()" class="btn btn-navy btn-sm" id="fl-add-btn" style="display:none;">+ Úkol</button>
+            <button onclick="flRefresh()" class="btn btn-secondary btn-sm" id="fl-refresh-btn" style="display:none;" title="Obnovit">↻</button>
+          </div>
+        </div>
+        <div class="kd-card-body" style="padding:12px 16px;">
+
+          <!-- NEPROPOJENO -->
+          <div id="fl-not-configured">
+            <div class="fl-connect">
+              <div style="font-size:22px;margin-bottom:6px;">🔗</div>
+              <strong style="color:var(--navy);">Propoj Freelo tasklist</strong>
+              <p style="margin:6px 0 12px;font-size:12px;">Vyber projekt a tasklist patřící tomuto klientovi</p>
+
+              <label style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted);display:block;margin-bottom:4px;text-align:left;">Freelo projekt</label>
+              <select id="fl-project-select" onchange="flOnProjectChange()" style="margin-bottom:10px;">
+                <option value="">Načítám projekty…</option>
+              </select>
+
+              <label style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted);display:block;margin-bottom:4px;text-align:left;">Tasklist</label>
+              <select id="fl-tasklist-select" style="margin-bottom:8px;">
+                <option value="">— nejdřív vyber projekt —</option>
+              </select>
+
+              <div style="display:flex;gap:6px;">
+                <button onclick="flNastavitTasklist()" class="btn btn-navy btn-sm" style="flex:1;">Uložit propojení</button>
+                <button onclick="flNovyTasklist()" class="btn btn-secondary btn-sm" title="Vytvořit nový tasklist ve Freelu">+ Nový tasklist</button>
+              </div>
+
+              <div id="fl-new-tl-form" style="display:none;margin-top:10px;padding:10px;background:#f0f5fb;border-radius:5px;border:1px solid #c8d8ee;">
+                <label style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted);display:block;margin-bottom:4px;">Název nového tasklist</label>
+                <input id="fl-new-tl-name" class="fl-edit-input" placeholder="Např. Nábytek Centrum — 2026" style="margin-bottom:8px;">
+                <div style="display:flex;gap:6px;">
+                  <button onclick="flVytvoritTasklist()" class="btn btn-navy btn-sm" style="flex:1;">Vytvořit ve Freelu</button>
+                  <button onclick="document.getElementById('fl-new-tl-form').style.display='none';" class="btn btn-secondary btn-sm">Zrušit</button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- PROPOJENO -->
+          <div id="fl-configured" style="display:none;">
+            <div class="fl-tasklist-info" id="fl-info-bar">
+              <span>Tasklist: <strong id="fl-tasklist-name">–</strong></span>
+              <a href="#" onclick="flOdpojit(event)">změnit</a>
+            </div>
+
+            <!-- Tabs: otevřené / hotové -->
+            <div class="fl-header">
+              <div class="fl-tabs">
+                <button class="fl-tab active" onclick="flTab('open',this)">Otevřené</button>
+                <button class="fl-tab" onclick="flTab('done',this)">Hotové</button>
+                <button class="fl-tab" onclick="flTab('all',this)">Vše</button>
+              </div>
+            </div>
+
+            <!-- Nový úkol form -->
+            <div class="fl-new-task" id="fl-new-task-form">
+              <div style="font-size:12px;font-weight:700;color:var(--navy);margin-bottom:8px;text-transform:uppercase;letter-spacing:0.05em;">Nový úkol</div>
+              <input id="fl-new-name" class="fl-edit-input" placeholder="Název úkolu *" style="margin-bottom:8px;width:100%;">
+              <div class="fl-new-row">
+                <input id="fl-new-deadline" class="fl-edit-input" type="date">
+                <input id="fl-new-desc" class="fl-edit-input" placeholder="Popis (volitelný)">
+              </div>
+              <div style="display:flex;gap:6px;">
+                <button onclick="flPridatUkol()" class="btn btn-navy btn-sm">Přidat do Freela</button>
+                <button onclick="flNovyUkolToggle()" class="btn btn-secondary btn-sm">Zrušit</button>
+              </div>
+            </div>
+
+            <!-- Loading -->
+            <div class="fl-loading" id="fl-loading">
+              <div class="fl-spinner"></div><br>Načítám z Freela…
+            </div>
+
+            <!-- Seznam úkolů -->
+            <div id="fl-tasks-list" style="display:none;"></div>
+
+            <!-- Prázdný stav -->
+            <div class="fl-empty" id="fl-empty" style="display:none;">
+              Žádné úkoly v tomto filtru.
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- NABÍDKY -->
+      <div class="kd-card">
+        <div class="kd-card-head">
+          <h2>Nabídky ({{ nabidky|length }})</h2>
+          <a href="{{ url_for('nabidka_nova') }}?klient_id={{ k.id }}" class="btn btn-sm" style="background:#FF8D00;color:white;border-color:#FF8D00;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.04em;padding:5px 11px;">+ Nabídka</a>
+        </div>
+        <div class="kd-card-body">
+          {% if nabidky %}
+            {% for n in nabidky %}
+            <div class="nabidka-row">
+              <div>
+                <div style="display:flex;align-items:center;gap:8px;margin-bottom:3px;">
+                  <span style="font-size:12px;font-weight:700;color:var(--navy);">{{ n.cislo }}</span>
+                  <span class="stav-badge {{ n.stav }}">{{ n.stav }}</span>
+                </div>
+                <div style="font-size:12px;color:var(--text);">{{ n.nazev | truncate(50) }}</div>
+                <div style="font-size:11px;color:var(--muted);">{{ n.created_at.strftime('%d. %m. %Y') }}</div>
+              </div>
+              <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px;">
+                {% set total = namespace(val=0) %}
+                {% for pol in n.polozky %}{% set total.val = total.val + (pol.mnozstvi * pol.cena_ks * (1 - pol.sleva_pct/100) * (1 + pol.dph_pct/100)) %}{% endfor %}
+                {% if total.val > 0 %}<div style="font-size:13px;font-weight:700;color:var(--navy);white-space:nowrap;">{{ "{:,.0f}".format(total.val).replace(",", " ") }} {{ n.mena }}</div>{% endif %}
+                <a href="{{ url_for('nabidka_detail', nabidka_id=n.id) }}" class="btn btn-secondary btn-sm">Detail →</a>
+              </div>
+            </div>
+            {% endfor %}
+          {% else %}<p style="color:var(--muted);font-size:13px;">Žádné nabídky</p>{% endif %}
+        </div>
+      </div>
+
+    </div><!-- /pravý sloupec -->
+  </div>
+</div>
+
+<script>
+const KLIENT_ID = {{ k.id }};
+
+function toast(msg, ok=true) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.style.background = ok ? '#173767' : '#C0392B';
+  t.classList.add('show'); setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+function toggleEdit() {
+  const r = document.getElementById('read-mode'), e = document.getElementById('edit-mode'), btn = document.getElementById('edit-btn');
+  const editing = e.style.display !== 'none';
+  r.style.display = editing ? 'block' : 'none';
+  e.style.display = editing ? 'none' : 'block';
+  btn.textContent = editing ? '✎ Upravit' : 'Zrušit';
+}
+
+async function saveInfo(ev) {
+  ev.preventDefault();
+  const data = Object.fromEntries(new FormData(ev.target));
+  try {
+    const r = await fetch(`/api/klient/${KLIENT_ID}/upravit`, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(data) });
+    const d = await r.json();
+    if (d.ok) { toggleEdit(); toast('Uloženo'); setTimeout(() => location.reload(), 700); }
+    else toast(d.error || 'Chyba', false);
+  } catch(e) { toast('Chyba: ' + e.message, false); }
+}
+
+async function savePoznamky() {
+  const text = document.getElementById('poznamky-text').value;
+  document.getElementById('pozn-status').textContent = 'Ukládám…';
+  try {
+    const r = await fetch(`/api/klient/${KLIENT_ID}/poznamky`, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ poznamka: text }) });
+    const d = await r.json();
+    if (d.ok) { document.getElementById('pozn-status').textContent = 'Uloženo ✓'; toast('Poznámky uloženy'); }
+    else toast(d.error || 'Chyba', false);
+  } catch(e) { toast('Chyba', false); }
+}
+document.getElementById('poznamky-text').addEventListener('blur', savePoznamky);
+
+function toggleProfil() {
+  const r = document.getElementById('profil-read'), e = document.getElementById('profil-edit');
+  if (!r || !e) return;
+  const editing = e.style.display !== 'none';
+  r.style.display = editing ? 'block' : 'none';
+  e.style.display = editing ? 'none' : 'block';
+  document.getElementById('profil-btn').textContent = editing ? '✎ Upravit' : 'Zrušit';
+}
+
+async function saveProfil(ev) {
+  ev.preventDefault();
+  const profil = Object.fromEntries(new FormData(ev.target));
+  try {
+    const r = await fetch(`/api/klient/${KLIENT_ID}/profil`, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ profil }) });
+    const d = await r.json();
+    if (d.ok) { toggleProfil(); toast('Profil skladu uložen'); }
+    else toast(d.error || 'Chyba', false);
+  } catch(e) { toast('Chyba', false); }
+}
+
+function filterTL(typ, btn) {
+  document.querySelectorAll('.typ-tab').forEach(t => t.classList.remove('active'));
+  btn.classList.add('active');
+  document.querySelectorAll('.timeline-item').forEach(item => {
+    item.style.display = (typ === 'vse' || item.dataset.typ === typ) ? 'grid' : 'none';
+  });
+}
+
+// ════════════════════════════════════════════
+// FREELO PANEL
+// ════════════════════════════════════════════
+const FL_KLIENT_ID = {{ k.id }};
+const FL_TASKLIST_ID = {{ k.freelo_tasklist_id or 'null' }};
+let flAllTasks = [];
+let flCurrentTab = 'open';
+let flTasklistName = '';
+
+// Init
+document.addEventListener('DOMContentLoaded', () => {
+  if (FL_TASKLIST_ID) {
+    flShowConfigured();
+    flLoadTasks();
+    flLoadMembers();
+  } else {
+    flShowNotConfigured();
+    flLoadTasklists();
+  }
+});
+
+function flShowConfigured() {
+  document.getElementById('fl-not-configured').style.display = 'none';
+  document.getElementById('fl-configured').style.display = 'block';
+  document.getElementById('fl-add-btn').style.display = '';
+  document.getElementById('fl-refresh-btn').style.display = '';
+}
+
+function flShowNotConfigured() {
+  document.getElementById('fl-not-configured').style.display = 'block';
+  document.getElementById('fl-configured').style.display = 'none';
+  document.getElementById('fl-add-btn').style.display = 'none';
+  document.getElementById('fl-refresh-btn').style.display = 'none';
+}
+
+// Uloží načtené projekty pro kaskádu
+let flProjects = [];
+let flMembers = [];
+
+async function flLoadMembers() {
+  // Pokud neznáme project_id, zjisti ho z tasklist přes projects endpoint
+  if (!flCurrentProjectId) {
+    try {
+      const pd = await fetch('/api/freelo/projects').then(r => r.json());
+      for (const p of (pd.projects || [])) {
+        for (const tl of (p.tasklists || [])) {
+          if (tl.id === FL_TASKLIST_ID) {
+            flCurrentProjectId = p.id;
+            break;
+          }
+        }
+        if (flCurrentProjectId) break;
+      }
+    } catch(e) {}
+  }
+  if (!flCurrentProjectId) return;
+  try {
+    const d = await fetch(`/api/freelo/members/${flCurrentProjectId}`).then(r => r.json());
+    flMembers = d.members || [];
+  } catch(e) { flMembers = []; }
+}
+
+async function flLoadTasklists() {
+  const projSel = document.getElementById('fl-project-select');
+  if (!projSel) return;
+  projSel.innerHTML = '<option value="">Načítám projekty…</option>';
+  try {
+    const data = await fetch('/api/freelo/projects').then(r => r.json());
+    flProjects = data.projects || [];
+    if (flProjects.length) {
+      projSel.innerHTML = '<option value="">— Vyberte projekt —</option>' +
+        flProjects.map(p => `<option value="${p.id}">${p.name}</option>`).join('');
+    } else {
+      projSel.innerHTML = `<option value="">${data.error || 'Žádné projekty'}</option>`;
+    }
+  } catch(e) {
+    projSel.innerHTML = '<option value="">Chyba načítání</option>';
+  }
+}
+
+let flCurrentProjectId = null;
+
+function flOnProjectChange() {
+  const projSel = document.getElementById('fl-project-select');
+  const tlSel = document.getElementById('fl-tasklist-select');
+  const pid = parseInt(projSel.value);
+  flCurrentProjectId = pid || null;
+  const proj = flProjects.find(p => p.id === pid);
+  if (!proj) {
+    tlSel.innerHTML = '<option value="">— nejdřív vyber projekt —</option>';
+    return;
+  }
+  const tasklists = proj.tasklists || [];
+  tlSel.innerHTML = '<option value="">— Vyberte tasklist —</option>' +
+    tasklists.map(tl => `<option value="${tl.id}">${tl.name}</option>`).join('');
+}
+
+function flNovyTasklist() {
+  const projSel = document.getElementById('fl-project-select');
+  if (!projSel.value) { toast('Nejdřív vyber projekt', false); return; }
+  document.getElementById('fl-new-tl-form').style.display = 'block';
+  document.getElementById('fl-new-tl-name').focus();
+}
+
+async function flVytvoritTasklist() {
+  const projSel = document.getElementById('fl-project-select');
+  const name = document.getElementById('fl-new-tl-name').value.trim();
+  if (!name) { toast('Zadej název tasklist', false); return; }
+  if (!projSel.value) { toast('Vyber projekt', false); return; }
+  const btn = document.querySelector('#fl-new-tl-form .btn-navy');
+  btn.disabled = true; btn.textContent = 'Vytvářím…';
+  try {
+    const d = await fetch('/api/freelo/create-tasklist', {
+      method: 'POST', headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({name, project_id: projSel.value})
+    }).then(r => r.json());
+    if (d.id) {
+      // Přidej do lokálního cache a selectu
+      const proj = flProjects.find(p => p.id === parseInt(projSel.value));
+      if (proj) {
+        proj.tasklists = proj.tasklists || [];
+        proj.tasklists.push({id: d.id, name: d.name || name});
+      }
+      flOnProjectChange();
+      document.getElementById('fl-tasklist-select').value = d.id;
+      document.getElementById('fl-new-tl-form').style.display = 'none';
+      document.getElementById('fl-new-tl-name').value = '';
+      toast(`Tasklist "${name}" vytvořen ✓`);
+    } else {
+      toast(d.error || 'Chyba vytvoření', false);
+    }
+  } catch(e) { toast('Chyba: ' + e.message, false); }
+  btn.disabled = false; btn.textContent = 'Vytvořit ve Freelu';
+}
+
+async function flNastavitTasklist() {
+  const sel = document.getElementById('fl-tasklist-select');
+  const projSelEl = document.getElementById('fl-project-select');
+  const id = sel.value;
+  if (!id) { toast('Vyber tasklist', false); return; }
+  const tlName = sel.options[sel.selectedIndex].text;
+  const projName = projSelEl ? (projSelEl.options[projSelEl.selectedIndex]?.text || '') : '';
+  const name = projName ? `${projName} / ${tlName}` : tlName;
+  // Ulož project_id pro načtení členů
+  if (projSelEl && projSelEl.value) flCurrentProjectId = parseInt(projSelEl.value);
+  try {
+    const d = await fetch(`/api/klient/${FL_KLIENT_ID}/freelo-nastavit`, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({tasklist_id: id})
+    }).then(r => r.json());
+    if (d.ok) {
+      flTasklistName = name;
+      document.getElementById('fl-tasklist-name').textContent = name.split('] ')[1] || name;
+      flShowConfigured();
+      flLoadTasks();
+      flLoadMembers();
+      toast('Tasklist propojen ✓');
+    } else {
+      toast(d.error || 'Chyba', false);
+    }
+  } catch(e) { toast('Chyba: ' + e.message, false); }
+}
+
+async function flOdpojit(e) {
+  e.preventDefault();
+  if (!confirm('Odpojit Freelo tasklist od tohoto klienta?')) return;
+  try {
+    const d = await fetch(`/api/klient/${FL_KLIENT_ID}/freelo-nastavit`, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({tasklist_id: null})
+    }).then(r => r.json());
+    if (d.ok) {
+      flShowNotConfigured();
+      flLoadTasklists();
+      flAllTasks = [];
+      toast('Odpojeno');
+    }
+  } catch(e) { toast('Chyba', false); }
+}
+
+async function flLoadTasks() {
+  document.getElementById('fl-loading').style.display = 'block';
+  document.getElementById('fl-tasks-list').style.display = 'none';
+  document.getElementById('fl-empty').style.display = 'none';
+  try {
+    const data = await fetch(`/api/klient/${FL_KLIENT_ID}/freelo-ukoly`).then(r => r.json());
+    if (data.error) {
+      document.getElementById('fl-loading').innerHTML = `<span style="color:var(--danger);">${data.error}</span>`;
+      return;
+    }
+    flAllTasks = data.ukoly || [];
+    // Najdi název tasklist z načtených dat
+    flRenderTasks();
+    // Aktualizuj badge počtu
+    const openCount = flAllTasks.filter(t => t.state === 'open').length;
+    const badge = document.getElementById('fl-count-badge');
+    badge.textContent = `${openCount} otevřených`;
+    badge.style.display = openCount > 0 ? '' : 'none';
+  } catch(e) {
+    document.getElementById('fl-loading').innerHTML = `<span style="color:var(--danger);">Chyba: ${e.message}</span>`;
+  }
+}
+
+function flRefresh() { flLoadTasks(); }
+
+function flTab(tab, btn) {
+  document.querySelectorAll('.fl-tab').forEach(t => t.classList.remove('active'));
+  btn.classList.add('active');
+  flCurrentTab = tab;
+  flRenderTasks();
+}
+
+function flRenderTasks() {
+  const list = document.getElementById('fl-tasks-list');
+  const loading = document.getElementById('fl-loading');
+  const empty = document.getElementById('fl-empty');
+  loading.style.display = 'none';
+
+  let tasks = flAllTasks;
+  if (flCurrentTab === 'open') tasks = tasks.filter(t => t.state === 'open');
+  else if (flCurrentTab === 'done') tasks = tasks.filter(t => t.state === 'done');
+
+  if (!tasks.length) {
+    list.style.display = 'none';
+    empty.style.display = 'block';
+    return;
+  }
+  empty.style.display = 'none';
+  list.style.display = 'block';
+
+  list.innerHTML = tasks.map(t => flTaskHTML(t)).join('');
+}
+
+function flTaskHTML(t, indent) {
+  indent = indent || 0;
+  const done = t.state === 'done';
+  const today = new Date().toISOString().slice(0,10);
+  const tomorrow = new Date(Date.now() + 86400000).toISOString().slice(0,10);
+  let deadlineClass = '', deadlineLabel = '';
+  if (t.deadline) {
+    const d = t.deadline.slice(0,10);
+    if (d < today) { deadlineClass = 'deadline-over'; deadlineLabel = `⚠ ${d}`; }
+    else if (d <= tomorrow) { deadlineClass = 'deadline-soon'; deadlineLabel = d; }
+    else { deadlineClass = 'deadline-ok'; deadlineLabel = d; }
+  }
+  const indentStyle = indent > 0 ? `margin-left:${indent*18}px;border-left:2px solid #e8eef4;border-radius:0 5px 5px 0;` : '';
+
+  return `<div class="fl-task ${done ? 'done' : ''} ${t.deadline && t.deadline.slice(0,10) < today && !done ? 'overdue' : ''}" id="flt-${t.id}" style="${indentStyle}">
+    <div class="fl-task-main">
+      <div class="fl-checkbox ${done ? 'done' : ''}" onclick="flToggleDone(${t.id}, ${!done})" title="${done ? 'Znovu otevřít' : 'Označit jako hotový'}"></div>
+      <div class="fl-task-info">
+        <div class="fl-task-name ${done ? 'done' : ''}"><a href="${t.url}" target="_blank" style="color:inherit;text-decoration:none;" title="Otevřít ve Freelu">${flEsc(t.name)}</a></div>
+        <div class="fl-task-meta">
+          ${t.assignee
+            ? `<span class="fl-meta-chip" style="cursor:pointer;" onclick="flToggleEdit(${t.id})" title="Změnit zodpovědnou osobu">👤 ${flEsc(t.assignee)}</span>`
+            : `<span class="fl-meta-chip" style="cursor:pointer;color:var(--muted);" onclick="flToggleEdit(${t.id})" title="Přiřadit osobu">👤 nepřiřazeno</span>`
+          }
+          ${deadlineLabel ? `<span class="fl-meta-chip ${deadlineClass}">📅 ${deadlineLabel}</span>` : ''}
+          ${!indent && t.count_subtasks > 0 ? `<span class="fl-meta-chip" style="cursor:pointer;color:var(--navy);" onclick="flToggleSubtasks(${t.id})">⊞ ${t.count_subtasks} podúkolů</span>` : ''}
+          ${t.comments_count > 0 ? `<span class="fl-comments-badge" onclick="flToggleComments(${t.id})">💬 ${t.comments_count}</span>` : ''}
+        </div>
+      </div>
+      <div class="fl-task-actions">
+        <button class="fl-btn" onclick="flToggleEdit(${t.id})" title="Upravit">✎</button>
+        <button class="fl-btn" onclick="flToggleComments(${t.id})" title="Komentáře">💬</button>
+        <a href="${t.url}" target="_blank" class="fl-btn" title="Otevřít ve Freelu" style="text-decoration:none;display:inline-flex;align-items:center;">↗</a>
+        <button class="fl-btn danger" onclick="flSmazat(${t.id})" title="Smazat">✕</button>
+      </div>
+    </div>
+
+    <div class="fl-task-edit" id="fledit-${t.id}">
+      <input class="fl-edit-input" id="flname-${t.id}" value="${flEsc(t.name)}" placeholder="Název" style="margin-bottom:6px;width:100%;">
+      <textarea class="fl-edit-textarea" id="fldesc-${t.id}" placeholder="Popis úkolu">${flEsc(t.description || '')}</textarea>
+      <div class="fl-edit-row" style="margin-top:6px;">
+        <input class="fl-edit-input" id="fldate-${t.id}" type="date" value="${(t.deadline||'').slice(0,10)}" title="Deadline">
+        <select class="fl-edit-input" id="flworker-${t.id}" style="font-size:12px;">
+          <option value="">— Zodpovědná osoba —</option>
+          ${(flMembers||[]).map(m => `<option value="${m.id}" ${t.assignee_id == m.id ? 'selected' : ''}>${flEsc(m.name)}</option>`).join('')}
+        </select>
+      </div>
+      <div style="display:flex;gap:6px;margin-top:6px;align-items:center;">
+        <button onclick="flUlozitEdit(${t.id})" class="btn btn-navy btn-sm">Uložit</button>
+        <button onclick="flToggleEdit(${t.id})" class="btn btn-secondary btn-sm">Zrušit</button>
+        ${!indent ? `<button onclick="flNovyPodukol(${t.id})" class="btn btn-secondary btn-sm" style="margin-left:auto;font-size:11px;">+ Podúkol</button>` : ''}
+      </div>
+    </div>
+
+    <div class="fl-comments" id="flcomm-${t.id}">
+      <div id="flcomm-list-${t.id}" style="margin-bottom:8px;">
+        <div style="font-size:11px;color:var(--muted);padding:4px 0;">Načítám komentáře…</div>
+      </div>
+      <div class="fl-comment-form">
+        <input class="fl-comment-input" id="flcomm-input-${t.id}" placeholder="Napsat komentář…" onkeydown="if(event.key==='Enter'){event.preventDefault();flPridatKomentar(${t.id});}">
+        <button onclick="flPridatKomentar(${t.id})" class="btn btn-navy btn-sm">Odeslat</button>
+      </div>
+    </div>
+
+    <div id="flsub-${t.id}" style="display:none;"></div>
+  </div>`;
+}
+
+function flEsc(str) {
+  if (!str) return '';
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+async function flToggleDone(taskId, done) {
+  const el = document.getElementById(`flt-${taskId}`);
+  if (el) el.style.opacity = '0.5';
+  try {
+    const d = await fetch(`/api/freelo/task/${taskId}/stav`, {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({done})
+    }).then(r => r.json());
+    if (d.ok) {
+      const task = flAllTasks.find(t => t.id === taskId);
+      if (task) task.state = done ? 'done' : 'open';
+      flRenderTasks();
+      // Aktualizuj badge
+      const openCount = flAllTasks.filter(t => t.state === 'open').length;
+      const badge = document.getElementById('fl-count-badge');
+      badge.textContent = `${openCount} otevřených`;
+      badge.style.display = openCount > 0 ? '' : 'none';
+      toast(done ? '✓ Označeno jako hotové' : 'Označeno jako otevřené');
+    } else {
+      if (el) el.style.opacity = '';
+      toast(d.error || 'Chyba', false);
+    }
+  } catch(e) {
+    if (el) el.style.opacity = '';
+    toast('Chyba: ' + e.message, false);
+  }
+}
+
+async function flToggleEdit(taskId) {
+  const ed = document.getElementById(`fledit-${taskId}`);
+  const isOpen = ed.classList.contains('open');
+  if (isOpen) {
+    ed.classList.remove('open');
+    return;
+  }
+  ed.classList.add('open');
+  // Lazy načtení description pokud ještě není
+  const descEl = document.getElementById(`fldesc-${taskId}`);
+  if (descEl && !descEl.dataset.loaded) {
+    descEl.placeholder = 'Načítám popis…';
+    try {
+      const d = await fetch(`/api/freelo/task/${taskId}/detail`).then(r => r.json());
+      if (d.ok) {
+        descEl.value = d.description || '';
+        // Aktualizuj i v cache
+        const task = flAllTasks.find(t => t.id === taskId);
+        if (task) task.description = d.description || '';
+      }
+    } catch(e) {}
+    descEl.dataset.loaded = '1';
+    descEl.placeholder = 'Popis úkolu';
+  }
+}
+
+async function flUlozitEdit(taskId) {
+  const nameEl = document.getElementById(`flname-${taskId}`);
+  const descEl = document.getElementById(`fldesc-${taskId}`);
+  const dateEl = document.getElementById(`fldate-${taskId}`);
+  const workerEl = document.getElementById(`flworker-${taskId}`);
+  const name = nameEl?.value.trim() || '';
+  const desc = descEl?.value || '';
+  const deadline = dateEl?.value || '';
+  const worker_id = workerEl?.value ? parseInt(workerEl.value) : null;
+  if (!name) { toast('Název je povinný', false); return; }
+
+  // Najdi task v cache pro project_id a tasklist_id
+  const task = flAllTasks.find(t => t.id === taskId);
+  const payload = {
+    name,
+    description: desc,
+    deadline,
+    project_id: task?.project_id || null,
+    tasklist_id: task?.tasklist_id || null,
+  };
+  if (workerEl) payload.worker_id = worker_id;
+
+  try {
+    const d = await fetch(`/api/freelo/task/${taskId}/edit`, {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify(payload)
+    }).then(r => r.json());
+    if (d.ok) {
+      const workerName = worker_id ? (flMembers.find(m => m.id === worker_id)?.name || '') : '';
+      // Aktualizuj v lokálním cache (hledej i v podúkolech)
+      const updateTask = (tasks) => {
+        for (const t of tasks) {
+          if (t.id === taskId) {
+            t.name = name; t.description = desc; t.deadline = deadline;
+            t.assignee = workerName; t.assignee_id = worker_id;
+            return true;
+          }
+        }
+        return false;
+      };
+      updateTask(flAllTasks);
+      flRenderTasks();
+      flToggleEdit(taskId);
+      toast('Uloženo ✓');
+    } else { toast(d.error || 'Chyba', false); }
+  } catch(e) { toast('Chyba: ' + e.message, false); }
+}
+
+async function flToggleComments(taskId) {
+  const panel = document.getElementById(`flcomm-${taskId}`);
+  const listEl = document.getElementById(`flcomm-list-${taskId}`);
+  panel.classList.toggle('open');
+  if (panel.classList.contains('open')) {
+    listEl.innerHTML = '<div style="font-size:11px;color:var(--muted);padding:4px 0;">Načítám komentáře…</div>';
+    const d = await fetch(`/api/freelo/task/${taskId}/komentare`).then(r => r.json());
+    if (d.ok && d.comments.length) {
+      listEl.innerHTML = d.comments.map(c => `
+        <div class="fl-comment-item">
+          <span class="fl-comment-author">${flEsc(c.author)}</span>
+          <span class="fl-comment-date">${(c.created_at||'').slice(0,10)}</span>
+          <div class="fl-comment-text">${flEsc(c.content)}</div>
+        </div>`).join('');
+    } else if (d.ok) {
+      listEl.innerHTML = '<div style="font-size:11px;color:var(--muted);font-style:italic;">Zatím žádné komentáře.</div>';
+    } else {
+      listEl.innerHTML = `<div style="font-size:11px;color:var(--danger);">${d.error || 'Chyba'}</div>`;
+    }
+  }
+}
+
+async function flPridatKomentar(taskId) {
+  const input = document.getElementById(`flcomm-input-${taskId}`);
+  const text = input.value.trim();
+  if (!text) return;
+  input.disabled = true;
+  try {
+    const d = await fetch(`/api/freelo/task/${taskId}/komentar`, {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({content: text})
+    }).then(r => r.json());
+    if (d.ok) {
+      input.value = '';
+      // Přidej do listu
+      const listEl = document.getElementById(`flcomm-list-${taskId}`);
+      const newComment = `<div class="fl-comment-item">
+        <span class="fl-comment-author">Já</span>
+        <span class="fl-comment-date">dnes</span>
+        <div class="fl-comment-text">${flEsc(text)}</div>
+      </div>`;
+      listEl.innerHTML += newComment;
+      // Aktualizuj počet
+      const task = flAllTasks.find(t => t.id === taskId);
+      if (task) task.comments_count = (task.comments_count || 0) + 1;
+      toast('Komentář přidán');
+    } else { toast(d.error || 'Chyba', false); }
+  } catch(e) { toast('Chyba', false); }
+  input.disabled = false;
+}
+
+async function flSmazat(taskId) {
+  const task = flAllTasks.find(t => t.id === taskId);
+  if (!confirm(`Smazat úkol "${task?.name || taskId}" z Freela? Tato akce je nevratná.`)) return;
+  const el = document.getElementById(`flt-${taskId}`);
+  if (el) el.style.opacity = '0.3';
+  try {
+    const d = await fetch(`/api/freelo/task/${taskId}/smazat`, {
+      method: 'POST', headers: {'Content-Type':'application/json'}
+    }).then(r => r.json());
+    if (d.ok) {
+      flAllTasks = flAllTasks.filter(t => t.id !== taskId);
+      flRenderTasks();
+      toast('Úkol smazán');
+    } else {
+      if (el) el.style.opacity = '';
+      toast(d.error || 'Chyba mazání', false);
+    }
+  } catch(e) {
+    if (el) el.style.opacity = '';
+    toast('Chyba', false);
+  }
+}
+
+async function flToggleSubtasks(taskId) {
+  const container = document.getElementById(`flsub-${taskId}`);
+  if (container.style.display !== 'none') {
+    container.style.display = 'none';
+    return;
+  }
+  container.style.display = 'block';
+  container.innerHTML = '<div style="padding:8px 0 4px 20px;font-size:11px;color:var(--muted);">Načítám podúkoly…</div>';
+  try {
+    const d = await fetch(`/api/freelo/task/${taskId}/podukoly`).then(r => r.json());
+    if (d.ok && d.subtasks.length) {
+      container.innerHTML = d.subtasks.map(s => flTaskHTML(s, 1)).join('');
+    } else if (d.ok) {
+      container.innerHTML = '<div style="padding:6px 0 4px 20px;font-size:11px;color:var(--muted);font-style:italic;">Žádné podúkoly.</div>';
+    } else {
+      container.innerHTML = `<div style="padding:6px 0 4px 20px;font-size:11px;color:var(--danger);">${d.error || 'Chyba'}</div>`;
+    }
+  } catch(e) { container.innerHTML = `<div style="padding:6px 0;font-size:11px;color:var(--danger);">Chyba: ${e.message}</div>`; }
+}
+
+function flNovyPodukol(parentId) {
+  const name = prompt('Název podúkolu:');
+  if (!name || !name.trim()) return;
+  fetch(`/api/klient/${FL_KLIENT_ID}/freelo-pridat-podukol`, {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({parent_id: parentId, name: name.trim()})
+  }).then(r => r.json()).then(d => {
+    if (d.ok) {
+      toast('Podúkol přidán ✓');
+      // Otevři / obnov podúkoly
+      const container = document.getElementById(`flsub-${parentId}`);
+      container.style.display = 'none';
+      flToggleSubtasks(parentId);
+      // Aktualizuj count v paměti
+      const task = flAllTasks.find(t => t.id === parentId);
+      if (task) task.count_subtasks = (task.count_subtasks || 0) + 1;
+      flRenderTasks();
+    } else { toast(d.error || 'Chyba', false); }
+  }).catch(e => toast('Chyba: ' + e.message, false));
+}
+
+function flNovyUkolToggle() {
+  const form = document.getElementById('fl-new-task-form');
+  form.classList.toggle('open');
+  if (form.classList.contains('open')) {
+    document.getElementById('fl-new-name').focus();
+  }
+}
+
+async function flPridatUkol() {
+  const name = document.getElementById('fl-new-name').value.trim();
+  const deadline = document.getElementById('fl-new-deadline').value;
+  const desc = document.getElementById('fl-new-desc').value.trim();
+  if (!name) { toast('Název je povinný', false); return; }
+  const btn = document.querySelector('#fl-new-task-form .btn-navy');
+  btn.disabled = true; btn.textContent = 'Přidávám…';
+  try {
+    const d = await fetch(`/api/klient/${FL_KLIENT_ID}/freelo-pridat-ukol`, {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({name, deadline, description: desc})
+    }).then(r => r.json());
+    if (d.ok) {
+      flAllTasks.unshift(d.task);
+      document.getElementById('fl-new-name').value = '';
+      document.getElementById('fl-new-deadline').value = '';
+      document.getElementById('fl-new-desc').value = '';
+      flNovyUkolToggle();
+      flRenderTasks();
+      // Aktualizuj badge
+      const openCount = flAllTasks.filter(t => t.state === 'open').length;
+      const badge = document.getElementById('fl-count-badge');
+      badge.textContent = `${openCount} otevřených`;
+      badge.style.display = openCount > 0 ? '' : 'none';
+      toast('Úkol přidán do Freela ✓');
+    } else { toast(d.error || 'Chyba', false); }
+  } catch(e) { toast('Chyba: ' + e.message, false); }
+  btn.disabled = false; btn.textContent = 'Přidat do Freela';
+}
+
+</script>
+{% endblock %}
