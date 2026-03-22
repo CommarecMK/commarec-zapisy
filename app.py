@@ -2221,65 +2221,73 @@ def api_freelo_task_stav(task_id):
 @app.route("/api/freelo/task/<int:task_id>/edit", methods=["POST"])
 @login_required
 def api_freelo_task_edit(task_id):
-    """Edituje úkol přes PUT /project/{pid}/tasklist/{tlid}/task/{tid} + POST /task/{id}/description."""
+    """Edituje úkol — přesně jako odeslat_do_freela: jméno → worker_id přes members API."""
     data = request.get_json()
     errors = []
 
-    # project_id a tasklist_id posílá frontend (jsou uloženy v task objektu od api_klient_freelo_ukoly)
-    project_id = data.get("project_id")
+    project_id  = data.get("project_id")
     tasklist_id = data.get("tasklist_id")
 
-    # Pokud frontend neposlal project_id/tasklist_id, zjistíme je z Freelo GET /task/{id}
+    # Pokud nemáme project_id, dohledáme z GET /task/{id}
     if not project_id or not tasklist_id:
         try:
             r = freelo_get(f"/task/{task_id}")
             if r.status_code == 200:
                 td = r.json()
                 if isinstance(td, dict):
-                    project_id = project_id or (td.get("project") or {}).get("id")
+                    project_id  = project_id  or (td.get("project")  or {}).get("id")
                     tasklist_id = tasklist_id or (td.get("tasklist") or {}).get("id")
         except Exception:
             pass
 
-    # Název, deadline, worker — PUT /project/{pid}/tasklist/{tlid}/task/{tid}
+    # Resolve assignee jméno → worker_id (stejně jako odeslat_do_freela)
+    worker_id = None
+    assignee_name = (data.get("assignee") or "").strip()
+    if assignee_name and project_id:
+        try:
+            mr = freelo_get(f"/project/{project_id}/workers")
+            if mr.status_code == 200:
+                for w in mr.json().get("data", {}).get("workers", []):
+                    if w.get("fullname", "").lower() == assignee_name.lower():
+                        worker_id = w["id"]
+                        break
+        except Exception:
+            pass
+
+    # PUT /project/{pid}/tasklist/{tlid}/task/{tid}
     put_payload = {}
     if "name" in data and data["name"]:
         put_payload["name"] = data["name"]
     if "deadline" in data:
         put_payload["due_date"] = data["deadline"] or None
-    if "worker_id" in data:
-        put_payload["worker_id"] = data["worker_id"] or None
+    if worker_id:
+        put_payload["worker_id"] = worker_id
 
     if put_payload:
         try:
             if project_id and tasklist_id:
-                # Správná Freelo URL s plnou cestou
                 resp = requests.put(
                     f"https://api.freelo.io/v1/project/{project_id}/tasklist/{tasklist_id}/task/{task_id}",
                     auth=freelo_auth(),
                     headers={"Content-Type": "application/json"},
-                    json=put_payload,
-                    timeout=15
+                    json=put_payload, timeout=15
                 )
             else:
-                # Fallback bez project/tasklist (pravděpodobně selže, ale zkusíme)
                 resp = requests.put(
                     f"https://api.freelo.io/v1/task/{task_id}",
                     auth=freelo_auth(),
                     headers={"Content-Type": "application/json"},
-                    json=put_payload,
-                    timeout=15
+                    json=put_payload, timeout=15
                 )
             if resp.status_code not in (200, 201, 204):
                 errors.append(f"Úkol: {resp.status_code} {resp.text[:150]}")
         except Exception as e:
             errors.append(f"Úkol error: {str(e)}")
 
-    # Popis — POST /task/{id}/description
+    # POST /task/{id}/description
     if "description" in data and data["description"] is not None:
         try:
             desc = data["description"].strip()
-            # Freelo vyžaduje HTML obsah
             if desc and not desc.startswith("<"):
                 desc = f"<div>{desc}</div>"
             resp2 = freelo_post(f"/task/{task_id}/description", {"content": desc})
