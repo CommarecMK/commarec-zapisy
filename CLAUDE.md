@@ -165,27 +165,97 @@ MONTSERRAT — VŠE (DrukCondensed byl kompletně odstraněn 22. 3. 2026)
 
 ### Freelo API — ověřené správné endpointy
 ```
-⚠️ KRITICKÉ POZNÁMKY PRO PŘÍŠTÍHO CLAUDA:
+⚠️ KRITICKÉ POZNÁMKY PRO PŘÍŠTÍHO CLAUDA — PŘEČTI CELÉ PŘED JAKOUKOLIV ZMĚNOU
+⚠️ TYTO VĚCI JSME ZJISTILI PŘÍMÝMI TESTY — NEVYMÝŠLEJ VARIANTY, POUŽIJ CO JE TU:
 
-GET  /tasklist/{id}              → vrátí tasklist + tasks[] (BEZ /tasks na konci!)
-GET  /task/{id}                  → detail úkolu, komentáře (description = comment.is_description=true)
-GET  /task/{id}/subtasks         → podúkoly: {"data":{"subtasks":[...]}}
-POST /task/{id}/finish           → označit jako hotový (NE PATCH, NE state:"done")
-POST /task/{id}/activate         → znovu otevřít
-POST /task/{id}/description      → uložit/přepsat popis
-GET  /project/{id}/workers       → členové projektu
-POST /project/{pid}/tasklist/{tlid}/tasks  → vytvořit úkol
+=== AUTH ===
+Basic Auth: username = FREELO_EMAIL, password = FREELO_API_KEY
+Jen samotný API klíč NESTAČÍ — musí být email + klíč!
 
-Podúkoly mají DVĚ ID:
-  - "id" = subtask record ID (nepoužitelné pro API volání!)
-  - "task_id" = skutečné Freelo task ID → toto použij pro finish/activate/edit
+=== PROJEKT IDs ===
+FREELO_PROJECT_ID = 501350  ← toto je správné API ID projektu CMRC
+582553 = ID z URL v prohlížeči — NEFUNGUJE v API, vrací 404!
 
-Editace (PUT/POST /task/{id}) — stále se testuje správný verb
-  Aktuálně: zkusí POST, při 404 fallback na PUT
-  Popis: POST /task/{id}/description s {"content": "<div>text</div>"}
+=== FUNGUJÍCÍ ENDPOINTY (ověřeno přímými testy) ===
+GET  /projects                              → seznam všech projektů + embedded tasklists
+GET  /project/{id}/workers                  → členové projektu
+     Struktura: data.workers[].id + data.workers[].fullname
+     Členové: Martin Komárek=236443, Pavel Bezdék=236444, Markéta Komárek=236445, Jakub Matějka=236446
+GET  /tasklist/{id}                         → tasklist + tasks[] (BEZ /tasks na konci!)
+GET  /task/{id}                             → detail úkolu
+GET  /task/{id}/subtasks                    → {"data":{"subtasks":[...]}}
+
+POST /project/{pid}/tasklist/{tlid}/tasks   → VYTVOŘENÍ ÚKOLU ✅ OVĚŘENO
+     ⚠️ SINGULÁR /project/ a /tasklist/, PLURÁL /tasks na konci!
+     Payload: {name, due_date, worker_id}
+     worker_id = číslo (integer), ne jméno!
+
+POST /task/{id}                             → EDITACE ÚKOLU ✅ OVĚŘENO 22.3.2026
+     Payload: {name, due_date, worker_id}
+     ⚠️ worker_id se musí přeložit ze jména přes GET /project/{id}/workers
+
+POST /task/{id}/description                 → POPIS ÚKOLU ✅ OVĚŘENO
+     ⚠️ NESMÍ se posílat při vytvoření — MUSÍ se poslat zvlášť ПІСЛЯ vytvoření!
+     ⚠️ Prázdný string {"content": ""} = Freelo vrací 400! Posílat JEN pokud desc != ""
+     Payload: {"content": "<div>text popisu</div>"}
+     Freelo IGNORUJE pole description/note/body/content při POST /tasks — jen /description funguje!
+
+POST /task/{id}/finish                      → označit jako hotový
+POST /task/{id}/activate                    → znovu otevřít
+POST /task/{id}/comments                    → přidat komentář {"content": "text"}
+
+=== NEFUNGUJÍCÍ ENDPOINTY (ověřeno = vrací 404) ===
+❌ PUT /task/{id}                           → 404
+❌ PATCH /task/{id}                         → 404
+❌ PUT /project/{pid}/tasklist/{tlid}/task/{tid} → 404
+❌ /projects/{pid}/tasklists/{tlid}/tasks   → 404 (plurál pro project/tasklist nefunguje!)
+❌ /projects/{pid}/tasklists/{tlid}/task    → 404
+❌ /tasklist/{id}/tasks                     → 404
+❌ /project/{id}/users                      → 404
+❌ /projects/{id}/workers                   → 404 (plurál nefunguje!)
+❌ /project/582553/tasklists               → 404 (špatné ID)
+
+=== ZODPOVĚDNÁ OSOBA — WORKFLOW ===
+1. Načti members: GET /project/{pid}/workers → data.workers[]
+2. Uživatel vybere jméno z autocomplete (NE select — načítá se async!)
+3. Frontend pošle jméno jako string "assignee": "Martin Komárek"
+4. Backend najde worker_id: next(w["id"] for w in workers if w["fullname"].lower() == name.lower())
+5. Pošli worker_id v POST /task/{id} nebo POST /project/.../tasks
 
 Auth: Basic (FREELO_EMAIL + FREELO_API_KEY)
 Base URL: https://api.freelo.io/v1
+```
+
+### Zodpovědná osoba v HTML — POUŽIJ VŽDY TENTO VZOR (kopie z detail.html)
+```
+⚠️ NIKDY NEPOUŽÍVEJ <select> pro zodpovědnou osobu — members se načítají async,
+   select by byl prázdný! Vždy použij text input s autocomplete stejně jako v detail.html.
+
+CSS (přesná kopie z detail.html):
+  .asgn-wrap{position:relative;}
+  .asgn-dd{display:none;position:absolute;top:100%;left:0;right:0;background:white;
+    border:1.5px solid #00AFF0;border-radius:5px;z-index:200;max-height:180px;
+    overflow-y:auto;box-shadow:0 6px 20px rgba(0,0,0,0.12);}
+  .asgn-dd.open{display:block;}
+  .asgn-opt{padding:8px 12px;font-size:12px;color:#173767;cursor:pointer;}
+  .asgn-opt:hover{background:#f0f5fb;}
+
+HTML:
+  <div class="asgn-wrap">
+    <input type="text" class="task-assignee fl-in" placeholder="Vybrat..."
+      autocomplete="off" onfocus="openAD(this)" oninput="filterAD(this)" style="cursor:pointer;">
+    <div class="asgn-dd"></div>
+  </div>
+
+JS (přesná kopie z detail.html):
+  function populateAD(input){...}
+  function renderAD(dd,input){...}
+  function openAD(input){...}
+  function filterAD(input){...}
+  function pickAsgn(opt,name){...}  ← ukládá JEN jméno, backend přeloží na ID
+
+Při odeslání: posílej "assignee": input.value (jméno jako string)
+Backend pak přeloží: GET /project/{id}/workers → najde worker_id podle fullname
 ```
 
 ### Stav Freelo integrace
@@ -195,26 +265,53 @@ Načítání úkolů ze tasklist       ✅ Funguje (GET /tasklist/{id})
 Označit hotový/otevřít           ✅ Funguje (POST /finish, /activate)
 Přidat komentář                  ✅ Funguje
 Načíst komentáře                 ✅ Funguje
-Vytvořit nový úkol               ✅ Funguje
+Vytvořit nový úkol               ✅ Funguje (POST /project/{pid}/tasklist/{tlid}/tasks)
 Smazat úkol                      ✅ Funguje
-Přiřadit zodpovědnou osobu        ⚠️ Dropdown načten, uložení testuje se (PUT vs POST)
-Editace názvu/deadline            ⚠️ Testuje se správný verb
-Editace popisu (description)      ⚠️ POST /description funguje, ale lazy load fix probíhá
+Editace názvu/deadline            ✅ Funguje (POST /task/{id}) — OVĚŘENO 22.3.2026
+Zodpovědná osoba — editace        ✅ Funguje (POST /task/{id} s worker_id) — OVĚŘENO
+Editace popisu                    ✅ Funguje (POST /task/{id}/description, jen neprázdný!)
 Podúkoly — zobrazení              ✅ Funguje
-Podúkoly — označit hotový         ⚠️ Opraveno task_id vs id, testovat
+Podúkoly — označit hotový         ✅ Opraveno (task_id vs id)
 Vytvořit podúkol                  ✅ Implementováno
 Freelo data v progress reportu    ✅ Splněné úkoly za období
 Freelo kontext v AI reportu       ✅ Předán Claudovi
+Freelo plugin v projekt_detail    ✅ Přidáno 22.3.2026 (stejný jako v zápisech)
 ```
 
 ### Diagnostické endpointy (pro ladění)
 ```
-/api/freelo/test-ukoly/<tasklist_id>   → testuje URL formáty
-/api/freelo/debug-task/<task_id>       → plná struktura úkolu
-/api/freelo/debug-tasklist/<id>        → plná struktura tasklist
-/api/freelo/debug-state/<task_id>      → testuje PATCH formáty
-/api/freelo/debug-state2/<task_id>     → testuje POST formáty
-/api/freelo/debug-edit/<task_id>       → testuje edit endpointy
+/api/freelo/debug                          → základní debug (auth, project ID, test /projects)
+/api/freelo/test-ukoly/<tasklist_id>       → testuje URL formáty pro tasklist
+/api/freelo/debug-task/<task_id>           → plná struktura úkolu
+/api/freelo/debug-tasklist/<id>            → plná struktura tasklist
+/api/freelo/debug-state/<task_id>          → testuje PATCH formáty stavu
+/api/freelo/debug-state2/<task_id>         → testuje POST formáty stavu
+/api/freelo/debug-edit/<task_id>           → testuje edit (POST funguje, PUT/PATCH ne)
+/api/freelo/test-create-task/<pid>/<tlid>  → testuje 5 variant vytvoření úkolu
+/api/freelo/test-desc/<pid>/<tlid>         → testuje pole pro popis (všechna ignorována při vytvoření!)
+/api/freelo/test-members/<project_id>      → testuje endpointy pro members
+```
+
+### Historie zjišťování Freelo API (pro kontext — co jsme prošli)
+```
+Sezení 17. 3. 2026:
+- Zjistili jsme že projekt ID 582553 (z URL) ≠ API ID
+- Správné ID projektu CMRC = 501350 (z GET /projects)
+- Auth selhal: jen API klíč nestačí, musí být email + klíč (Basic Auth)
+- Správný endpoint pro vytvoření úkolu: POST /project/{pid}/tasklist/{tlid}/tasks
+  (singulár project/tasklist, plurál tasks — ne /projects/, ne /task bez s)
+- GET /tasklist/{id} funguje, GET /tasklist/{id}/tasks vrací 404
+- Popis nelze přidat při vytvoření — musí se přidat zvlášť POST /task/{id}/description
+- worker_id musí být číslo (integer), endpoint GET /project/{id}/workers (singulár!)
+- Zodpovědná osoba: Martin=236443, Pavel=236444, Markéta=236445, Jakub=236446
+- PHP SDK dokumentace byla ŠPATNĚ (uváděla plurál /projects/ — nefunguje!)
+- Fungující vzor ověřen přímým test endpointem /api/freelo/test-create-task
+
+Sezení 22. 3. 2026:
+- Editace úkolu: POST /task/{id} funguje, PUT i PATCH vrací 404
+- Prázdný popis {"content": ""} vrací 400 — posílat jen neprázdný
+- Zodpovědná osoba: <select> nefunguje (async načítání), použít asgn-wrap vzor
+- Přidán Freelo plugin do projekt_detail.html (identický se zápisem)
 ```
 
 ---
@@ -327,6 +424,40 @@ Klientský portál                 ❌ Plánováno
 
 ## 📝 CHANGELOG
 
+### 2026-03-22 — Session odpoledne (Freelo opravy)
+
+**Freelo editace úkolu — VYŘEŠENO po 3 hodinách debuggingu:**
+- Přímým testem (`/api/freelo/debug-edit/{id}`) ověřeno: `POST /task/{id}` funguje, PUT/PATCH vrací 404
+- Opravena funkce `api_freelo_task_edit` v app.py: používá POST místo PUT
+- Opravena chyba: prázdný popis (`""`) nesmí být posílán na `/task/{id}/description` → Freelo vrací 400
+- Opravena zodpovědná osoba: backend překládá jméno → worker_id přes GET /project/{id}/workers
+
+**Zodpovědná osoba v klient_detail — VYŘEŠENO:**
+- Nahrazen `<select>` za text input s autocomplete (přesná kopie z detail.html)
+- CSS: `asgn-wrap`, `asgn-dd`, `asgn-opt` — JS: `openAD`, `filterAD`, `pickAsgn`
+- Select byl prázdný protože `flMembers` se načítá async a select se vyplnil dřív
+
+**Freelo plugin v projekt_detail:**
+- Starý panel nahrazen plným pluginem (identický se zápisem)
+- Nový endpoint: `POST /api/freelo/projekt/<projekt_id>`
+
+### 2026-03-20 — Session (dokončení Freelo)
+- Zjištěno: Freelo ignoruje description/note/body/content při POST /tasks
+- Popis se MUSÍ přidat zvlášť přes POST /task/{id}/description PO vytvoření
+- Worker_id funguje v POST /tasks payloadu přímo
+- Správný endpoint members: GET /project/{id}/workers (singulár, ne /projects/)
+- Workers struktura: data.workers[].id + data.workers[].fullname
+- Martin Komárek = 236443, Pavel Bezdék = 236444, Markéta Komárek = 236445, Jakub Matějka = 236446
+
+### 2026-03-17 — Session (Freelo základy)
+- Zjištěno správné API ID projektu CMRC = 501350 (ne 582553 z URL!)
+- Auth: Basic Auth email+API klíč (jen API klíč nestačí, musí být FREELO_EMAIL)
+- Správný endpoint pro vytvoření úkolu: POST /project/{pid}/tasklist/{tlid}/tasks
+  (singulár project/tasklist, plurál tasks — NON-STANDARD!)
+- Nefungující endpointy: /projects/ (plurál), /tasklists/ (plurál), /tasklist/{id}/tasks
+- Vytváření tasklist: POST /project/{pid}/tasklist (singulár)
+- Test endpoint /api/freelo/test-create-task/{pid}/{tlid} potvrdil správný formát
+
 ### 2026-03-22 — Velká session (celý den)
 
 **Navigace & UX přestavba:**
@@ -389,5 +520,5 @@ Klientský portál                 ❌ Plánováno
 
 ---
 
-*Poslední aktualizace: 22. 03. 2026*
-*Verze aplikace: ~1.5 (ostré použití, Freelo integrace se ladí)*
+*Poslední aktualizace: 22. 03. 2026 — odpoledne*
+*Verze aplikace: ~1.6 (Freelo editace opravena, plugin v projekt_detail)*
