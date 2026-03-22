@@ -281,6 +281,13 @@
 #toast { position: fixed; bottom: 24px; right: 24px; background: var(--navy); color: white; padding: 10px 18px; border-radius: 6px; font-size: 13px; font-weight: 600; opacity: 0; transition: opacity 0.2s; z-index: 999; pointer-events: none; }
 #toast.show { opacity: 1; }
 
+/* Autocomplete — kopie z detail.html */
+.asgn-wrap{position:relative;}
+.asgn-dd{display:none;position:absolute;top:100%;left:0;right:0;background:white;border:1.5px solid #00AFF0;border-radius:5px;z-index:200;max-height:180px;overflow-y:auto;box-shadow:0 6px 20px rgba(0,0,0,0.12);}
+.asgn-dd.open{display:block;}
+.asgn-opt{padding:8px 12px;font-size:12px;color:#173767;cursor:pointer;font-family:'Montserrat',sans-serif;}
+.asgn-opt:hover{background:#f0f5fb;}
+
 /* Nový projekt */
 #novy-projekt-form { display: none; padding: 14px 0 4px; border-top: 1px solid var(--border); margin-top: 4px; }
 .projekt-form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
@@ -605,9 +612,13 @@
               <input id="fl-new-name" class="fl-edit-input" placeholder="Název úkolu *" style="margin-bottom:8px;width:100%;">
               <div class="fl-new-row">
                 <input id="fl-new-deadline" class="fl-edit-input" type="date">
-                <input id="fl-new-desc" class="fl-edit-input" placeholder="Popis (volitelný)">
+                <div class="asgn-wrap" style="position:relative;">
+                  <input id="fl-new-assignee" class="fl-edit-input" placeholder="Zodpovědná osoba" autocomplete="off" onfocus="openAD(this)" oninput="filterAD(this)" style="cursor:pointer;">
+                  <div class="asgn-dd"></div>
+                </div>
               </div>
-              <div style="display:flex;gap:6px;">
+              <input id="fl-new-desc" class="fl-edit-input" placeholder="Popis (volitelný)" style="margin-top:6px;width:100%;">
+              <div style="display:flex;gap:6px;margin-top:8px;">
                 <button onclick="flPridatUkol()" class="btn btn-navy btn-sm">Přidat do Freela</button>
                 <button onclick="flNovyUkolToggle()" class="btn btn-secondary btn-sm">Zrušit</button>
               </div>
@@ -751,6 +762,12 @@ document.addEventListener('DOMContentLoaded', () => {
     flShowNotConfigured();
     flLoadTasklists();
   }
+  // Zavři autocomplete při kliku mimo
+  document.addEventListener('click', e => {
+    if (!e.target.closest('.asgn-wrap')) {
+      document.querySelectorAll('.asgn-dd.open').forEach(d => d.classList.remove('open'));
+    }
+  });
 });
 
 function flShowConfigured() {
@@ -791,6 +808,8 @@ async function flLoadMembers() {
   try {
     const d = await fetch(`/api/freelo/members/${flCurrentProjectId}`).then(r => r.json());
     flMembers = d.members || [];
+    // Po načtení members nabídni dropdown na všech otevřených edit formulářích
+    document.querySelectorAll('[id^="flworker-input-"]').forEach(populateAD);
   } catch(e) { flMembers = []; }
 }
 
@@ -985,7 +1004,7 @@ function flTaskHTML(t, indent) {
     <div class="fl-task-main">
       <div class="fl-checkbox ${done ? 'done' : ''}" onclick="flToggleDone(${t.id}, ${!done})" title="${done ? 'Znovu otevřít' : 'Označit jako hotový'}"></div>
       <div class="fl-task-info">
-        <div class="fl-task-name ${done ? 'done' : ''}">${flEsc(t.name)}</div>
+        <div class="fl-task-name ${done ? 'done' : ''}"><a href="${t.url}" target="_blank" style="color:inherit;text-decoration:none;" title="Otevřít ve Freelu">${flEsc(t.name)}</a></div>
         <div class="fl-task-meta">
           ${t.assignee
             ? `<span class="fl-meta-chip" style="cursor:pointer;" onclick="flToggleEdit(${t.id})" title="Změnit zodpovědnou osobu">👤 ${flEsc(t.assignee)}</span>`
@@ -994,12 +1013,12 @@ function flTaskHTML(t, indent) {
           ${deadlineLabel ? `<span class="fl-meta-chip ${deadlineClass}">📅 ${deadlineLabel}</span>` : ''}
           ${!indent && t.count_subtasks > 0 ? `<span class="fl-meta-chip" style="cursor:pointer;color:var(--navy);" onclick="flToggleSubtasks(${t.id})">⊞ ${t.count_subtasks} podúkolů</span>` : ''}
           ${t.comments_count > 0 ? `<span class="fl-comments-badge" onclick="flToggleComments(${t.id})">💬 ${t.comments_count}</span>` : ''}
-          <a href="${t.url}" target="_blank" style="font-size:10px;color:var(--cyan);text-decoration:none;" title="Otevřít ve Freelu">↗</a>
         </div>
       </div>
       <div class="fl-task-actions">
         <button class="fl-btn" onclick="flToggleEdit(${t.id})" title="Upravit">✎</button>
         <button class="fl-btn" onclick="flToggleComments(${t.id})" title="Komentáře">💬</button>
+        <a href="${t.url}" target="_blank" class="fl-btn" title="Otevřít ve Freelu" style="text-decoration:none;display:inline-flex;align-items:center;">↗</a>
         <button class="fl-btn danger" onclick="flSmazat(${t.id})" title="Smazat">✕</button>
       </div>
     </div>
@@ -1009,10 +1028,10 @@ function flTaskHTML(t, indent) {
       <textarea class="fl-edit-textarea" id="fldesc-${t.id}" placeholder="Popis úkolu">${flEsc(t.description || '')}</textarea>
       <div class="fl-edit-row" style="margin-top:6px;">
         <input class="fl-edit-input" id="fldate-${t.id}" type="date" value="${(t.deadline||'').slice(0,10)}" title="Deadline">
-        <select class="fl-edit-input" id="flworker-${t.id}" style="font-size:12px;">
-          <option value="">— Zodpovědná osoba —</option>
-          ${(flMembers||[]).map(m => `<option value="${m.id}" ${t.assignee_id == m.id ? 'selected' : ''}>${flEsc(m.name)}</option>`).join('')}
-        </select>
+        <div class="asgn-wrap">
+          <input type="text" class="fl-edit-input" id="flworker-input-${t.id}" placeholder="Vybrat..." autocomplete="off" onfocus="openAD(this)" oninput="filterAD(this)" value="${flEsc(t.assignee||'')}" style="cursor:pointer;">
+          <div class="asgn-dd"></div>
+        </div>
       </div>
       <div style="display:flex;gap:6px;margin-top:6px;align-items:center;">
         <button onclick="flUlozitEdit(${t.id})" class="btn btn-navy btn-sm">Uložit</button>
@@ -1039,6 +1058,13 @@ function flEsc(str) {
   if (!str) return '';
   return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
+
+// Kopie z detail.html — zodpovědná osoba autocomplete
+function populateAD(input){if(!input)return;const wrap=input.closest(".asgn-wrap");if(!wrap)return;let dd=wrap.querySelector(".asgn-dd");if(!dd){dd=document.createElement("div");dd.className="asgn-dd";wrap.appendChild(dd);}renderAD(dd,input);}
+function renderAD(dd,input){const q=(input.value||"").toLowerCase();const members=flMembers.filter(m=>m.name.toLowerCase().includes(q)||(m.email||"").toLowerCase().includes(q));dd.innerHTML=members.length?members.map(m=>`<div class="asgn-opt" onclick="pickAsgn(this,'${m.name.replace(/'/g,"\\'")}')">${flEsc(m.name)}</div>`).join(""):"<div class=\"asgn-opt\" style=\"color:#4A6080;font-style:italic;\">Žádné výsledky</div>";}
+function openAD(input){populateAD(input);input.closest(".asgn-wrap")?.querySelector(".asgn-dd")?.classList.add("open");}
+function filterAD(input){const dd=input.closest(".asgn-wrap")?.querySelector(".asgn-dd");if(dd){renderAD(dd,input);dd.classList.add("open");}}
+function pickAsgn(opt,name){const w=opt.closest(".asgn-wrap");if(w?.querySelector("input"))w.querySelector("input").value=name;w?.querySelector(".asgn-dd")?.classList.remove("open");}
 
 async function flToggleDone(taskId, done) {
   const el = document.getElementById(`flt-${taskId}`);
@@ -1095,18 +1121,25 @@ async function flToggleEdit(taskId) {
 }
 
 async function flUlozitEdit(taskId) {
-  const nameEl = document.getElementById(`flname-${taskId}`);
-  const descEl = document.getElementById(`fldesc-${taskId}`);
-  const dateEl = document.getElementById(`fldate-${taskId}`);
-  const workerEl = document.getElementById(`flworker-${taskId}`);
-  const name = nameEl?.value.trim() || '';
-  const desc = descEl?.value || '';
+  const nameEl   = document.getElementById(`flname-${taskId}`);
+  const descEl   = document.getElementById(`fldesc-${taskId}`);
+  const dateEl   = document.getElementById(`fldate-${taskId}`);
+  const workerEl = document.getElementById(`flworker-input-${taskId}`);
+  const name     = nameEl?.value.trim() || '';
+  const desc     = descEl?.value || '';
   const deadline = dateEl?.value || '';
-  const worker_id = workerEl?.value ? parseInt(workerEl.value) : null;
+  const assignee = workerEl?.value.trim() || '';
   if (!name) { toast('Název je povinný', false); return; }
 
-  const payload = {name, description: desc, deadline};
-  if (workerEl) payload.worker_id = worker_id;
+  const task = flAllTasks.find(t => t.id === taskId);
+  const payload = {
+    name,
+    description: desc,
+    deadline,
+    assignee,
+    project_id:  task?.project_id  || null,
+    tasklist_id: task?.tasklist_id || null,
+  };
 
   try {
     const d = await fetch(`/api/freelo/task/${taskId}/edit`, {
@@ -1114,13 +1147,11 @@ async function flUlozitEdit(taskId) {
       body: JSON.stringify(payload)
     }).then(r => r.json());
     if (d.ok) {
-      const workerName = worker_id ? (flMembers.find(m => m.id === worker_id)?.name || '') : '';
-      // Aktualizuj v lokálním cache (hledej i v podúkolech)
       const updateTask = (tasks) => {
         for (const t of tasks) {
           if (t.id === taskId) {
             t.name = name; t.description = desc; t.deadline = deadline;
-            t.assignee = workerName; t.assignee_id = worker_id;
+            t.assignee = assignee;
             return true;
           }
         }
@@ -1259,25 +1290,26 @@ function flNovyUkolToggle() {
 }
 
 async function flPridatUkol() {
-  const name = document.getElementById('fl-new-name').value.trim();
+  const name     = document.getElementById('fl-new-name').value.trim();
   const deadline = document.getElementById('fl-new-deadline').value;
-  const desc = document.getElementById('fl-new-desc').value.trim();
+  const desc     = document.getElementById('fl-new-desc').value.trim();
+  const assignee = document.getElementById('fl-new-assignee').value.trim();
   if (!name) { toast('Název je povinný', false); return; }
   const btn = document.querySelector('#fl-new-task-form .btn-navy');
   btn.disabled = true; btn.textContent = 'Přidávám…';
   try {
     const d = await fetch(`/api/klient/${FL_KLIENT_ID}/freelo-pridat-ukol`, {
       method: 'POST', headers: {'Content-Type':'application/json'},
-      body: JSON.stringify({name, deadline, description: desc})
+      body: JSON.stringify({name, deadline, description: desc, assignee})
     }).then(r => r.json());
     if (d.ok) {
       flAllTasks.unshift(d.task);
       document.getElementById('fl-new-name').value = '';
       document.getElementById('fl-new-deadline').value = '';
       document.getElementById('fl-new-desc').value = '';
+      document.getElementById('fl-new-assignee').value = '';
       flNovyUkolToggle();
       flRenderTasks();
-      // Aktualizuj badge
       const openCount = flAllTasks.filter(t => t.state === 'open').length;
       const badge = document.getElementById('fl-count-badge');
       badge.textContent = `${openCount} otevřených`;
