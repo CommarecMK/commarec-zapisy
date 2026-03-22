@@ -2561,6 +2561,72 @@ def odeslat_do_freela(zapis_id):
     return jsonify({"created": created, "errors": errors})
 
 
+@app.route("/api/freelo/projekt/<int:projekt_id>", methods=["POST"])
+@login_required
+def odeslat_do_freela_projekt(projekt_id):
+    """Odešle úkoly do Freela z kontextu projektu (bez vazby na konkrétní zápis)."""
+    data           = request.json or {}
+    selected_tasks = data.get("tasks", [])
+    tasklist_id    = data.get("tasklist_id")
+    if not selected_tasks: return jsonify({"error": "Žádné úkoly"}), 400
+    if not tasklist_id:    return jsonify({"error": "Vyberte To-Do list"}), 400
+
+    project_id_for_tasks = FREELO_PROJECT_ID
+    try:
+        resp_p = freelo_get("/projects")
+        if resp_p.status_code == 200:
+            for proj in resp_p.json():
+                for tl in proj.get("tasklists", []):
+                    if str(tl.get("id")) == str(tasklist_id):
+                        project_id_for_tasks = proj["id"]; break
+    except Exception:
+        pass
+
+    members_by_name = {}
+    try:
+        mr = freelo_get(f"/project/{project_id_for_tasks}/workers")
+        if mr.status_code == 200:
+            for w in mr.json().get("data", {}).get("workers", []):
+                if w.get("fullname"):
+                    members_by_name[w["fullname"].lower()] = w["id"]
+    except Exception:
+        pass
+
+    created, errors = [], []
+    for task in selected_tasks:
+        name = task.get("name", "").strip()
+        if not name: continue
+        payload  = {"name": name}
+        assignee = (task.get("assignee") or "").strip()
+        deadline = (task.get("deadline") or "").strip()
+        desc     = (task.get("desc") or "").strip()
+        if assignee:
+            wid = members_by_name.get(assignee.lower())
+            if wid: payload["worker_id"] = wid
+        if deadline and deadline.lower() not in ("dle dohody", ""):
+            if re.match(r"\d{4}-\d{2}-\d{2}", deadline):
+                payload["due_date"] = deadline
+            elif re.match(r"\d{1,2}\.\d{1,2}\.\d{4}", deadline):
+                p = deadline.replace(" ", "").split(".")
+                payload["due_date"] = f"{p[2]}-{p[1].zfill(2)}-{p[0].zfill(2)}"
+        try:
+            resp = freelo_post(f"/project/{project_id_for_tasks}/tasklist/{tasklist_id}/tasks", payload)
+            if resp.status_code in (200, 201):
+                created.append(name)
+                task_data = resp.json()
+                task_id   = (task_data.get("data") or task_data).get("id")
+                if task_id and desc:
+                    freelo_post(f"/task/{task_id}/description", {"content": desc})
+                if assignee and not members_by_name.get(assignee.lower()):
+                    freelo_post(f"/task/{task_id}/comments", {"content": f"Zodpovedna osoba: {assignee}"})
+            else:
+                errors.append(f"{name}: {resp.text[:100]}")
+        except Exception as e:
+            errors.append(f"{name}: {str(e)}")
+
+    return jsonify({"created": created, "errors": errors})
+
+
 @app.route("/api/freelo/test-kompletni")
 @login_required
 def test_freelo_kompletni():

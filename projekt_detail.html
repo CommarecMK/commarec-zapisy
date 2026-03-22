@@ -1,0 +1,378 @@
+{% extends "base.html" %}
+{% block title %}{{ p.nazev }}{% endblock %}
+
+{% block extra_head %}
+<style>
+.fl-lbl{font-size:10px;font-weight:700;color:#4A6080;text-transform:uppercase;letter-spacing:0.08em;display:block;margin-bottom:3px;}
+.fl-in{width:100%;padding:7px 9px;border:1.5px solid var(--border);border-radius:4px;font-size:12px;font-family:'Montserrat',sans-serif;color:#173767;}
+.fl-in:focus{outline:none;border-color:#00AFF0;}
+.task-row{display:grid;grid-template-columns:28px 1fr 180px 150px 34px;gap:8px;align-items:start;padding:10px 0;border-bottom:1px solid var(--border);}
+.task-row:last-child{border-bottom:none;}
+.modal-bg{display:none;position:fixed;inset:0;background:rgba(14,33,62,0.65);z-index:2000;align-items:center;justify-content:center;}
+.modal-bg.open{display:flex;}
+.modal-box{background:white;border-radius:8px;padding:28px 32px;width:500px;max-width:calc(100vw - 32px);box-shadow:0 20px 60px rgba(0,0,0,0.3);}
+.modal-title{font-family:'Montserrat',sans-serif;font-size:16px;font-weight:900;color:#173767;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:18px;}
+.modal-foot{display:flex;gap:10px;justify-content:flex-end;margin-top:20px;}
+.btn-mcancel{padding:9px 18px;border:1.5px solid var(--border);border-radius:5px;background:white;font-size:12px;font-weight:700;cursor:pointer;font-family:'Montserrat',sans-serif;}
+.btn-msave{padding:9px 20px;background:#173767;color:white;border:none;border-radius:5px;font-family:'Montserrat',sans-serif;font-size:13px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;cursor:pointer;}
+.btn-msave:hover{background:#254f8a;}
+.asgn-wrap{position:relative;}
+.asgn-dd{display:none;position:absolute;top:100%;left:0;right:0;background:white;border:1.5px solid #00AFF0;border-radius:5px;z-index:200;max-height:180px;overflow-y:auto;box-shadow:0 6px 20px rgba(0,0,0,0.12);}
+.asgn-dd.open{display:block;}
+.asgn-opt{padding:8px 12px;font-size:12px;color:#173767;cursor:pointer;font-family:'Montserrat',sans-serif;}
+.asgn-opt:hover{background:#f0f5fb;}
+@keyframes spin{to{transform:rotate(360deg);}}
+#toast-pd{position:fixed;bottom:24px;right:24px;background:#173767;color:white;padding:11px 20px;border-radius:6px;font-size:13px;font-family:'Montserrat',sans-serif;font-weight:600;z-index:9999;opacity:0;transition:opacity 0.3s;pointer-events:none;box-shadow:0 4px 20px rgba(0,0,0,0.2);}
+#toast-pd.show{opacity:1;}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+  <div class="page-header">
+    <div>
+      <div style="font-size:12px;color:#4A6080;margin-bottom:4px;"><a href="{{ url_for('klient_detail', klient_id=p.klient_id) }}" style="color:#00AFF0;">{{ p.klient.nazev }}</a> &rsaquo; Projekt</div>
+      <h1>{{ p.nazev }}</h1>
+      {% if p.popis %}<p style="font-size:13px;color:#4A6080;margin-top:4px;">{{ p.popis }}</p>{% endif %}
+    </div>
+    <div style="display:flex;gap:8px;">
+      <a href="{{ url_for('novy_zapis') }}?klient_id={{ p.klient_id }}&projekt_id={{ p.id }}" class="btn btn-navy" style="font-family:'Montserrat',sans-serif;font-size:13px;font-weight:900;letter-spacing:0.04em;text-transform:uppercase;">+ Nový zápis</a>
+      <a href="{{ url_for('klient_detail', klient_id=p.klient_id) }}" class="btn btn-secondary">&larr; Zpět</a>
+    </div>
+  </div>
+
+  <!-- Meta -->
+  <div class="card" style="margin-bottom:1rem;">
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:16px;">
+      <div><div style="font-size:10px;font-weight:700;color:#4A6080;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:3px;">Konzultant</div><div style="font-size:13px;font-weight:600;">{{ p.konzultant.name if p.konzultant else '—' }}</div></div>
+      <div><div style="font-size:10px;font-weight:700;color:#4A6080;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:3px;">Začátek</div><div style="font-size:13px;">{{ p.datum_od.strftime('%d. %m. %Y') if p.datum_od else '—' }}</div></div>
+      <div><div style="font-size:10px;font-weight:700;color:#4A6080;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:3px;">Konec</div><div style="font-size:13px;">{{ p.datum_do.strftime('%d. %m. %Y') if p.datum_do else '—' }}</div></div>
+      <div><div style="font-size:10px;font-weight:700;color:#4A6080;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:3px;">Stav</div><div>{% if p.is_active %}<span class="badge badge-green">Aktivní</span>{% else %}<span class="badge badge-gray">Uzavřený</span>{% endif %}</div></div>
+    </div>
+    <details style="margin-top:12px;border-top:1px solid var(--border);padding-top:12px;">
+      <summary style="font-size:11px;font-weight:700;color:#4A6080;text-transform:uppercase;letter-spacing:0.08em;cursor:pointer;">Upravit projekt</summary>
+      <form method="POST" action="{{ url_for('projekt_upravit', projekt_id=p.id) }}" style="margin-top:12px;">
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:10px;">
+          <div><label style="font-size:10px;font-weight:700;color:#4A6080;text-transform:uppercase;letter-spacing:0.08em;display:block;margin-bottom:3px;">Název</label><input type="text" name="nazev" value="{{ p.nazev }}" required style="padding:8px 10px;border:1.5px solid var(--border);border-radius:5px;font-size:13px;width:100%;font-family:'Montserrat',sans-serif;"></div>
+          <div><label style="font-size:10px;font-weight:700;color:#4A6080;text-transform:uppercase;letter-spacing:0.08em;display:block;margin-bottom:3px;">Konzultant</label><select name="user_id" style="padding:8px 10px;border:1.5px solid var(--border);border-radius:5px;font-size:13px;width:100%;font-family:'Montserrat',sans-serif;"><option value="">— nevybráno —</option>{% for u in konzultanti %}<option value="{{ u.id }}" {% if p.user_id==u.id %}selected{% endif %}>{{ u.name }}</option>{% endfor %}</select></div>
+          <div><label style="font-size:10px;font-weight:700;color:#4A6080;text-transform:uppercase;letter-spacing:0.08em;display:block;margin-bottom:3px;">Stav</label><select name="is_active" style="padding:8px 10px;border:1.5px solid var(--border);border-radius:5px;font-size:13px;width:100%;font-family:'Montserrat',sans-serif;"><option value="1" {% if p.is_active %}selected{% endif %}>Aktivní</option><option value="0" {% if not p.is_active %}selected{% endif %}>Uzavřený</option></select></div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:10px;">
+          <div><label style="font-size:10px;font-weight:700;color:#4A6080;text-transform:uppercase;letter-spacing:0.08em;display:block;margin-bottom:3px;">Od</label><input type="date" name="datum_od" value="{{ p.datum_od.isoformat() if p.datum_od else '' }}" style="padding:8px 10px;border:1.5px solid var(--border);border-radius:5px;font-size:13px;width:100%;font-family:'Montserrat',sans-serif;"></div>
+          <div><label style="font-size:10px;font-weight:700;color:#4A6080;text-transform:uppercase;letter-spacing:0.08em;display:block;margin-bottom:3px;">Do</label><input type="date" name="datum_do" value="{{ p.datum_do.isoformat() if p.datum_do else '' }}" style="padding:8px 10px;border:1.5px solid var(--border);border-radius:5px;font-size:13px;width:100%;font-family:'Montserrat',sans-serif;"></div>
+          <div style="display:flex;align-items:flex-end;"><button type="submit" class="btn btn-navy btn-sm" style="font-family:'Montserrat',sans-serif;font-weight:900;letter-spacing:0.04em;text-transform:uppercase;">Uložit</button></div>
+        </div>
+        <div><label style="font-size:10px;font-weight:700;color:#4A6080;text-transform:uppercase;letter-spacing:0.08em;display:block;margin-bottom:3px;">Popis</label><input type="text" name="popis" value="{{ p.popis }}" style="padding:8px 10px;border:1.5px solid var(--border);border-radius:5px;font-size:13px;width:100%;font-family:'Montserrat',sans-serif;"></div>
+      </form>
+    </details>
+  </div>
+
+  <!-- Zápisy timeline -->
+  <div class="card" style="margin-bottom:1rem;">
+    <div style="font-family:'Montserrat',sans-serif;font-size:16px;font-weight:900;color:#173767;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:16px;padding-bottom:10px;border-bottom:2px solid #00AFF0;">
+      Timeline schůzek ({{ zapisy|length }})
+    </div>
+    {% if zapisy %}
+    <div style="border-left:2px solid var(--border);padding-left:16px;">
+      {% for z in zapisy %}
+      <div style="position:relative;margin-bottom:20px;">
+        <div style="position:absolute;left:-21px;top:5px;width:8px;height:8px;border-radius:50%;background:#00AFF0;border:2px solid white;box-shadow:0 0 0 2px #00AFF0;"></div>
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;">
+          <div>
+            <span class="badge badge-gray" style="margin-bottom:5px;display:inline-block;">{{ z.created_at.strftime('%d. %m. %Y') }}</span>
+            <div><a href="{{ url_for('detail_zapisu', zapis_id=z.id) }}" style="font-weight:700;color:#173767;font-size:14px;">{{ z.title }}</a></div>
+            <div style="margin-top:3px;"><span class="badge badge-blue">{{ template_names.get(z.template, z.template) }}</span>
+            {% if z.freelo_sent %}<span class="badge badge-green" style="margin-left:4px;">&#x2713; Freelo</span>{% endif %}
+            {% if z.is_public %}<span class="badge badge-cyan" style="margin-left:4px;">Veřejný</span>{% endif %}</div>
+          </div>
+          <a href="{{ url_for('detail_zapisu', zapis_id=z.id) }}" class="btn btn-secondary btn-sm">Otevřít</a>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div style="text-align:center;padding:2rem;color:#4A6080;font-size:13px;">Zatím žádné zápisy pro tento projekt.</div>
+    {% endif %}
+  </div>
+
+  <!-- FREELO PLUGIN -->
+  <div class="card tasks-section" id="freelo-panel">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.25rem;padding-bottom:12px;border-bottom:1px solid var(--border);">
+      <div>
+        <div style="font-family:'Montserrat',sans-serif;font-size:12px;font-weight:800;color:#173767;text-transform:uppercase;letter-spacing:0.04em;">Úkoly pro Freelo</div>
+        <div id="task-count-label" style="font-size:10px;font-weight:600;color:#4A6080;text-transform:uppercase;letter-spacing:0.04em;margin-top:3px;"></div>
+      </div>
+    </div>
+
+    <div style="display:flex;align-items:flex-end;gap:10px;margin-bottom:1rem;flex-wrap:wrap;">
+      <div style="flex:1;min-width:140px;">
+        <label class="fl-lbl">Freelo projekt</label>
+        <select id="project-select" onchange="onProjectChange()" class="fl-in" style="cursor:pointer;">
+          <option value="">Načítám...</option>
+        </select>
+      </div>
+      <div style="flex:1;min-width:140px;">
+        <label class="fl-lbl">To-Do list</label>
+        <select id="tasklist-select" class="fl-in" style="cursor:pointer;">
+          <option value="">— vyberte projekt —</option>
+        </select>
+      </div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;padding-bottom:1px;">
+        <button onclick="openNewListModal()" class="btn btn-secondary btn-sm">+ + Nový list</button>
+        <button onclick="selectAllTasks(true)" style="font-size:10px;font-weight:700;color:#00AFF0;background:none;border:1.5px solid #00AFF0;border-radius:4px;padding:6px 11px;cursor:pointer;text-transform:uppercase;letter-spacing:0.04em;font-family:'Montserrat',sans-serif;">Vše</button>
+        <button onclick="selectAllTasks(false)" style="font-size:10px;font-weight:700;color:#4A6080;background:none;border:1.5px solid var(--border);border-radius:4px;padding:6px 11px;cursor:pointer;text-transform:uppercase;letter-spacing:0.04em;font-family:'Montserrat',sans-serif;">Nic</button>
+        <button onclick="addTaskRow()" style="font-size:10px;font-weight:700;color:#0A7A5A;background:none;border:1.5px solid #0A7A5A;border-radius:4px;padding:6px 11px;cursor:pointer;text-transform:uppercase;letter-spacing:0.04em;font-family:'Montserrat',sans-serif;">+ Přidat úkol</button>
+      </div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:28px 1fr 180px 150px 34px;gap:8px;padding:0 0 6px;border-bottom:2px solid var(--border);margin-bottom:2px;">
+      <div></div>
+      <div style="font-size:10px;font-weight:700;color:#4A6080;text-transform:uppercase;letter-spacing:0.04em;">Úkol + popis</div>
+      <div style="font-size:10px;font-weight:700;color:#4A6080;text-transform:uppercase;letter-spacing:0.04em;">Zodpovědná osoba</div>
+      <div style="font-size:10px;font-weight:700;color:#4A6080;text-transform:uppercase;letter-spacing:0.04em;">Termín</div>
+      <div></div>
+    </div>
+
+    <div id="tasks-list-container">
+      <div id="no-tasks-msg" style="padding:1.5rem 0;font-size:13px;color:#4A6080;font-style:italic;text-align:center;">Žádné úkoly. Klikni na &ldquo;+ Přidat úkol&rdquo;.</div>
+    </div>
+
+    <div style="margin-top:1.25rem;display:flex;gap:12px;align-items:center;flex-wrap:wrap;">
+      <button id="freelo-send-btn" onclick="odeslatDoFreela()" style="font-family:'Montserrat',sans-serif;font-size:13px;font-weight:700;background:#0A7A5A;color:white;border:none;padding:11px 24px;border-radius:5px;cursor:pointer;">Odeslat vybrané do Freela &rarr;</button>
+      <span id="freelo-status" style="font-size:12px;color:#4A6080;font-weight:500;"></span>
+    </div>
+    <div id="freelo-result" style="margin-top:12px;"></div>
+  </div>
+
+</div>
+
+<div id="toast-pd"></div>
+
+<!-- Modal: Nový list -->
+<div id="modal-new-list" class="modal-bg">
+  <div class="modal-box">
+    <div class="modal-title">Nový To-Do list</div>
+    <label class="fl-lbl" style="margin-bottom:5px;">Projekt</label>
+    <select id="new-list-project" class="fl-in" style="margin-bottom:14px;cursor:pointer;padding:9px 12px;font-size:13px;"></select>
+    <label class="fl-lbl" style="margin-bottom:5px;">Název listu</label>
+    <input id="new-list-name" type="text" class="fl-in" placeholder="Např. Klient — akční kroky" style="font-size:12px;padding:10px 12px;">
+    <div class="modal-foot">
+      <button class="btn-mcancel" onclick="closeModal('modal-new-list')">Zrušit</button>
+      <button class="btn-msave" id="create-list-btn" onclick="createNewList()">Vytvořit</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Detail úkolu -->
+<div id="modal-task-detail" class="modal-bg">
+  <div class="modal-box">
+    <div class="modal-title">Detail úkolu</div>
+    <div style="display:grid;gap:14px;">
+      <div><label class="fl-lbl" style="margin-bottom:5px;">Název úkolu</label><input id="detail-name" type="text" class="fl-in" style="font-size:13px;font-weight:600;padding:9px 12px;"></div>
+      <div><label class="fl-lbl" style="margin-bottom:5px;">Popis</label><textarea id="detail-desc" rows="4" class="fl-in" style="resize:vertical;font-size:13px;padding:9px 12px;"></textarea></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+        <div class="asgn-wrap">
+          <label class="fl-lbl" style="margin-bottom:5px;">Zodpovědná osoba</label>
+          <input id="detail-assignee" type="text" class="fl-in" placeholder="Vybrat..." autocomplete="off" onfocus="openAD(this)" oninput="filterAD(this)" style="padding:9px 12px;cursor:pointer;">
+          <div class="asgn-dd"></div>
+        </div>
+        <div><label class="fl-lbl" style="margin-bottom:5px;">Termín</label><input id="detail-deadline" type="date" class="fl-in" style="padding:9px 12px;"></div>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn-mcancel" onclick="closeModal('modal-task-detail')">Zrušit</button>
+      <button class="btn-msave" onclick="saveDetail()">Uložit</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const PROJEKT_ID = {{ p.id }};
+let freeloProjects = [], freeloMembers = [], activeRow = null, nextIdx = 0;
+
+document.addEventListener('DOMContentLoaded', () => {
+  loadProjects();
+  updateCount();
+  document.addEventListener('click', e => {
+    if (!e.target.closest('.asgn-wrap')) document.querySelectorAll('.asgn-dd.open').forEach(d => d.classList.remove('open'));
+    ['modal-new-list','modal-task-detail'].forEach(id => { if (e.target === document.getElementById(id)) closeModal(id); });
+  });
+});
+
+function toast(msg, ok=true) {
+  const t = document.getElementById('toast-pd');
+  t.textContent = msg; t.style.background = ok ? '#173767' : '#C0392B';
+  t.classList.add('show'); setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+async function loadProjects() {
+  try {
+    const d = await fetch('/api/freelo/projects').then(r => r.json());
+    freeloProjects = d.projects || [];
+    const sel = document.getElementById('project-select');
+    const nlp = document.getElementById('new-list-project');
+    if (!freeloProjects.length) { sel.innerHTML = '<option value="">Žádné projekty</option>'; return; }
+    const opts = freeloProjects.map(p => `<option value="${p.id}">${p.name}</option>`).join('');
+    sel.innerHTML = opts; nlp.innerHTML = opts;
+    onProjectChange(); loadMembers(freeloProjects[0]?.id);
+  } catch(e) { document.getElementById('project-select').innerHTML = '<option value="">Chyba načítání</option>'; }
+  updateCount();
+}
+
+function onProjectChange() {
+  const pid = document.getElementById('project-select').value;
+  const proj = freeloProjects.find(p => String(p.id) === String(pid));
+  const sel = document.getElementById('tasklist-select');
+  if (!proj) { sel.innerHTML = '<option value="">— vyberte projekt —</option>'; return; }
+  sel.innerHTML = (proj.tasklists || []).length
+    ? proj.tasklists.map(tl => `<option value="${tl.id}">${tl.name}</option>`).join('')
+    : '<option value="">Žádné listy</option>';
+  loadMembers(pid);
+}
+
+async function loadMembers(pid) {
+  if (!pid) return;
+  try {
+    const d = await fetch(`/api/freelo/members/${pid}`).then(r => r.json());
+    freeloMembers = d.members || [];
+    document.querySelectorAll('.task-assignee, #detail-assignee').forEach(populateAD);
+  } catch(e) {}
+}
+
+function populateAD(input) {
+  if (!input) return;
+  const wrap = input.closest('.asgn-wrap'); if (!wrap) return;
+  let dd = wrap.querySelector('.asgn-dd');
+  if (!dd) { dd = document.createElement('div'); dd.className = 'asgn-dd'; wrap.appendChild(dd); }
+  renderAD(dd, input);
+}
+
+function renderAD(dd, input) {
+  const q = (input.value || '').toLowerCase();
+  const members = freeloMembers.filter(m => m.name.toLowerCase().includes(q) || (m.email || '').toLowerCase().includes(q));
+  dd.innerHTML = members.length
+    ? members.map(m => `<div class="asgn-opt" onclick="pickAsgn(this,'${m.name.replace(/'/g,"\\'")}')"><strong>${m.name}</strong><span style="color:#4A6080;font-size:11px;margin-left:6px;">${m.email || ''}</span></div>`).join('')
+    : '<div class="asgn-opt" style="color:#4A6080;font-style:italic;">Žádné výsledky</div>';
+}
+
+function openAD(input) { populateAD(input); input.closest('.asgn-wrap')?.querySelector('.asgn-dd')?.classList.add('open'); }
+function filterAD(input) { const dd = input.closest('.asgn-wrap')?.querySelector('.asgn-dd'); if (dd) { renderAD(dd, input); dd.classList.add('open'); } }
+function pickAsgn(opt, name) { const w = opt.closest('.asgn-wrap'); if (w?.querySelector('input')) w.querySelector('input').value = name; w?.querySelector('.asgn-dd')?.classList.remove('open'); }
+function selectAllTasks(v) { document.querySelectorAll('.task-checkbox').forEach(cb => cb.checked = v); updateCount(); }
+
+function updateCount() {
+  const t = document.querySelectorAll('.task-checkbox').length;
+  const s = document.querySelectorAll('.task-checkbox:checked').length;
+  const el = document.getElementById('task-count-label');
+  if (el) el.textContent = `${s} z ${t} úkolů vybráno`;
+}
+
+function addTaskRow() {
+  const c = document.getElementById('tasks-list-container');
+  const nm = document.getElementById('no-tasks-msg'); if (nm) nm.remove();
+  const idx = nextIdx++;
+  const row = document.createElement('div');
+  row.className = 'task-row freelo-task-row'; row.dataset.idx = idx;
+  row.innerHTML = `
+    <div style="padding-top:4px;"><input type="checkbox" class="task-checkbox" checked style="width:16px;height:16px;accent-color:#00AFF0;cursor:pointer;margin:0;"></div>
+    <div>
+      <input type="text" class="task-name-input fl-in" placeholder="Název úkolu..." style="font-size:13px;font-weight:600;margin-bottom:4px;">
+      <textarea class="task-desc-text fl-in" rows="2" placeholder="Popis..." style="font-size:11px;color:#4A6080;resize:vertical;margin-top:2px;padding:5px 8px;line-height:1.5;width:100%;"></textarea>
+    </div>
+    <div class="asgn-wrap">
+      <input type="text" class="task-assignee fl-in" placeholder="Vybrat..." autocomplete="off" onfocus="openAD(this)" oninput="filterAD(this)" style="cursor:pointer;">
+      <div class="asgn-dd"></div>
+    </div>
+    <input type="date" class="task-deadline fl-in">
+    <button onclick="openDetail(this)" title="Detail" style="background:none;border:1.5px solid var(--border);border-radius:4px;width:32px;height:32px;cursor:pointer;font-size:16px;color:#4A6080;display:flex;align-items:center;justify-content:center;margin-top:1px;">&#x22EF;</button>`;
+  c.appendChild(row);
+  row.querySelector('.task-checkbox').addEventListener('change', updateCount);
+  populateAD(row.querySelector('.task-assignee'));
+  row.querySelector('.task-name-input').focus();
+  updateCount();
+}
+
+function closeModal(id) { document.getElementById(id).classList.remove('open'); if (id === 'modal-task-detail') activeRow = null; }
+function openNewListModal() { document.getElementById('modal-new-list').classList.add('open'); setTimeout(() => document.getElementById('new-list-name').focus(), 50); }
+
+async function createNewList() {
+  const name = document.getElementById('new-list-name').value.trim();
+  const pid  = document.getElementById('new-list-project').value;
+  if (!name || !pid) { toast('Vyplňte název a vyberte projekt', false); return; }
+  const btn = document.getElementById('create-list-btn'); btn.disabled = true; btn.textContent = 'Vytvářím...';
+  try {
+    const d = await fetch('/api/freelo/create-tasklist', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({name, project_id: pid}) }).then(r => r.json());
+    if (d.id) {
+      const proj = freeloProjects.find(p => String(p.id) === String(pid));
+      if (proj) { proj.tasklists = proj.tasklists || []; proj.tasklists.push({id: d.id, name: d.name}); }
+      document.getElementById('project-select').value = pid; onProjectChange();
+      document.getElementById('tasklist-select').value = d.id;
+      closeModal('modal-new-list'); toast('List vytvořen');
+    } else toast('Chyba: ' + (d.error || '?'), false);
+  } catch(e) { toast('Chyba: ' + e.message, false); }
+  finally { btn.disabled = false; btn.textContent = 'Vytvořit'; }
+}
+
+function openDetail(btn) {
+  activeRow = btn.closest('.freelo-task-row');
+  document.getElementById('detail-name').value     = activeRow.querySelector('.task-name-input')?.value || '';
+  document.getElementById('detail-assignee').value = activeRow.querySelector('.task-assignee')?.value || '';
+  document.getElementById('detail-deadline').value = activeRow.querySelector('.task-deadline')?.value || '';
+  const d = activeRow.querySelector('.task-desc-text');
+  document.getElementById('detail-desc').value = d ? (d.value !== undefined ? d.value : d.textContent).trim() : '';
+  populateAD(document.getElementById('detail-assignee'));
+  document.getElementById('modal-task-detail').classList.add('open');
+}
+
+function saveDetail() {
+  if (!activeRow) return;
+  const ni = activeRow.querySelector('.task-name-input'); if (ni) ni.value = document.getElementById('detail-name').value;
+  const ai = activeRow.querySelector('.task-assignee');   if (ai) ai.value = document.getElementById('detail-assignee').value;
+  const di = activeRow.querySelector('.task-deadline');   if (di) di.value = document.getElementById('detail-deadline').value;
+  let de = activeRow.querySelector('.task-desc-text');
+  const dv = document.getElementById('detail-desc').value.trim();
+  if (dv) {
+    if (!de) { de = document.createElement('textarea'); de.className = 'task-desc-text fl-in'; de.rows = 2; de.style.cssText = 'font-size:11px;color:#4A6080;resize:vertical;margin-top:2px;padding:5px 8px;line-height:1.5;width:100%;'; activeRow.querySelector('.task-name-input')?.insertAdjacentElement('afterend', de); }
+    de.value = dv;
+  }
+  closeModal('modal-task-detail');
+}
+
+async function odeslatDoFreela() {
+  const btn  = document.getElementById('freelo-send-btn');
+  const tlId = document.getElementById('tasklist-select')?.value || null;
+  if (!tlId) { toast('Vyberte To-Do list', false); return; }
+  const sel = [];
+  document.querySelectorAll('.task-checkbox:checked').forEach(cb => {
+    const row = cb.closest('.freelo-task-row'); if (!row) return;
+    const name = (row.querySelector('.task-name-input')?.value || '').trim(); if (!name) return;
+    const de = row.querySelector('.task-desc-text');
+    sel.push({
+      name,
+      desc:     (de ? (de.value !== undefined ? de.value : de.textContent) : '').trim(),
+      assignee: (row.querySelector('.task-assignee')?.value || '').trim(),
+      deadline: (row.querySelector('.task-deadline')?.value || '').trim()
+    });
+  });
+  if (!sel.length) { toast('Vyberte alespoň jeden úkol', false); return; }
+  btn.disabled = true;
+  btn.innerHTML = `<span style="display:inline-block;width:12px;height:12px;border:2px solid rgba(255,255,255,0.3);border-top-color:white;border-radius:50%;animation:spin 0.7s linear infinite;margin-right:6px;vertical-align:middle"></span>Odesílám ${sel.length} úkolů...`;
+  try {
+    const d = await fetch(`/api/freelo/projekt/${PROJEKT_ID}`, {
+      method: 'POST', headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({tasks: sel, tasklist_id: tlId})
+    }).then(r => r.json());
+    if (d.created?.length > 0) {
+      document.getElementById('freelo-result').innerHTML = `<div style="background:#E2F5EE;border:1px solid #0A7A5A;border-radius:5px;padding:10px 14px;font-size:13px;color:#0A7A5A;font-weight:600;">&#x2713; Odesláno ${d.created.length} úkolů do Freela</div>`;
+      btn.style.background = '#0A7A5A'; btn.innerHTML = '&#x2713; Odesláno';
+    } else {
+      document.getElementById('freelo-result').innerHTML = `<div style="background:#FCEAEA;border:1px solid #C0392B;border-radius:5px;padding:10px 14px;font-size:13px;color:#C0392B;">Chyba: ${(d.errors || []).join(', ') || d.error || 'Neznámá chyba'}</div>`;
+      btn.disabled = false; btn.innerHTML = 'Odeslat vybrané do Freela &rarr;';
+    }
+  } catch(e) {
+    toast('Chyba: ' + e.message, false);
+    btn.disabled = false; btn.innerHTML = 'Odeslat vybrané do Freela &rarr;';
+  }
+}
+</script>
+{% endblock %}
