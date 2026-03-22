@@ -3612,3 +3612,368 @@ def api_freelo_task_detail(task_id):
 
 if __name__ == "__main__":
     app.run(debug=False, host="0.0.0.0", port=int(os.environ.get("PORT", 5000)))
+
+
+# ─────────────────────────────────────────────
+# TEST ENDPOINT — ZODPOVĚDNÁ OSOBA (worker_id)
+# Otevři: /api/freelo/test-worker/<project_id>/<tasklist_id>
+# Příklad: /api/freelo/test-worker/582553/1810216
+# ─────────────────────────────────────────────
+@app.route("/api/freelo/test-worker/<int:project_id>/<int:tasklist_id>")
+@login_required
+def test_freelo_worker(project_id, tasklist_id):
+    """
+    Kompletní test zodpovědné osoby:
+    1. Načte members projektu
+    2. Vytvoří testovací úkol BEZ worker_id
+    3. Vytvoří testovací úkol S worker_id (první člen)
+    4. Upraví úkol přes POST /task/{id} s worker_id
+    5. Zobrazí výsledky — uvidíš přesně kde se worker ztrácí
+    """
+    log = []
+
+    # KROK 1: Načti members
+    log.append({"krok": "1. GET members", "url": f"/project/{project_id}/workers"})
+    members = []
+    try:
+        r = freelo_get(f"/project/{project_id}/workers")
+        log.append({"status": r.status_code, "body": r.text[:500]})
+        if r.status_code == 200:
+            members = r.json().get("data", {}).get("workers", [])
+            log.append({"members_nalezeno": len(members), "members": [{"id": w["id"], "jmeno": w.get("fullname")} for w in members]})
+        else:
+            log.append({"CHYBA": "Members se nenačetly!", "status": r.status_code})
+    except Exception as e:
+        log.append({"EXCEPTION": str(e)})
+
+    if not members:
+        return jsonify({"PROBLEM": "Žádní members! Zkontroluj project_id.", "log": log})
+
+    first_member = members[0]
+    worker_id = first_member["id"]
+    worker_name = first_member.get("fullname", "?")
+    log.append({"testovaci_worker": {"id": worker_id, "jmeno": worker_name}})
+
+    # KROK 2: Vytvoř úkol BEZ worker_id
+    log.append({"krok": "2. Vytvoř úkol BEZ worker_id"})
+    try:
+        r2 = freelo_post(f"/project/{project_id}/tasklist/{tasklist_id}/tasks", {
+            "name": "[TEST-WORKER] bez prirazeni - SMAZ"
+        })
+        log.append({"status": r2.status_code, "body": r2.text[:300]})
+        if r2.status_code in (200, 201):
+            task_id_bez = (r2.json().get("data") or r2.json()).get("id")
+            log.append({"task_bez_worker_id": task_id_bez})
+        else:
+            log.append({"CHYBA": "Nepodařilo se vytvořit úkol"})
+            task_id_bez = None
+    except Exception as e:
+        log.append({"EXCEPTION": str(e)})
+        task_id_bez = None
+
+    # KROK 3: Vytvoř úkol S worker_id
+    log.append({"krok": f"3. Vytvoř úkol S worker_id={worker_id} ({worker_name})"})
+    try:
+        r3 = freelo_post(f"/project/{project_id}/tasklist/{tasklist_id}/tasks", {
+            "name": f"[TEST-WORKER] s worker_id={worker_id} ({worker_name}) - SMAZ",
+            "worker_id": worker_id
+        })
+        log.append({"status": r3.status_code, "body": r3.text[:300]})
+        if r3.status_code in (200, 201):
+            task_data = r3.json().get("data") or r3.json()
+            task_id_s = task_data.get("id")
+            worker_v_odpovedi = task_data.get("worker")
+            log.append({
+                "task_s_worker_id": task_id_s,
+                "worker_v_odpovedi_freelo": worker_v_odpovedi,
+                "VYSLEDEK": "✅ WORKER SE ULOZIL" if worker_v_odpovedi else "❌ WORKER CHYBI V ODPOVEDI"
+            })
+        else:
+            log.append({"CHYBA": "Nepodařilo se vytvořit úkol s worker_id"})
+            task_id_s = None
+    except Exception as e:
+        log.append({"EXCEPTION": str(e)})
+        task_id_s = None
+
+    # KROK 4: Uprav existující úkol přes POST /task/{id}
+    if task_id_bez:
+        log.append({"krok": f"4. Uprav úkol {task_id_bez} přes POST /task/{{id}} s worker_id={worker_id}"})
+        try:
+            r4 = freelo_post(f"/task/{task_id_bez}", {"worker_id": worker_id})
+            log.append({"status": r4.status_code, "body": r4.text[:300]})
+            if r4.status_code in (200, 201, 204):
+                task_data4 = r4.json() if r4.text else {}
+                worker_po_editu = task_data4.get("worker")
+                log.append({
+                    "VYSLEDEK_EDITU": "✅ WORKER SE ULOZIL PO EDITU" if worker_po_editu else "⚠️ EDIT PROSLO ALE WORKER V ODPOVEDI CHYBI",
+                    "worker_v_odpovedi": worker_po_editu
+                })
+            else:
+                log.append({"CHYBA_EDITU": f"Status {r4.status_code}"})
+        except Exception as e:
+            log.append({"EXCEPTION_EDIT": str(e)})
+
+    # KROK 5: Ověř přes GET /task/{id} jestli worker je uložený
+    if task_id_s:
+        log.append({"krok": f"5. Ověř GET /task/{task_id_s} — je worker uložený?"})
+        try:
+            r5 = freelo_get(f"/task/{task_id_s}")
+            log.append({"status": r5.status_code})
+            if r5.status_code == 200:
+                task_check = r5.json()
+                worker_check = task_check.get("worker")
+                log.append({
+                    "KONECNY_VYSLEDEK": "✅ WORKER JE V TASKU" if worker_check else "❌ WORKER NENI V TASKU",
+                    "worker": worker_check
+                })
+        except Exception as e:
+            log.append({"EXCEPTION_CHECK": str(e)})
+
+    return jsonify({
+        "navod": f"Otevři Freelo → Consulting-test → tasklist ID {tasklist_id} → najdi [TEST-WORKER] úkoly a zkontroluj kdo je přiřazen",
+        "testovaci_worker": {"id": worker_id, "jmeno": worker_name},
+        "log": log
+    })
+
+
+# ─────────────────────────────────────────────
+# TEST ENDPOINT — SIMULACE ULOŽIT BUTTON
+# Otevři: /api/freelo/test-edit-worker/<task_id>/<jmeno>
+# Příklad: /api/freelo/test-edit-worker/28798538/Martin%20Kom%C3%A1rek
+# ─────────────────────────────────────────────
+@app.route("/api/freelo/test-edit-worker/<int:task_id>/<path:jmeno>")
+@login_required
+def test_freelo_edit_worker(task_id, jmeno):
+    """
+    Simuluje přesně co dělá tlačítko ULOŽIT v editaci úkolu.
+    Ukáže: payload který se posílá, worker_id který se našel, odpověď Freela.
+    """
+    log = []
+
+    # Stejný kód jako api_freelo_task_edit
+    project_id = 582553  # Consulting-test
+
+    # KROK 1: Resolve jméno → worker_id
+    log.append({"krok": f"1. Hledám worker_id pro jméno='{jmeno}' v project {project_id}"})
+    worker_id = None
+    try:
+        mr = freelo_get(f"/project/{project_id}/workers")
+        log.append({"members_status": mr.status_code})
+        if mr.status_code == 200:
+            workers = mr.json().get("data", {}).get("workers", [])
+            log.append({"vsichni_workers": [{"id": w["id"], "jmeno": w.get("fullname")} for w in workers]})
+            for w in workers:
+                if w.get("fullname", "").lower() == jmeno.lower():
+                    worker_id = w["id"]
+                    break
+            log.append({"hledane_jmeno": jmeno, "nalezeny_worker_id": worker_id})
+        else:
+            log.append({"CHYBA": "Members API selhalo"})
+    except Exception as e:
+        log.append({"EXCEPTION": str(e)})
+
+    # KROK 2: Sestaví payload (přesně jako edit endpoint)
+    post_payload = {"worker_id": worker_id} if worker_id else {}
+    log.append({"krok": "2. Payload pro POST /task/{id}", "payload": post_payload})
+
+    if not worker_id:
+        return jsonify({
+            "PROBLEM": f"Worker '{jmeno}' nenalezen v projektu {project_id}",
+            "RESENI": "Zkontroluj jméno — musí přesně souhlasit (case-insensitive)",
+            "log": log
+        })
+
+    # KROK 3: POST /task/{id}
+    log.append({"krok": f"3. POST /task/{task_id}", "payload": post_payload})
+    try:
+        resp = freelo_post(f"/task/{task_id}", post_payload)
+        log.append({"status": resp.status_code, "odpoved": resp.text[:400]})
+        if resp.status_code in (200, 201, 204):
+            resp_data = resp.json() if resp.text else {}
+            log.append({
+                "VYSLEDEK": "✅ EDIT PROSLO",
+                "worker_v_odpovedi": resp_data.get("worker"),
+                "cely_task": {k: v for k, v in resp_data.items() if k in ["id", "name", "worker"]}
+            })
+        else:
+            log.append({"VYSLEDEK": f"❌ EDIT SELHALO — status {resp.status_code}"})
+    except Exception as e:
+        log.append({"EXCEPTION": str(e)})
+
+    # KROK 4: GET task pro ověření
+    log.append({"krok": f"4. Ověření: GET /task/{task_id}"})
+    try:
+        r_check = freelo_get(f"/task/{task_id}")
+        if r_check.status_code == 200:
+            d = r_check.json()
+            log.append({
+                "KONECNY_STAV_WORKERA": d.get("worker"),
+                "USPECH": "✅ WORKER JE PRIRAZEN" if d.get("worker") else "❌ WORKER NENI PRIRAZEN"
+            })
+    except Exception as e:
+        log.append({"EXCEPTION_CHECK": str(e)})
+
+    return jsonify({"log": log})
+
+
+# ─────────────────────────────────────────────
+# TEST STRÁNKA — ZODPOVĚDNÁ OSOBA
+# Otevři: /freelo-test
+# ─────────────────────────────────────────────
+@app.route("/freelo-test")
+@login_required
+def freelo_test_stranka():
+    """HTML testovací stránka — načte úkoly a vygeneruje klikatelné test odkazy."""
+    # Načti všechny klienty s tasklist_id
+    klienti = Klient.query.filter(Klient.freelo_tasklist_id != None).all()
+
+    # Načti members z projektu 582553
+    members = []
+    try:
+        mr = freelo_get("/project/582553/workers")
+        if mr.status_code == 200:
+            members = mr.json().get("data", {}).get("workers", [])
+    except Exception:
+        pass
+
+    # Pro každého klienta načti první úkol
+    klienti_data = []
+    for k in klienti[:5]:  # max 5 klientů
+        ukoly = []
+        try:
+            r = freelo_get(f"/tasklist/{k.freelo_tasklist_id}")
+            if r.status_code == 200:
+                raw = r.json()
+                tasks_raw = raw.get("tasks", raw.get("data", []))
+                for t in tasks_raw[:3]:
+                    ukoly.append({"id": t.get("id"), "name": t.get("name", "?"), "worker": t.get("worker")})
+        except Exception:
+            pass
+        klienti_data.append({"klient": k.nazev, "tasklist_id": k.freelo_tasklist_id, "ukoly": ukoly})
+
+    html = f"""<!DOCTYPE html>
+<html lang="cs">
+<head>
+<meta charset="UTF-8">
+<title>Freelo Test — Zodpovědná osoba</title>
+<style>
+body {{ font-family: 'Montserrat', sans-serif; background: #f0f3f7; padding: 2rem; color: #173767; }}
+h1 {{ font-size: 22px; font-weight: 900; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.5rem; }}
+h2 {{ font-size: 14px; font-weight: 700; text-transform: uppercase; color: #4A6080; margin: 1.5rem 0 0.5rem; }}
+.card {{ background: white; border-radius: 8px; padding: 1.5rem; margin-bottom: 1.5rem; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }}
+.btn {{ display: inline-block; background: #173767; color: white; padding: 8px 16px; border-radius: 5px; text-decoration: none; font-size: 12px; font-weight: 700; margin: 4px 4px 4px 0; text-transform: uppercase; letter-spacing: 0.04em; }}
+.btn:hover {{ background: #00AFF0; color: white; }}
+.btn.green {{ background: #0A7A5A; }}
+.btn.red {{ background: #C0392B; }}
+.tag {{ display: inline-block; background: #f0f3f7; border-radius: 4px; padding: 2px 8px; font-size: 11px; font-weight: 600; color: #4A6080; margin-right: 6px; }}
+.ok {{ color: #0A7A5A; font-weight: 700; }}
+.err {{ color: #C0392B; font-weight: 700; }}
+table {{ width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 8px; }}
+th {{ background: #f0f3f7; padding: 8px 12px; text-align: left; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: #4A6080; }}
+td {{ padding: 8px 12px; border-bottom: 1px solid #e8eef4; }}
+tr:last-child td {{ border-bottom: none; }}
+#result {{ background: #0A7A5A; color: white; padding: 1rem 1.5rem; border-radius: 8px; margin-top: 1rem; font-size: 13px; white-space: pre-wrap; display: none; }}
+#result.err {{ background: #C0392B; }}
+</style>
+</head>
+<body>
+<h1>🔧 Freelo Test — Zodpovědná osoba</h1>
+<p style="color:#4A6080;font-size:13px;margin-bottom:1.5rem;">Testovací stránka pro debugging přiřazení zodpovědné osoby ve Freelu.</p>
+
+<div class="card">
+<h2>👥 Members projektu 582553</h2>
+<table>
+<tr><th>ID</th><th>Jméno</th><th>Test odkaz</th></tr>
+"""
+    for m in members:
+        jmeno_enc = m.get('fullname','').replace(' ', '%20')
+        html += f"<tr><td><code>{m.get('id')}</code></td><td><strong>{m.get('fullname','?')}</strong></td>"
+        html += f"<td><span class='tag'>Použij s úkolem níže</span></td></tr>"
+
+    html += "</table></div>"
+
+    if not members:
+        html += "<div class='card'><span class='err'>❌ Members se nenačetly! Zkontroluj FREELO_EMAIL a FREELO_API_KEY.</span></div>"
+
+    # Úkoly per klient
+    html += "<div class='card'><h2>📋 Úkoly klientů — klikni pro test</h2>"
+    for kd in klienti_data:
+        html += f"<h2 style='margin-top:1rem;'>{kd['klient']} <span class='tag'>tasklist {kd['tasklist_id']}</span></h2>"
+        if not kd['ukoly']:
+            html += "<p style='color:#C0392B;font-size:13px;'>Žádné úkoly nebo chyba načítání.</p>"
+            continue
+        html += "<table><tr><th>ID úkolu</th><th>Název</th><th>Aktuální worker</th><th>Test akce</th></tr>"
+        for u in kd['ukoly']:
+            worker_info = u['worker'].get('fullname','?') if u['worker'] else '<span class="err">nepřiřazeno</span>'
+            for m in members[:2]:  # Nabídni 2 osoby k otestování
+                jmeno_enc = m.get('fullname','').replace(' ', '%20')
+                html += f"""<tr>
+<td><code>{u['id']}</code></td>
+<td>{u['name'][:40]}</td>
+<td>{worker_info}</td>
+<td>
+  <a class="btn green" href="/api/freelo/test-edit-worker/{u['id']}/{jmeno_enc}" target="_blank">
+    Přiraď: {m.get('fullname','?').split()[0]}
+  </a>
+</td>
+</tr>"""
+            break  # jen první úkol per klient
+        html += "</table>"
+
+    html += "</div>"
+
+    # Manuální test
+    html += f"""
+<div class="card">
+<h2>🔬 Manuální test</h2>
+<p style="font-size:13px;color:#4A6080;margin-bottom:1rem;">Zadej ručně ID úkolu a jméno — otestuje celý flow edit endpointu:</p>
+<div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;">
+  <div>
+    <label style="font-size:10px;font-weight:700;color:#4A6080;display:block;margin-bottom:4px;">ID ÚKOLU</label>
+    <input id="ukol_id" type="text" placeholder="např. 28798538" style="padding:8px 12px;border:1.5px solid #D0DAE8;border-radius:5px;font-size:13px;width:160px;">
+  </div>
+  <div>
+    <label style="font-size:10px;font-weight:700;color:#4A6080;display:block;margin-bottom:4px;">JMÉNO</label>
+    <select id="jmeno_sel" style="padding:8px 12px;border:1.5px solid #D0DAE8;border-radius:5px;font-size:13px;">
+"""
+    for m in members:
+        html += f"<option value=\"{m.get('fullname','')}\">{m.get('fullname','?')}</option>"
+
+    html += f"""
+    </select>
+  </div>
+  <button onclick="spustTest()" style="background:#173767;color:white;border:none;padding:9px 18px;border-radius:5px;font-size:13px;font-weight:700;cursor:pointer;">▶ Spustit test</button>
+  <a id="test_odkaz" href="#" target="_blank" style="display:none;font-size:12px;color:#00AFF0;">Otevřít raw JSON →</a>
+</div>
+<div id="result"></div>
+</div>
+
+<script>
+async function spustTest() {{
+  const id = document.getElementById('ukol_id').value.trim();
+  const jmeno = document.getElementById('jmeno_sel').value;
+  if (!id) {{ alert('Zadej ID úkolu'); return; }}
+  const url = `/api/freelo/test-edit-worker/${{id}}/${{encodeURIComponent(jmeno)}}`;
+  document.getElementById('test_odkaz').href = url;
+  document.getElementById('test_odkaz').style.display = 'inline';
+  const res = document.getElementById('result');
+  res.style.display = 'block';
+  res.className = '';
+  res.textContent = 'Testuji...';
+  try {{
+    const r = await fetch(url);
+    const d = await r.json();
+    const success = JSON.stringify(d).includes('WORKER JE PRIRAZEN') || JSON.stringify(d).includes('ULOZIL');
+    res.className = success ? '' : 'err';
+    res.textContent = JSON.stringify(d, null, 2);
+  }} catch(e) {{
+    res.className = 'err';
+    res.textContent = 'Chyba: ' + e.message;
+  }}
+}}
+</script>
+
+</body>
+</html>"""
+
+    return html
